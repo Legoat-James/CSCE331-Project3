@@ -1,0 +1,20 @@
+{
+  "name": "my-fullstack-app",
+  "version": "1.0.0",
+  "description": "Full-stack app with React frontend and Express backend",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "build": "npm run build --workspace=frontend",
+    "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=backend"
+  },
+  "keywords": ["react", "express", "fullstack", "tailwind"],
+  "author": "",
+  "license": "ISC"
+}
