@@ -1,0 +1,29 @@
+name: Deploy Backend to EC2
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Starting deployment..."
+            cd ~/CSCE331-Project3/backend
+            echo "Pulling latest code from master..."
+            git pull origin master
+            echo "Installing dependencies..."
+            npm install --production
+            echo "Restarting backend with PM2..."
+            pm2 restart backend
+            echo "Deployment complete!"
+            pm2 status
