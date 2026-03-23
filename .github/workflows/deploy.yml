@@ -1,4 +1,4 @@
-name: Deploy Backend to EC2
+name: Deploy App to EC2
 
 on:
   release:
@@ -18,12 +18,21 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             echo "Starting deployment..."
-            cd ~/CSCE331-Project3/backend
+            cd ~/CSCE331-Project3
             echo "Pulling latest code from master..."
             git pull origin master
-            echo "Installing dependencies..."
+
+            echo "Update Backend..."
+            cd backend
             npm install --production
             echo "Restarting backend with PM2..."
             pm2 restart backend
+
+            echo "Update Frontend..."
+            cd ../frontend
+            npm install
+            echo "building frontend"
+            npm run build
+
             echo "Deployment complete!"
             pm2 status

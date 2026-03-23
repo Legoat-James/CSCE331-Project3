@@ -1,121 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { ErrorBoundary } from 'react-error-boundary';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { Routes, Route } from 'react-router';
+import { useState, useEffect,createContext, useContext } from 'react';
+import Home from './Home';
+import NotFound from './NotFound';
 
-function App() {
-  const [count, setCount] = useState(0)
+//create a client for react query
+const queryClient = new QueryClient();
+//create a theme context
+export const ThemeContext = createContext();
 
+
+function ErrorFallback({ error, resetErrorBoundary }) {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    <div role="alert">
+      <h1 className='text-center text-black'>An error occurred.</h1>
+      <p className='text-muted ms-3'>Error: {error.message}</p>
+      <button className='btn btn-warning ms-3' onClick={resetErrorBoundary}>Try again</button>
+    </div>
+  );
 }
 
-export default App
+
+export default function App(){
+    //themes will be used for accessiblity (ex: light, dark, high contrast)
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    useEffect(() => {
+        // Apply the theme to the HTML element for Bootstrap 5.3+
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('theme', theme);
+  }, [theme]);
+
+    return (
+      <ThemeContext.Provider value={{ theme, setTheme }}>
+        <QueryClientProvider client={queryClient}>
+          <div className="min-vh-100 transition-all">
+            <ErrorBoundary FallbackComponent={ErrorFallback}>
+              <Routes>
+                <Route path="/" index element={<Home />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
+          </div>
+        </QueryClientProvider>
+      </ThemeContext.Provider>
+    );
+}
