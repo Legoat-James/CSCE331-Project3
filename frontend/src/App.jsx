@@ -4,6 +4,8 @@ import { Routes, Route } from 'react-router';
 import { useState, useEffect,createContext, useContext } from 'react';
 import Home from './Home';
 import NotFound from './NotFound';
+import Cashier from './Cashier';
+import Manager from './Manager';
 
 //create a client for react query
 const queryClient = new QueryClient();
@@ -39,6 +41,8 @@ export default function App(){
               <Routes>
                 <Route path="/" index element={<Home />} />
                 <Route path="*" element={<NotFound />} />
+                <Route path="/cashier" element={<Cashier />} />
+                <Route path="/manager" element={<Manager />} />
               </Routes>
             </ErrorBoundary>
           </div>
