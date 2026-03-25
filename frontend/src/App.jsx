@@ -2,7 +2,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Routes, Route } from 'react-router';
 import { useState, useEffect,createContext, useContext } from 'react';
-import Home from './Home';
+import Customer from './Customer';
 import NotFound from './NotFound';
 import Cashier from './Cashier';
 import Manager from './Manager';
@@ -10,6 +10,7 @@ import Manager from './Manager';
 //create a client for react query
 const queryClient = new QueryClient();
 //create a theme context
+// eslint-disable-next-line react-refresh/only-export-components
 export const ThemeContext = createContext();
 
 
@@ -39,7 +40,7 @@ export default function App(){
           <div className="min-vh-100 transition-all">
             <ErrorBoundary FallbackComponent={ErrorFallback}>
               <Routes>
-                <Route path="/" index element={<Home />} />
+                <Route path="/" index element={<Customer />} />
                 <Route path="*" element={<NotFound />} />
                 <Route path="/cashier" element={<Cashier />} />
                 <Route path="/manager" element={<Manager />} />
