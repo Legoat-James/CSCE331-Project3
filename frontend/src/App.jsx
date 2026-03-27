@@ -2,6 +2,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Routes, Route } from 'react-router';
 import { useState, useEffect,createContext, useContext } from 'react';
+import { Navbar} from 'react-bootstrap';
 import Customer from './Customer';
 import NotFound from './NotFound';
 import Cashier from './Cashier';
@@ -14,7 +15,7 @@ const queryClient = new QueryClient();
 export const ThemeContext = createContext();
 
 
-function ErrorFallback({ error, resetErrorBoundary }) {
+function ErrorFallback({ error, resetErrorBoundary }) { 
   return (
     <div role="alert">
       <h1 className='text-center text-black'>An error occurred.</h1>
@@ -37,6 +38,12 @@ export default function App(){
     return (
       <ThemeContext.Provider value={{ theme, setTheme }}>
         <QueryClientProvider client={queryClient}>
+          <nav>
+            <button onClick={() => window.location.href = '/Cashier'} className='btn btn-primary'> Cashier </button>
+            <button onClick={() => window.location.href = '/Manager'} className='btn btn-primary'> manager </button>
+            <button onClick={() => window.location.href = '/'} className='btn btn-primary'> Home </button>
+            <button onClick={() => window.location.href = '/'} className='btn btn-primary'> login (WIP) </button>
+          </nav>
           <div className="min-vh-100 transition-all">
             <ErrorBoundary FallbackComponent={ErrorFallback}>
               <Routes>

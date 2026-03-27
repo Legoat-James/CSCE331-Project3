@@ -14,7 +14,16 @@
     "build": "npm run build --workspace=frontend",
     "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=backend"
   },
-  "keywords": ["react", "express", "fullstack", "tailwind"],
+  "keywords": [
+    "react",
+    "express",
+    "fullstack",
+    "tailwind"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "react-bootstrap": "^2.10.10"
+  }
 }

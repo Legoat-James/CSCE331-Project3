@@ -3,6 +3,7 @@ import cors from "cors"
 import "dotenv/config"
 import errorHandler from "./helpers/errorHandler.js";
 import ApiError from "./helpers/ApiError.js";
+import pool from "./config/db.js";
 
 
 const app = express();
@@ -42,6 +43,15 @@ app.get('/api/test', (req, res, next) => {
         });
       }
   }catch(err){
+    next(err);
+  }
+});
+
+app.get('/api/menu-items', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM menu');
+    res.json(rows);
+  } catch (err) {
     next(err);
   }
 });
