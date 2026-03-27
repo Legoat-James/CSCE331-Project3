@@ -16,6 +16,11 @@ export default function Login() {
         setSuccess('');
         setLoading(true);
         try {
+            // Debug logging
+            console.log('Login form submission:');
+            console.log('Username type:', typeof username, 'Value:', username);
+            console.log('Password type:', typeof password, 'Value:', password ? '[HIDDEN]' : password);
+
             //Call the api
             const response = await loginUser(username, password);
 
