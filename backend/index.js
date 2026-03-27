@@ -67,7 +67,7 @@ app.get('/api/menu-items', async (req, res, next) => {
 });
 
 // Catch-all handler: send back React's index.html file for non-API routes
-app.get('*', (req, res) => {
+app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
