@@ -40,7 +40,7 @@ export default function App(){
         <QueryClientProvider client={queryClient}>
           <nav>
             <button onClick={() => window.location.href = '/Cashier'} className='btn btn-primary'> Cashier </button>
-            <button onClick={() => window.location.href = '/Manager'} className='btn btn-primary'> manager </button>
+            <button onClick={() => window.location.href = '/Manager'} className='btn btn-primary'> Manager </button>
             <button onClick={() => window.location.href = '/'} className='btn btn-primary'> Home </button>
             <button onClick={() => window.location.href = '/'} className='btn btn-primary'> login (WIP) </button>
           </nav>
