@@ -1,39 +1,100 @@
 import React, { useState, useEffect } from 'react';
-
+import { Form, Button, Alert, Container, Card } from 'react-bootstrap';
+import { loginUser } from './api/authAPI.js';
 
 export default function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Add login logic here
+        //Clear previous messages
+        setError('');
+        setSuccess('');
+        setLoading(true);
+        try {
+            //Call the api
+            const response = await loginUser(username, password);
+
+            //store auth info in localStorage
+            localStorage.setItem('authToken', response.token);
+            localStorage.setItem('user', JSON.stringify(response.user));
+            
+            setSuccess('Login successful! Redirecting...');
+
+            //redirect after successful login
+            setTimeout(() => {
+                if(response.user.is_manager) {
+                    window.location.href = '/Manager';
+                } else {
+                    window.location.href = '/Cashier';
+                }
+            }, 1500);
+
+        } catch (err){
+            //Handle error
+            setError(err.message || 'Login failed. Please try again.');
+
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div>
-            <h1>Login Page (WIP)</h1>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="username">Username:</label>
-                    <input
-                        type="text"
-                        id="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
+        <Container className="mt-5">
+            <div className="row justify-content-center">
+                <div className="col-md-6">
+                    <Card>
+                        <Card.Body>
+                            <Card.Title className="text-center mb-4">
+                                <h2>Login</h2>
+                            </Card.Title>
+                            
+                            {error && <Alert variant="danger">{error}</Alert>}
+                            {success && <Alert variant="success">{success}</Alert>}
+                            
+                            <Form onSubmit={handleSubmit}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Username</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        placeholder="Enter your username"
+                                        required
+                                        disabled={loading}
+                                    />
+                                </Form.Group>
+                                
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Password</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Enter your password"
+                                        required
+                                        disabled={loading}
+                                    />
+                                </Form.Group>
+                                
+                                <div className="d-grid">
+                                    <Button 
+                                        type="submit" 
+                                        variant="primary" 
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Signing in...' : 'Sign In'}
+                                    </Button>
+                                </div>
+                            </Form>
+                        </Card.Body>
+                    </Card>
                 </div>
-                <div>
-                    <label htmlFor="password">Password:</label>
-                    <input
-                        type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                </div>
-                <button type="submit">Login</button>
-            </form>
-        </div>
+            </div>
+        </Container>
     );
 }
