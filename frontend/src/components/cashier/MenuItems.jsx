@@ -1,3 +1,4 @@
+import apiClient from '../../api/client_config.js';
 import React, { useState, useEffect } from 'react';
 import {Button } from 'react-bootstrap';
 
@@ -5,11 +6,17 @@ export default function Menuitems({ onAddItem }) {
     const [menuItems, setMenuItems] = useState([]);
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/menu-items')
-            .then(response => response.json())
-            .then(data => setMenuItems(data)) //stores the response data into the menuItems state variable
-            .catch(error => console.error('Error fetching menu items:', error));
-    }, []); //runs only once on initial render
+    const fetchMenuItems = async () => {
+        try {
+            const data = await apiClient('/api/menu-items');
+            setMenuItems(data);
+        } catch (error) {
+            console.error('Error fetching menu items:', error);
+        }
+    };
+    
+    fetchMenuItems();
+}, []);
 
     return (
         <div>

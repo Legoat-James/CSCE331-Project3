@@ -5,11 +5,10 @@ import Menuitems from './components/cashier/MenuItems';
 
 export default function Cashier() {
     const [total, setTotal] = useState(0.00);
-
     useEffect(() => {
-        // this is just a placeholder until we implement the backend, 
+        // this is just a placeholder until we implement the backend
         
-    }, []); //becuase i used empty brace [] it will render only once, on the initial render
+    }, []); // because i used empty brace [] it will render only once, on the initial render
 
     const handleAddItem = (cost) => {
         setTotal(prevTotal => {
