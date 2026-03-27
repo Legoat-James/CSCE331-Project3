@@ -22,17 +22,17 @@ jobs:
             echo "Pulling latest code from master..."
             git pull origin master
 
-            echo "Update Backend..."
-            cd backend
-            npm install --production
-            echo "Restarting backend with PM2..."
-            pm2 restart backend
-
             echo "Update Frontend..."
-            cd ../frontend
+            cd frontend
             npm install
-            echo "building frontend"
+            echo "Building frontend..."
             npm run build
+
+            echo "Update Backend..."
+            cd ../backend
+            npm install --production
+            echo "Restarting backend with PM2 (now serves frontend too)..."
+            pm2 restart backend
 
             echo "Deployment complete!"
             pm2 status
