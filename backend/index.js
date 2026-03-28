@@ -1,6 +1,8 @@
 import express from "express"
 import cors from "cors"
 import "dotenv/config"
+import path from "path"
+import { fileURLToPath } from "url"
 import errorHandler from "./helpers/errorHandler.js";
 import ApiError from "./helpers/ApiError.js";
 import pg from "pg";
@@ -11,7 +13,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: ['https://project3-backend.duckdns.org',
-          'http://localhost:3000'  // for local dev
+          'http://localhost:3000',  // for local dev
+          'http://localhost:5000'   // for serving React from Express
           ]
 }));
 app.use(express.json());
@@ -106,6 +109,20 @@ app.get('/api/test', (req, res, next) => {
   }catch(err){
     next(err);
   }
+});
+
+app.get('/api/menu-items', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM menu');
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Catch-all handler: send back React's index.html file for non-API routes
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 // Start server
