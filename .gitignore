@@ -36,3 +36,10 @@ Thumbs.db
 .vercel
 postman/
 .postman/
+
+#python
+.venv
+#for the script generator
+/backend/data
+/backend/SQLgen.py
+/backend/swagger-out.json
