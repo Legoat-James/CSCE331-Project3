@@ -846,6 +846,35 @@ app.post('/api/employee/logout', async (req,res,next)=>{
   }
 });
 
+app.get('/api/employee/auth', requireAuth(false), async (req,res,next)=>{
+  /* #swagger.tags = ['Employees']
+      #swagger.summary = "Authenticate an employee using their session_token cookie"
+      #swagger.responses[200] = { 
+          description: 'Authentication successful, user object returned',
+          schema: { message: "Authentication successful", user: 
+          {employee_id: 1, name: "John_Doe", 
+            is_manager: true, 
+            username: "John_Doe@gmail.com",
+            is_active: true,
+            session_token: "eY8Cj@p00Sd...",
+            google_id: "efdsfsd.... or null"
+            } 
+          }
+      } 
+      #swagger.responses[401] = { description: 'Invalid cookie' } 
+  */
+  try{
+    console.log(req.user);
+    const {password, session_token, google_id, is_active, ...restUser} = req.user;
+    res.json({
+      message: "Authentication successful",
+      user: restUser
+    });
+
+  }catch(err){
+    next(err);
+  }
+});
 
 
 app.get('/api/test', (req, res, next) => {
@@ -877,3 +906,5 @@ app.get(/^(?!\/api).*/, (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+app.use(errorHandler);
