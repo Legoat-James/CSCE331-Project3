@@ -1,6 +1,7 @@
 import './Customer.css'
 import { useGet } from './hooks/useApi'
-import React, { useState } from 'react'; // MUST import useState
+import apiClient from './api/client_config'
+import React, { useEffect, useState } from 'react'; // MUST import useState
 
 
 
@@ -21,12 +22,210 @@ function Home() {
   const [swapSugar, setSwapSugar] = useState(false);
   const [useOatMilk, setUseOatMilk] = useState(false);
   const [orderItems, setOrderItems] = useState([]);
+  const [editingOrderItemId, setEditingOrderItemId] = useState(null);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [orderSubmitMessage, setOrderSubmitMessage] = useState('');
+  const [orderSubmitError, setOrderSubmitError] = useState('');
+  const [resolvedImageByName, setResolvedImageByName] = useState({});
+  const [requestedImageByName, setRequestedImageByName] = useState({});
 
-  const placeholderDescriptionByName = {
-    'Taro Milk Tea': 'Creamy taro milk tea with a rich, nutty sweetness and a smooth finish.',
-    'Jasmine Milk Tea': 'Fragrant jasmine tea blended with milk for a floral and refreshing sip.',
-    'Brown Sugar Boba': 'Caramelized brown sugar syrup with fresh boba pearls and silky milk tea.',
-    'Grilled Cheese': 'Toasted artisan bread layered with melty cheddar and a crisp golden crust.',
+  const fallbackCardImage = 'https://picsum.photos/id/1040/900/600';
+
+  const itemVisualsByName = {
+    'black tea': {
+      description: 'Classic brewed black tea with a smooth tannin finish and a bold, comforting aroma.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Cup_of_black_tea.JPG/330px-Cup_of_black_tea.JPG',
+    },
+    'black honey tea': {
+      description: 'Fragrant black tea sweetened with mellow honey notes for a warm, rounded sip.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Chai_%28Tea%29_2.jpg/330px-Chai_%28Tea%29_2.jpg',
+    },
+    'coffee crema': {
+      description: 'Velvety coffee-forward drink topped with a creamy finish and roasted caramel depth.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Affogato_al_Caffe.jpg/330px-Affogato_al_Caffe.jpg',
+    },
+    'coffee milk tea': {
+      description: 'A balanced fusion of milk tea richness and smooth coffee flavor with light sweetness.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Caffe_Latte_at_Pulse_Cafe.jpg/330px-Caffe_Latte_at_Pulse_Cafe.jpg',
+    },
+    'golden retriever': {
+      description: 'House signature golden milk tea blend with bright floral notes and silky texture.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Bubble_Tea.png/330px-Bubble_Tea.png',
+    },
+    'honey lemonade': {
+      description: 'Citrusy lemonade sweetened with honey for a refreshing, sunny, and crisp finish.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Lemonade_-_27682817724.jpg/330px-Lemonade_-_27682817724.jpg',
+    },
+    'honey pearl milk tea': {
+      description: 'Creamy milk tea with chewy pearls and layered honey sweetness in every sip.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Bubble_Tea.png/330px-Bubble_Tea.png',
+    },
+    'mango and passion fruit tea': {
+      description: 'Tropical mango and passion fruit infusion with bright acidity and juicy tea notes.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Passiflora_edulis_forma_flavicarpa.jpg/330px-Passiflora_edulis_forma_flavicarpa.jpg',
+    },
+    'mango green mlik tea': {
+      description: 'Green milk tea blended with ripe mango flavor for a creamy, fruity profile.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Green_tea_3_appearances.jpg/330px-Green_tea_3_appearances.jpg',
+    },
+    'mango green tea': {
+      description: 'Fresh green tea base with sweet mango character and a clean, lightly grassy finish.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Green_tea_3_appearances.jpg/330px-Green_tea_3_appearances.jpg',
+    },
+    'mango matcha fresh milk': {
+      description: 'Creamy fresh milk layered with mango sweetness and earthy matcha complexity.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Matcha_Scoop.jpg/330px-Matcha_Scoop.jpg',
+    },
+    'matcha pearl milk tea': {
+      description: 'Matcha milk tea with bouncy pearls, combining gentle bitterness and creamy sweetness.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Matcha_Scoop.jpg/330px-Matcha_Scoop.jpg',
+    },
+    'pearl milk tea': {
+      description: 'Traditional pearl milk tea with smooth tea flavor and chewy tapioca pearls.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Bubble_Tea.png/330px-Bubble_Tea.png',
+    },
+    'strawberry coconut': {
+      description: 'Sweet strawberry and coconut blend with a creamy tropical finish.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Cononut_milk.JPG/330px-Cononut_milk.JPG',
+    },
+    'thai pearl milk tea': {
+      description: 'Thai-style milk tea with pearl topping, deep spice notes, and caramel sweetness.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Cha_yen.JPG/330px-Cha_yen.JPG',
+    },
+    'tiger boba': {
+      description: 'Brown sugar tiger stripes over milk tea and boba for a rich caramelized treat.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Bubble_Tea.png/330px-Bubble_Tea.png',
+    },
+    'avacado toast': {
+      description: 'Crisp toasted bread layered with seasoned avocado mash and savory toppings.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Avocado_toast_at_Voyager_Espresso_%2833134505776%29.jpg/330px-Avocado_toast_at_Voyager_Espresso_%2833134505776%29.jpg',
+    },
+    'bagel sandwhich': {
+      description: 'Warm bagel sandwich stacked with hearty fillings for a satisfying bite.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Bagel_with_sesame_3.jpg/330px-Bagel_with_sesame_3.jpg',
+    },
+    fries: {
+      description: 'Golden fries with a crisp outside, fluffy center, and a savory potato finish.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/French_Fries.JPG/330px-French_Fries.JPG',
+    },
+    'grilled cheese': {
+      description: 'Buttery toasted bread with a melty cheese center and classic comfort flavor.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Classic_Grilled_Cheese_Sandwich_%2825791331763%29_%28cropped%29.jpg/330px-Classic_Grilled_Cheese_Sandwich_%2825791331763%29_%28cropped%29.jpg',
+    },
+  };
+
+  const normalizeItemName = (name) => String(name || '').trim().toLowerCase();
+
+  const imageSearchAliasesByName = {
+    'black tea': 'black tea drink',
+    'black honey tea': 'honey black tea',
+    'coffee crema': 'coffee cream drink',
+    'coffee milk tea': 'coffee milk tea',
+    'golden retriever': 'milk tea',
+    'honey lemonade': 'honey lemonade drink',
+    'honey pearl milk tea': 'bubble tea pearls',
+    'mango and passion fruit tea': 'mango passionfruit iced tea',
+    'mango green mlik tea': 'mango green milk tea',
+    'mango green tea': 'mango green tea drink',
+    'mango matcha fresh milk': 'mango matcha latte',
+    'matcha pearl milk tea': 'matcha bubble tea',
+    'pearl milk tea': 'bubble tea',
+    'strawberry coconut': 'strawberry coconut milk drink',
+    'thai pearl milk tea': 'thai milk tea bubble tea',
+    'tiger boba': 'brown sugar boba',
+    'avacado toast': 'avocado toast',
+    'bagel sandwhich': 'bagel sandwich',
+    fries: 'french fries',
+    'grilled cheese': 'grilled cheese sandwich',
+  };
+
+  const getImageSearchQuery = (name, category) => {
+    const normalizedName = normalizeItemName(name)
+      .replace(/\bmlik\b/g, 'milk')
+      .replace(/\bavacado\b/g, 'avocado')
+      .replace(/\bsandwhich\b/g, 'sandwich')
+      .replace(/\b(small|medium|large)\b/g, '')
+      .trim();
+
+    if (imageSearchAliasesByName[normalizedName]) {
+      return imageSearchAliasesByName[normalizedName];
+    }
+
+    return category === 'food'
+      ? `${normalizedName} food`
+      : `${normalizedName} milk tea drink`;
+  };
+
+  const fetchWikipediaImage = async (query) => {
+    try {
+      const searchResponse = await fetch(
+        `https://en.wikipedia.org/w/rest.php/v1/search/page?q=${encodeURIComponent(query)}&limit=3`,
+      );
+
+      if (!searchResponse.ok) {
+        return null;
+      }
+
+      const searchData = await searchResponse.json();
+      const pages = Array.isArray(searchData?.pages) ? searchData.pages : [];
+
+      for (const page of pages) {
+        if (!page?.title) {
+          continue;
+        }
+
+        const summaryResponse = await fetch(
+          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(page.title)}`,
+        );
+
+        if (!summaryResponse.ok) {
+          continue;
+        }
+
+        const summaryData = await summaryResponse.json();
+        const imageUrl = summaryData?.thumbnail?.source;
+
+        if (imageUrl) {
+          return imageUrl.startsWith('//') ? `https:${imageUrl}` : imageUrl;
+        }
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  };
+
+  const fetchOpenverseImage = async (query) => {
+    try {
+      const openverseResponse = await fetch(
+        `https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page_size=3`,
+      );
+
+      if (!openverseResponse.ok) {
+        return null;
+      }
+
+      const openverseData = await openverseResponse.json();
+      const firstResult = Array.isArray(openverseData?.results)
+        ? openverseData.results.find((result) => typeof result?.url === 'string')
+        : null;
+
+      return firstResult?.url || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const resolveImageForMenuItem = async (name, category) => {
+    const query = getImageSearchQuery(name, category);
+    const wikiImage = await fetchWikipediaImage(query);
+
+    if (wikiImage) {
+      return wikiImage;
+    }
+
+    return fetchOpenverseImage(query);
   };
 
   const normalizeCategory = (categoryValue) => {
@@ -40,17 +239,38 @@ function Home() {
     return normalized;
   };
 
-  const getPlaceholderImage = (category) => {
-    if (category === 'food') {
-      return 'https://images.unsplash.com/photo-1528736235302-52922df5c122?auto=format&fit=crop&w=900&q=80';
+  const getMenuImage = (name, category) => {
+    const normalizedName = normalizeItemName(name);
+    const mappedImage = itemVisualsByName[normalizedName]?.image;
+    const resolvedImage = resolvedImageByName[normalizedName];
+
+    if (mappedImage) {
+      return mappedImage;
     }
 
-    return 'https://northofbleu.com/wp-content/uploads/2022/07/taro-tea-recipe-northofbleu.com_.png';
+    if (resolvedImage) {
+      return resolvedImage;
+    }
+
+    if (category === 'food') {
+      return 'https://picsum.photos/id/292/900/600';
+    }
+
+    return 'https://picsum.photos/id/766/900/600';
   };
 
-  const getPlaceholderDescription = (name, category) => {
-    if (placeholderDescriptionByName[name]) {
-      return placeholderDescriptionByName[name];
+  const handleCardImageError = (event) => {
+    if (event.currentTarget.src !== fallbackCardImage) {
+      event.currentTarget.src = fallbackCardImage;
+    }
+  };
+
+  const getMenuDescription = (name, category) => {
+    const normalizedName = normalizeItemName(name);
+    const match = itemVisualsByName[normalizedName];
+
+    if (match?.description) {
+      return match.description;
     }
 
     if (category === 'food') {
@@ -63,6 +283,84 @@ function Home() {
 
     return 'House specialty item with rotating ingredients and seasonal flavors.';
   };
+
+  const { data, isLoading, error, isError } = useGet(['full-menu'], '/api/menu/all',
+    {
+      retry: false //only try to query once
+    }
+  );
+
+  useEffect(() => {
+    const activeMenuItems = Array.isArray(data)
+      ? data
+          .filter((item) => item?.is_active !== false)
+          .map((item) => ({
+            name: item.name,
+            category: normalizeCategory(item.category),
+          }))
+          .filter((item) => item.category === 'drink' || item.category === 'food')
+      : [];
+
+    if (activeMenuItems.length === 0) {
+      return;
+    }
+
+    const uniqueByName = new Map();
+
+    for (const item of activeMenuItems) {
+      const key = normalizeItemName(item.name);
+      if (!uniqueByName.has(key)) {
+        uniqueByName.set(key, item);
+      }
+    }
+
+    const unresolvedItems = [...uniqueByName.entries()]
+      .filter(([key]) => !itemVisualsByName[key]?.image && !resolvedImageByName[key] && !requestedImageByName[key])
+      .map(([key, item]) => ({ key, ...item }));
+
+    if (unresolvedItems.length === 0) {
+      return;
+    }
+
+    setRequestedImageByName((prev) => {
+      const next = { ...prev };
+      unresolvedItems.forEach((item) => {
+        next[item.key] = true;
+      });
+      return next;
+    });
+
+    let isCancelled = false;
+
+    const loadImages = async () => {
+      const resolvedEntries = await Promise.all(
+        unresolvedItems.map(async (item) => {
+          const imageUrl = await resolveImageForMenuItem(item.name, item.category);
+          return [item.key, imageUrl];
+        }),
+      );
+
+      if (isCancelled) {
+        return;
+      }
+
+      setResolvedImageByName((prev) => {
+        const next = { ...prev };
+        resolvedEntries.forEach(([key, imageUrl]) => {
+          if (imageUrl) {
+            next[key] = imageUrl;
+          }
+        });
+        return next;
+      });
+    };
+
+    loadImages();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [data, requestedImageByName, resolvedImageByName]);
 
   const parseDrinkVariant = (drinkName) => {
     const normalizedName = String(drinkName || '').trim();
@@ -88,10 +386,6 @@ function Home() {
     };
   };
 
-  function handleFinishOrder(){
-
-  }
-
   const iceLevelOptions = ['No Ice', 'Light Ice', 'Regular Ice', 'Extra Ice'];
 
   const handleSelectItem = (item) => {
@@ -107,6 +401,7 @@ function Home() {
   };
 
   const handleToppings = (drinkItem) => {
+    setEditingOrderItemId(null);
     setSelectedDrink(drinkItem); // Memorize which drink was clicked
     const defaultSize = Number.isFinite(drinkItem?.sizeOptions?.medium)
       ? 'medium'
@@ -130,6 +425,7 @@ function Home() {
     setIceLevelIndex(2);
     setSwapSugar(false);
     setUseOatMilk(false);
+    setEditingOrderItemId(null);
   };
 
   const closeFoodConfirm = () => {
@@ -146,20 +442,18 @@ function Home() {
     const orderEntry = {
       id: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       type: 'food',
+      menuId: selectedFood.id,
+      quantity: 1,
       name: selectedFood.name,
       price: selectedFood.price,
       totalPrice: selectedFood.price,
     };
 
+    setOrderSubmitMessage('');
+    setOrderSubmitError('');
     setOrderItems((prev) => [...prev, orderEntry]);
     closeFoodConfirm();
   };
-
-  const { data, isLoading, error, isError } = useGet(['full-menu'], '/api/get-full-menu',
-    {
-      retry: false //only try to query once
-    }
-  );
 
   const allMenuItems = Array.isArray(data)
     ? data
@@ -173,8 +467,8 @@ function Home() {
             name: item.name,
             price,
             category,
-            image: getPlaceholderImage(category),
-            description: getPlaceholderDescription(item.name, category),
+            image: getMenuImage(item.name, category),
+            description: getMenuDescription(item.name, category),
           };
         })
         .filter((item) => Number.isFinite(item.price))
@@ -191,13 +485,15 @@ function Home() {
           id: item.id,
           name: baseName,
           category: 'drink',
-          image: getPlaceholderImage('drink'),
-          description: getPlaceholderDescription(baseName, 'drink'),
+          image: getMenuImage(baseName, 'drink'),
+          description: getMenuDescription(baseName, 'drink'),
           sizeOptions: {},
+          sizeMenuIds: {},
         };
       }
 
       groups[key].sizeOptions[size] = item.price;
+      groups[key].sizeMenuIds[size] = item.id;
 
       // Use medium variant record as canonical card row when available.
       if (size === 'medium') {
@@ -225,9 +521,15 @@ function Home() {
     return normalized === 'oak milk' || normalized === 'oat milk';
   });
 
+  const modificationByName = modificationItems.reduce((lookup, item) => {
+    lookup[item.name.toLowerCase()] = item;
+    return lookup;
+  }, {});
+
   const foodItems = allMenuItems.filter((item) => item.category === 'food');
   const visibleItems = activeCategory === 'drink' ? drinkItems : foodItems;
   const selectedDrinkPrice = selectedDrink?.sizeOptions?.[selectedDrinkSize] ?? selectedDrink?.price;
+  const selectedDrinkMenuId = selectedDrink?.sizeMenuIds?.[selectedDrinkSize] ?? selectedDrink?.id;
   const availableDrinkSizes = selectedDrink?.sizeOptions
     ? ['small', 'medium', 'large'].filter((size) => Number.isFinite(selectedDrink.sizeOptions[size]))
     : [];
@@ -247,6 +549,143 @@ function Home() {
   const selectedDrinkTotal = (selectedDrinkPrice || 0) + toppingsTotal;
 
   const orderSubtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+  const resolveItemMenuId = (item) => {
+    if (Number.isInteger(item?.menuId)) {
+      return item.menuId;
+    }
+
+    if (item?.type === 'drink') {
+      const matchedDrink = drinkItems.find(
+        (drink) => drink.name.toLowerCase() === String(item.name || '').toLowerCase(),
+      );
+
+      if (matchedDrink) {
+        const sizeKey = item.size || 'medium';
+        return matchedDrink.sizeMenuIds?.[sizeKey] ?? matchedDrink.id;
+      }
+    }
+
+    const matchedMenu = allMenuItems.find(
+      (menuItem) => menuItem.category === item?.type && menuItem.name.toLowerCase() === String(item?.name || '').toLowerCase(),
+    );
+
+    return matchedMenu?.id;
+  };
+
+  const handleFinishOrder = async () => {
+    if (isSubmittingOrder || orderItems.length === 0) {
+      return;
+    }
+
+    setIsSubmittingOrder(true);
+    setOrderSubmitMessage('');
+    setOrderSubmitError('');
+
+    try {
+      const swapSugarMenuId = modificationByName['swap sugar']?.id;
+      const oatMilkMenuId = (modificationByName['oat milk'] || modificationByName['oak milk'])?.id;
+
+      const payloadItems = orderItems.map((item, itemIndex) => {
+        const menuId = resolveItemMenuId(item);
+        if (!Number.isInteger(menuId)) {
+          throw new Error(`Could not resolve menu ID for order item ${itemIndex + 1} (${item.name}).`);
+        }
+
+        const toppings = Array.isArray(item.toppings)
+          ? item.toppings.map((topping) => ({
+              id: topping.id,
+              qty: topping.quantity,
+            }))
+          : [];
+
+        if (item.type === 'drink') {
+          if (item.swapSugar && Number.isInteger(swapSugarMenuId)) {
+            toppings.push({ id: swapSugarMenuId, qty: 1 });
+          }
+
+          if (item.useOatMilk && Number.isInteger(oatMilkMenuId)) {
+            toppings.push({ id: oatMilkMenuId, qty: 1 });
+          }
+        }
+
+        return {
+          menuId,
+          quantity: Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1,
+          toppings,
+        };
+      });
+
+      const response = await apiClient('/api/orders/submit', {
+        method: 'POST',
+        body: {
+          orderTotal: Number(orderSubtotal.toFixed(2)),
+          customerName: 'Guest',
+          orderItems: payloadItems,
+        },
+      });
+
+      setOrderItems([]);
+      setOrderSubmitMessage(`Order #${response.orderId} submitted successfully.`);
+    } catch (submitError) {
+      setOrderSubmitError(submitError.message || 'Unable to submit order. Please try again.');
+    } finally {
+      setIsSubmittingOrder(false);
+    }
+  };
+
+  const removeOrderItem = (itemId) => {
+    setOrderSubmitMessage('');
+    setOrderSubmitError('');
+    setOrderItems((prev) => prev.filter((item) => item.id !== itemId));
+  };
+
+  const editOrderItem = (item) => {
+    if (item.type !== 'drink') {
+      return;
+    }
+
+    const matchedDrink = drinkItems.find(
+      (drink) => drink.name.toLowerCase() === String(item.name || '').toLowerCase(),
+    );
+
+    const fallbackSize = item.size || 'medium';
+    const fallbackDrink = {
+      id: item.menuId ?? item.id,
+      name: item.name,
+      category: 'drink',
+      image: getMenuImage(item.name, 'drink'),
+      description: getMenuDescription(item.name, 'drink'),
+      sizeOptions: {
+        [fallbackSize]: item.price,
+      },
+      sizeMenuIds: {
+        [fallbackSize]: item.menuId ?? item.id,
+      },
+    };
+
+    const sourceDrink = matchedDrink || fallbackDrink;
+    const selectedSize = Number.isFinite(sourceDrink?.sizeOptions?.[item.size])
+      ? item.size
+      : (['medium', 'small', 'large'].find((size) => Number.isFinite(sourceDrink?.sizeOptions?.[size])) || fallbackSize);
+
+    const toppingsMap = (item.toppings || []).reduce((acc, topping) => {
+      acc[topping.id] = topping.quantity;
+      return acc;
+    }, {});
+
+    const iceIndex = iceLevelOptions.indexOf(item.iceLevel);
+
+    setEditingOrderItemId(item.id);
+    setSelectedDrink(sourceDrink);
+    setSelectedDrinkSize(selectedSize);
+    setSelectedToppings(toppingsMap);
+    setSugarMultiplier(item.sugarMultiplier ?? 1);
+    setIceLevelIndex(iceIndex >= 0 ? iceIndex : 2);
+    setSwapSugar(Boolean(item.swapSugar));
+    setUseOatMilk(Boolean(item.useOatMilk));
+    setIsToppingsOpen(true);
+  };
 
   const updateToppingQuantity = (toppingId, delta) => {
     setSelectedToppings((prev) => {
@@ -270,8 +709,10 @@ function Home() {
     }
 
     const orderEntry = {
-      id: `drink-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      id: editingOrderItemId || `drink-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       type: 'drink',
+      menuId: selectedDrinkMenuId,
+      quantity: 1,
       name: selectedDrink.name,
       size: selectedDrinkSize,
       price: selectedDrinkPrice,
@@ -288,7 +729,17 @@ function Home() {
       totalPrice: selectedDrinkTotal,
     };
 
-    setOrderItems((prev) => [...prev, orderEntry]);
+    setOrderSubmitMessage('');
+    setOrderSubmitError('');
+
+    if (editingOrderItemId) {
+      setOrderItems((prev) =>
+        prev.map((item) => (item.id === editingOrderItemId ? orderEntry : item)),
+      );
+    } else {
+      setOrderItems((prev) => [...prev, orderEntry]);
+    }
+
     closeToppingsScreen();
   };
 
@@ -370,6 +821,8 @@ function Home() {
                     src={item.image}
                     className="card-img-top"
                     alt={item.name}
+                    loading="lazy"
+                    onError={handleCardImageError}
                   />
                   <div className="card-body">
                     <h5 className="card-title">{item.name}</h5>
@@ -407,7 +860,31 @@ function Home() {
                 <div key={item.id} className="order-line-item">
                   <div className="order-line-header">
                     <span className="order-line-name">{item.name}</span>
-                    <span className="order-line-price">${item.totalPrice.toFixed(2)}</span>
+                    <div className="order-line-actions">
+                      <span className="order-line-price">${item.totalPrice.toFixed(2)}</span>
+                      {item.type === 'drink' && (
+                        <button
+                          type="button"
+                          className="order-edit-btn"
+                          aria-label={`Edit ${item.name}`}
+                          onClick={() => editOrderItem(item)}
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92L5.92 19.58zM20.7 7.04a1 1 0 0 0 0-1.42l-2.32-2.32a1 1 0 0 0-1.42 0l-1.42 1.42 3.75 3.75 1.41-1.43z" />
+                          </svg>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="order-remove-btn"
+                        aria-label={`Remove ${item.name} from order`}
+                        onClick={() => removeOrderItem(item.id)}
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9zm4 2v8h2v-8h-2zm4 0v8h2v-8h-2z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
                   {item.type === 'drink' && (
@@ -430,7 +907,16 @@ function Home() {
 
             <p className="order-subtotal">Subtotal: ${orderSubtotal.toFixed(2)}</p>
 
-            <button className="btn tea-btn-finish btn-sm" onClick={handleFinishOrder}>Finish Order</button>
+            {orderSubmitMessage && <p className="order-submit-message success">{orderSubmitMessage}</p>}
+            {orderSubmitError && <p className="order-submit-message error">{orderSubmitError}</p>}
+
+            <button
+              className="btn tea-btn-finish btn-sm"
+              onClick={handleFinishOrder}
+              disabled={isSubmittingOrder || orderItems.length === 0}
+            >
+              {isSubmittingOrder ? 'Submitting...' : 'Finish Order'}
+            </button>
           </aside>
         </div>
 
@@ -444,7 +930,7 @@ function Home() {
           <div className="tea-modal-card tea-modal-card--drink">
             <div className="tea-modal-header">
               <h3 id="toppings-modal-title" className="tea-modal-title">
-                Customize your {selectedDrink?.name}
+                {editingOrderItemId ? 'Edit' : 'Customize'} your {selectedDrink?.name}
               </h3>
               <button
                 type="button"
@@ -568,7 +1054,7 @@ function Home() {
                 )}
               </div>
 
-              <p className="tea-modal-note">Toppings can be added in any quantity. Swap sugar and oat milk are stored in order details only for now.</p>
+              <p className="tea-modal-note">Toppings can be added in any quantity. Swap sugar and oat milk are included in order submission when selected.</p>
 
               <p className="tea-modal-total">Current drink total: ${selectedDrinkTotal.toFixed(2)}</p>
             </div>
@@ -578,7 +1064,7 @@ function Home() {
                 Cancel
               </button>
               <button className="btn tea-modal-btn-primary" onClick={saveDrinkSelection}>
-                Add Drink
+                {editingOrderItemId ? 'Save Changes' : 'Add Drink'}
               </button>
             </div>
           </div>

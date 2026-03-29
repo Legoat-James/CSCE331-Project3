@@ -246,6 +246,53 @@
   color: var(--tea-wood-dark);
 }
 
+.order-line-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.order-edit-btn,
+.order-remove-btn {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+}
+
+.order-edit-btn {
+  border: 1px solid #b99474;
+  background: #efe1ce;
+  color: #6a4733;
+}
+
+.order-edit-btn svg,
+.order-remove-btn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: currentColor;
+}
+
+.order-edit-btn:hover,
+.order-edit-btn:focus-visible {
+  background: #e6d2b9;
+  border-color: #9f7658;
+}
+
+.order-remove-btn {
+  border: 1px solid #c99d82;
+  background: #f4dcc8;
+  color: #7d352f;
+}
+
+.order-remove-btn:hover,
+.order-remove-btn:focus-visible {
+  background: #eec3b2;
+  border-color: #b76d63;
+}
+
 .order-line-name {
   overflow-wrap: anywhere;
 }
@@ -262,6 +309,28 @@
   margin: 0 0 0.8rem;
   color: var(--tea-wood-dark);
   font-weight: 700;
+}
+
+.order-submit-message {
+  border-radius: 9px;
+  padding: 0.5rem 0.65rem;
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+}
+
+.order-submit-message.success {
+  background: #d6ecd5;
+  color: #215c27;
+}
+
+.order-submit-message.error {
+  background: #f6d4d2;
+  color: #7e2f2a;
+}
+
+.tea-btn-finish:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .tea-spinner {
