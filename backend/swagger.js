@@ -21,6 +21,16 @@ const docInfo = {
             name: "Employees", description: "Endpoints for handling the Restaurant Employees"
         }
 
-    ]
+    ],
+    components: {
+        securitySchemes: {
+            cookieAuth: {
+                type: 'apiKey',
+                in: 'cookie',
+                name: 'session_token',
+                description: 'Login to get a session cookie, which is automatically stored and used in the browser'
+            }
+        }
+    }
 }
 swaggerAutogen(outputJSON, endpointFiles, docInfo);
