@@ -1,12 +1,26 @@
 import express from "express"
 import cors from "cors"
-import "dotenv/config"
+import dotenv from "dotenv"
 import fs from "fs"
 import path from "path"
 import errorHandler from "./helpers/errorHandler.js";
 import ApiError from "./helpers/ApiError.js";
 import pg from "pg";
 import swaggerUi from 'swagger-ui-express';
+
+// Support running backend from either repo root or backend/ folder.
+// This loads the first matching .env values without overriding already-set vars.
+const envCandidates = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'backend/.env'),
+  path.resolve(process.cwd(), '../.env'),
+];
+
+for (const envPath of envCandidates) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath, override: false });
+  }
+}
 
 
 const app = express();

@@ -153,6 +153,24 @@
   object-fit: cover;
 }
 
+.tea-card .card-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.tea-description {
+  color: var(--tea-muted);
+  font-size: 0.92rem;
+  line-height: 1.3;
+  margin-bottom: 0.45rem;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(1.3em * 2);
+}
+
 .tea-price {
   font-weight: 700;
   color: var(--tea-wood-dark);
@@ -168,6 +186,7 @@
 .tea-btn-select {
   background: var(--tea-accent-soft);
   color: var(--tea-wood-dark);
+  margin-top: auto;
 }
 
 .tea-btn-select:hover,
@@ -282,6 +301,41 @@
   margin: 0;
   color: #6e5647;
   font-style: italic;
+}
+
+.tea-mod-heading {
+  margin: 0 0 0.45rem;
+  color: var(--tea-wood-dark);
+  font-weight: 600;
+}
+
+.tea-size-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.tea-size-btn {
+  border-radius: 999px;
+  border: 1px solid #b99474;
+  background: #efe1ce;
+  color: #5a4334;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.tea-size-btn:hover,
+.tea-size-btn:focus-visible {
+  background: #e6d2b9;
+  color: #5a4334;
+}
+
+.tea-size-btn.is-active {
+  border-color: var(--tea-wood);
+  background: var(--tea-wood);
+  color: #fff;
 }
 
 .tea-modal-actions {
