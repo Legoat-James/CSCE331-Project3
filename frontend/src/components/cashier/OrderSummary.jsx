@@ -17,6 +17,7 @@ export default function OrderSummary({ orderItems }) {
                 {orderItems.map((item, index) => (
                     <li key={index}>
                         {item.name} - ${item.cost}
+                        
                     </li>
                 ))}
             </ul>

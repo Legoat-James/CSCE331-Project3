@@ -13,13 +13,13 @@ export default function Cashier() {
         
     }, []); //becuase i used empty brace [] it will render only once, on the initial render
 
-    const handleAddItem = (cost, name, menu_id) => {
+    const handleAddItem = (cost, name, menu_id, modifications_array) => {
         setTotal(prevTotal => {
             const newTotal = prevTotal + parseFloat(cost);
             return Math.round(newTotal * 100) / 100; //this prevents floating point issues
         });
 
-        setOrderItems(prevItems => [...prevItems, { name, cost, menu_id }]);
+        setOrderItems(prevItems => [...prevItems, { name, cost, menu_id, modifications_array }]);
     };
 
     const handleCheckout = () => {

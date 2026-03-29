@@ -24,6 +24,9 @@
   "license": "ISC",
   "dependencies": {
     "bootstrap": "^5.3.8",
-    "react-bootstrap": "^2.10.10"
+    "chart.js": "^4.5.1",
+    "react-bootstrap": "^2.10.10",
+    "react-chartjs": "^1.2.0",
+    "react-chartjs-2": "^5.3.1"
   }
 }

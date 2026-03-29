@@ -13,8 +13,8 @@ export default function Menuitems({ onAddItem }) {
         fetch(`${apiUrl}/api/menu-items`)
             .then(response => response.json())
             .then(data => {
-                setMenuItems(data.filter(item => item.category !== 'topping' && item.category !== 'modification'));
-                setModifications(data.filter(item => item.category === 'topping' || item.category === 'modification'));
+                setMenuItems(data.filter(item => item.category !== 'topping' && item.category !== 'modifications'));
+                setModifications(data.filter(item => item.category === 'topping' || item.category === 'modifications'));
             })
             .catch(error => console.error('Error fetching menu items:', error));
     }, []);
