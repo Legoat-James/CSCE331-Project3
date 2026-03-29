@@ -7,7 +7,7 @@ import Customer from './Customer';
 import NotFound from './NotFound';
 import Cashier from './Cashier';
 import Manager from './Manager';
-
+import Login from './Login';
 //create a client for react query
 const queryClient = new QueryClient();
 //create a theme context
@@ -29,6 +29,8 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 export default function App(){
     //themes will be used for accessiblity (ex: light, dark, high contrast)
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    //added line to track if signed in yet.
+    const [signedIn, setSignedIn] = useState(false);
     useEffect(() => {
         // Apply the theme to the HTML element for Bootstrap 5.3+
         document.documentElement.setAttribute('data-bs-theme', theme);
@@ -42,15 +44,16 @@ export default function App(){
             <button onClick={() => window.location.href = '/Cashier'} className='btn btn-primary'> Cashier </button>
             <button onClick={() => window.location.href = '/Manager'} className='btn btn-primary'> Manager </button>
             <button onClick={() => window.location.href = '/'} className='btn btn-primary'> Home </button>
-            <button onClick={() => window.location.href = '/'} className='btn btn-primary'> login (WIP) </button>
+            <button onClick={() => window.location.href = '/Login'} className='btn btn-primary'> login (WIP) </button>
           </nav>
           <div className="min-vh-100 transition-all">
             <ErrorBoundary FallbackComponent={ErrorFallback}>
               <Routes>
                 <Route path="/" index element={<Customer />} />
-                <Route path="*" element={<NotFound />} />
                 <Route path="/cashier" element={<Cashier />} />
                 <Route path="/manager" element={<Manager />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </ErrorBoundary>
           </div>
