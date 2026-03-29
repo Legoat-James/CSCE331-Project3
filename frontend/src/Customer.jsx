@@ -1,143 +1,277 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
 import './Customer.css'
 import { useGet } from './hooks/useApi'
-import { useQueryClient } from '@tanstack/react-query'
+import React, { useState } from 'react'; // MUST import useState
+
+
 
 function Home() {
-  //const queryClient = useQueryClient(); 
-//console.log("Query Client Found:", !!queryClient);
-  const [count, setCount] = useState(0)
+
+  const [activeCategory, setActiveCategory] = useState('drink');
+
+  const [isToppingsOpen, setIsToppingsOpen] = useState(false); 
+  const [isFoodConfirmOpen, setIsFoodConfirmOpen] = useState(false);
+  
+  // selectedDrink starts as 'null' (nothing selected yet)
+  const [selectedDrink, setSelectedDrink] = useState(null);
+  const [selectedFood, setSelectedFood] = useState(null);
+
+  const drinkItems = [
+    {
+      id: 1,
+      name: 'Taro Milk Tea',
+      price: 4.5,
+      category: 'drink',
+      image: 'https://northofbleu.com/wp-content/uploads/2022/07/taro-tea-recipe-northofbleu.com_.png',
+    },
+    {
+      id: 2,
+      name: 'Jasmine Milk Tea',
+      price: 4.25,
+      category: 'drink',
+      image: 'https://northofbleu.com/wp-content/uploads/2022/07/taro-tea-recipe-northofbleu.com_.png',
+    },
+    {
+      id: 3,
+      name: 'Brown Sugar Boba',
+      price: 4.95,
+      category: 'drink',
+      image: 'https://northofbleu.com/wp-content/uploads/2022/07/taro-tea-recipe-northofbleu.com_.png',
+    },
+  ];
+
+  const foodItems = [
+    {
+      id: 101,
+      name: 'Grilled Cheese',
+      price: 5.75,
+      category: 'food',
+      image: 'https://images.unsplash.com/photo-1528736235302-52922df5c122?auto=format&fit=crop&w=900&q=80',
+    },
+  ];
+
+  const visibleItems = activeCategory === 'drink' ? drinkItems : foodItems;
+
+  function handleFinishOrder(){
+
+  }
+
+  const handleSelectItem = (item) => {
+    if (item.category === 'drink') {
+      handleToppings(item);
+      return;
+    }
+
+    if (item.category === 'food') {
+      setSelectedFood(item);
+      setIsFoodConfirmOpen(true);
+    }
+  };
+
+  const handleToppings = (drinkItem) => {
+    setSelectedDrink(drinkItem); // Memorize which drink was clicked
+    setIsToppingsOpen(true);     // Flip the switch to open the screen
+  };
+
+  // We also need a way to close the screen!
+  const closeToppingsScreen = () => {
+    setIsToppingsOpen(false);    // Hide the screen
+    setSelectedDrink(null);      // Clear the memory
+  };
+
+  const closeFoodConfirm = () => {
+    setIsFoodConfirmOpen(false);
+    setSelectedFood(null);
+  };
+
+  const confirmAddFood = () => {
+    // Cart integration comes next. For now, just close after confirming.
+    closeFoodConfirm();
+  };
   const { data, isLoading, error, isError} = useGet(['testkey'], "/api/test?isError=false",
     {
       retry: false //only try to query once
     }
   );
 
-  if (isLoading) return <div className="spinner-border" />;
+  if (isLoading) return <div className="spinner-border tea-spinner" />;
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="customer-page">
+      <div className="customer-shell">
+        {/* Category nav anchored to kiosk content */}
+        <nav className="tea-nav navbar navbar-expand-lg" aria-label="Category navigation">
+          <div className="container-fluid p-0 align-items-center">
+            <a className="navbar-brand tea-brand" href="#" aria-label="Tea shop home">
+              <img
+                src="teashopLogo.png"
+                alt="Tea Shop Logo"
+                className="tea-logo"
+              />
+            </a>
+
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#customerCategoryNav"
+              aria-controls="customerCategoryNav"
+              aria-expanded="false"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+
+            <div className="collapse navbar-collapse" id="customerCategoryNav">
+              <ul className="navbar-nav me-auto tea-links">
+                <li className="nav-item">
+                  <button
+                    type="button"
+                    className={`nav-link tea-link ${activeCategory === 'drink' ? 'is-active' : ''}`}
+                    onClick={() => setActiveCategory('drink')}
+                  >
+                    Drinks
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <button
+                    type="button"
+                    className={`nav-link tea-link ${activeCategory === 'food' ? 'is-active' : ''}`}
+                    onClick={() => setActiveCategory('food')}
+                  >
+                    Food
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </nav>
+
+        <div className="kiosk-layout">
+          <section className="menu-panel" aria-label="Menu items">
+            <div className="panel-heading-row">
+              <h3 className="panel-title">
+                Featured {activeCategory === 'drink' ? 'Drinks' : 'Food'}
+              </h3>
+            </div>
+
+            <div className="menu-grid">
+              {visibleItems.map((item) => (
+                <article key={item.id} className="card h-100 text-center tea-card">
+                  <img
+                    src={item.image}
+                    className="card-img-top"
+                    alt={item.name}
+                  />
+                  <div className="card-body">
+                    <h5 className="card-title">{item.name}</h5>
+                    <p className="card-text tea-price">${item.price.toFixed(2)}</p>
+                    <button
+                      className="btn tea-btn-select btn-sm"
+                      onClick={() => handleSelectItem(item)}
+                    >
+                      Select
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <aside className="order-panel" aria-label="Current order">
+            <h4 className="panel-title">Current Order</h4>
+            <p className="order-subtitle">Your selected drinks and snacks will appear here.</p>
+
+            {data && <p className="backend-status">{data.message}</p>}
+            {isError && <p className="backend-status error">{error.message}</p>}
+
+            <button className="btn tea-btn-finish btn-sm" onClick={handleFinishOrder}>Finish Order</button>
+          </aside>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+
+      {isToppingsOpen && (
+        <div
+          className="tea-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="toppings-modal-title"
         >
-          Count is {count}
-        </button>
-      </section>
+          <div className="tea-modal-card">
+            <div className="tea-modal-header">
+              <h3 id="toppings-modal-title" className="tea-modal-title">
+                Customize your {selectedDrink?.name}
+              </h3>
+              <button
+                type="button"
+                className="tea-modal-close"
+                onClick={closeToppingsScreen}
+                aria-label="Close customization dialog"
+              >
+                x
+              </button>
+            </div>
 
-      <div className="container">
-      { data &&
-        <div>
-            <h3 className='fw-bold'>{data.message}</h3>
+            <p className="tea-modal-price">
+              Base Price: <strong>${selectedDrink?.price.toFixed(2)}</strong>
+            </p>
+
+            <div className="tea-modal-body">
+              <p className="tea-modal-note">(Toppings fetched from database will map here...)</p>
+            </div>
+
+            <div className="tea-modal-actions">
+              <button className="btn tea-modal-btn-secondary" onClick={closeToppingsScreen}>
+                Cancel
+              </button>
+              <button className="btn tea-modal-btn-primary" onClick={closeToppingsScreen}>
+                Save Selection
+              </button>
+            </div>
+          </div>
         </div>
-      }
-      {isError  && 
-      <div className="container">
-        <h3 className='text-danger'>{error.message}</h3>
+      )}
+
+      {isFoodConfirmOpen && (
+        <div
+          className="tea-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="food-confirm-title"
+        >
+          <div className="tea-modal-card">
+            <div className="tea-modal-header">
+              <h3 id="food-confirm-title" className="tea-modal-title">
+                Confirm Add
+              </h3>
+              <button
+                type="button"
+                className="tea-modal-close"
+                onClick={closeFoodConfirm}
+                aria-label="Close add confirmation"
+              >
+                x
+              </button>
+            </div>
+
+            <p className="tea-modal-price">
+              Add <strong>{selectedFood?.name}</strong> to your order for <strong>${selectedFood?.price.toFixed(2)}</strong>?
+            </p>
+
+            <div className="tea-modal-body">
+              <p className="tea-modal-note">Food items are added directly and do not need customization.</p>
+            </div>
+
+            <div className="tea-modal-actions">
+              <button className="btn tea-modal-btn-secondary" onClick={closeFoodConfirm}>
+                Cancel
+              </button>
+              <button className="btn tea-modal-btn-primary" onClick={confirmAddFood}>
+                Confirm Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
-
-      }
-  
-      </div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    </div>
   )
 }
 

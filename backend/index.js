@@ -1,13 +1,12 @@
 import express from "express"
 import cors from "cors"
 import "dotenv/config"
+import fs from "fs"
 import path from "path"
 import errorHandler from "./helpers/errorHandler.js";
 import ApiError from "./helpers/ApiError.js";
 import pg from "pg";
-import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from 'swagger-ui-express';
-import swaggerFile from "./swagger-out.json" with {type: "json"};
 
 
 const app = express();
@@ -23,10 +22,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 if(process.env.NODE_ENV === "development"){
-  // const swaggerSpec = swaggerJSDoc(swaggerOptions);
-  // console.log('Found Paths:', Object.keys(swaggerSpec.paths));
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
-  console.log('API Docs available at http://localhost:5000/api-docs');
+  const swaggerFilePath = path.resolve(process.cwd(), "swagger-out.json");
+
+  if (fs.existsSync(swaggerFilePath)) {
+    const swaggerFile = JSON.parse(fs.readFileSync(swaggerFilePath, "utf-8"));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
+    console.log('API Docs available at http://localhost:5000/api-docs');
+  } else {
+    console.warn('Swagger docs disabled: swagger-out.json not found. Run `npm run swagger`.');
+  }
 }
 
 
