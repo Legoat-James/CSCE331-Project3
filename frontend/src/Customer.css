@@ -219,6 +219,51 @@
   color: #7e2f2a;
 }
 
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+
+.order-empty {
+  margin: 0;
+  color: var(--tea-muted);
+}
+
+.order-line-item {
+  border: 1px solid var(--tea-border);
+  border-radius: 10px;
+  background: #f8efe2;
+  padding: 0.55rem 0.65rem;
+}
+
+.order-line-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  font-weight: 700;
+  color: var(--tea-wood-dark);
+}
+
+.order-line-name {
+  overflow-wrap: anywhere;
+}
+
+.order-line-details {
+  margin-top: 0.25rem;
+  font-size: 0.88rem;
+  color: var(--tea-muted);
+  display: grid;
+  gap: 0.1rem;
+}
+
+.order-subtotal {
+  margin: 0 0 0.8rem;
+  color: var(--tea-wood-dark);
+  font-weight: 700;
+}
+
 .tea-spinner {
   margin: 2rem auto;
   display: block;
@@ -231,20 +276,31 @@
   z-index: 1050;
   background: rgba(40, 26, 18, 0.38);
   backdrop-filter: blur(2px);
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
   padding: 1rem;
   animation: tea-modal-overlay-in 160ms ease-out;
 }
 
 .tea-modal-card {
   width: min(520px, 100%);
+  max-height: calc(100vh - 2rem);
   border: 2px solid #6f4c36;
   border-radius: 16px;
   background: #fff8ef;
   box-shadow: 0 16px 42px rgba(69, 45, 30, 0.3);
   padding: 1.05rem;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   animation: tea-modal-card-in 220ms ease-out;
+}
+
+.tea-modal-card--drink {
+  width: min(760px, 100%);
 }
 
 .tea-modal-header {
@@ -293,8 +349,9 @@
   border: 1px dashed #b88f6e;
   border-radius: 12px;
   background: #f8efe1;
-  padding: 0.8rem;
+  padding: 0.65rem;
   margin-bottom: 0.95rem;
+  overflow-y: auto;
 }
 
 .tea-modal-note {
@@ -304,16 +361,17 @@
 }
 
 .tea-mod-heading {
-  margin: 0 0 0.45rem;
+  margin: 0 0 0.35rem;
   color: var(--tea-wood-dark);
   font-weight: 600;
+  font-size: 0.96rem;
 }
 
 .tea-size-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 0.75rem;
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
 }
 
 .tea-size-btn {
@@ -321,8 +379,8 @@
   border: 1px solid #b99474;
   background: #efe1ce;
   color: #5a4334;
-  padding: 0.3rem 0.75rem;
-  font-size: 0.9rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.84rem;
   font-weight: 600;
 }
 
@@ -338,10 +396,118 @@
   color: #fff;
 }
 
+.tea-toppings-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.tea-topping-row {
+  border: 1px solid #d8bf9f;
+  border-radius: 10px;
+  background: #fff9f1;
+  padding: 0.3rem 0.45rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tea-topping-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: #5b4434;
+  min-width: 0;
+}
+
+.tea-topping-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.86rem;
+}
+
+.tea-topping-price {
+  font-size: 0.78rem;
+  color: var(--tea-muted);
+  white-space: nowrap;
+}
+
+.tea-topping-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.tea-qty-btn {
+  border-radius: 7px;
+  border: 1px solid #b99474;
+  background: #efe1ce;
+  color: #5a4334;
+  padding: 0.05rem 0.35rem;
+  line-height: 1;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.tea-qty-btn:hover,
+.tea-qty-btn:focus-visible {
+  background: #e6d2b9;
+  color: #5a4334;
+}
+
+.tea-qty-value {
+  min-width: 1.1rem;
+  text-align: center;
+  color: var(--tea-wood-dark);
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.tea-slider-block {
+  margin-bottom: 0.5rem;
+}
+
+.tea-slider-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #5b4434;
+  font-size: 0.92rem;
+}
+
+.tea-slider-block input[type='range'] {
+  width: 100%;
+  accent-color: var(--tea-wood);
+}
+
+.tea-toggle-list {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.45rem;
+}
+
+.tea-toggle-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #5b4434;
+}
+
+.tea-modal-total {
+  margin: 0;
+  color: var(--tea-wood-dark);
+  font-weight: 700;
+  font-size: 0.96rem;
+}
+
 .tea-modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.55rem;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .tea-modal-btn-secondary,
@@ -430,9 +596,24 @@
 
   .tea-modal-card {
     padding: 0.85rem;
+    max-height: calc(100vh - 1.4rem);
+  }
+
+  .tea-modal-card--drink {
+    width: min(620px, 100%);
   }
 
   .tea-modal-title {
     font-size: 1.05rem;
+  }
+
+  .tea-toppings-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .tea-toppings-list {
+    grid-template-columns: 1fr;
   }
 }

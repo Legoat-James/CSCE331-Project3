@@ -15,6 +15,12 @@ function Home() {
   const [selectedDrink, setSelectedDrink] = useState(null);
   const [selectedDrinkSize, setSelectedDrinkSize] = useState('medium');
   const [selectedFood, setSelectedFood] = useState(null);
+  const [selectedToppings, setSelectedToppings] = useState({});
+  const [sugarMultiplier, setSugarMultiplier] = useState(1);
+  const [iceLevelIndex, setIceLevelIndex] = useState(2);
+  const [swapSugar, setSwapSugar] = useState(false);
+  const [useOatMilk, setUseOatMilk] = useState(false);
+  const [orderItems, setOrderItems] = useState([]);
 
   const placeholderDescriptionByName = {
     'Taro Milk Tea': 'Creamy taro milk tea with a rich, nutty sweetness and a smooth finish.',
@@ -86,6 +92,8 @@ function Home() {
 
   }
 
+  const iceLevelOptions = ['No Ice', 'Light Ice', 'Regular Ice', 'Extra Ice'];
+
   const handleSelectItem = (item) => {
     if (item.category === 'drink') {
       handleToppings(item);
@@ -104,6 +112,11 @@ function Home() {
       ? 'medium'
       : (['small', 'large'].find((size) => Number.isFinite(drinkItem?.sizeOptions?.[size])) || 'medium');
     setSelectedDrinkSize(defaultSize);
+    setSelectedToppings({});
+    setSugarMultiplier(1);
+    setIceLevelIndex(2);
+    setSwapSugar(false);
+    setUseOatMilk(false);
     setIsToppingsOpen(true);     // Flip the switch to open the screen
   };
 
@@ -112,6 +125,11 @@ function Home() {
     setIsToppingsOpen(false);    // Hide the screen
     setSelectedDrink(null);      // Clear the memory
     setSelectedDrinkSize('medium');
+    setSelectedToppings({});
+    setSugarMultiplier(1);
+    setIceLevelIndex(2);
+    setSwapSugar(false);
+    setUseOatMilk(false);
   };
 
   const closeFoodConfirm = () => {
@@ -120,7 +138,20 @@ function Home() {
   };
 
   const confirmAddFood = () => {
-    // Cart integration comes next. For now, just close after confirming.
+    if (!selectedFood) {
+      closeFoodConfirm();
+      return;
+    }
+
+    const orderEntry = {
+      id: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      type: 'food',
+      name: selectedFood.name,
+      price: selectedFood.price,
+      totalPrice: selectedFood.price,
+    };
+
+    setOrderItems((prev) => [...prev, orderEntry]);
     closeFoodConfirm();
   };
 
@@ -183,12 +214,83 @@ function Home() {
       price: item.sizeOptions.medium,
     }));
 
+  const toppingItems = allMenuItems.filter((item) => item.category === 'topping');
+  const modificationItems = allMenuItems.filter((item) => item.category === 'modifications');
+
+  const hasSugarSlider = modificationItems.some((item) => item.name.toLowerCase() === 'sugar');
+  const hasIceControl = modificationItems.some((item) => item.name.toLowerCase() === 'ice');
+  const hasSwapSugar = modificationItems.some((item) => item.name.toLowerCase() === 'swap sugar');
+  const hasOatMilkToggle = modificationItems.some((item) => {
+    const normalized = item.name.toLowerCase();
+    return normalized === 'oak milk' || normalized === 'oat milk';
+  });
+
   const foodItems = allMenuItems.filter((item) => item.category === 'food');
   const visibleItems = activeCategory === 'drink' ? drinkItems : foodItems;
   const selectedDrinkPrice = selectedDrink?.sizeOptions?.[selectedDrinkSize] ?? selectedDrink?.price;
   const availableDrinkSizes = selectedDrink?.sizeOptions
     ? ['small', 'medium', 'large'].filter((size) => Number.isFinite(selectedDrink.sizeOptions[size]))
     : [];
+
+  const selectedToppingEntries = toppingItems
+    .map((topping) => ({
+      ...topping,
+      quantity: selectedToppings[topping.id] || 0,
+    }))
+    .filter((topping) => topping.quantity > 0);
+
+  const toppingsTotal = selectedToppingEntries.reduce(
+    (sum, topping) => sum + (topping.price * topping.quantity),
+    0,
+  );
+
+  const selectedDrinkTotal = (selectedDrinkPrice || 0) + toppingsTotal;
+
+  const orderSubtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+  const updateToppingQuantity = (toppingId, delta) => {
+    setSelectedToppings((prev) => {
+      const nextQuantity = Math.max(0, (prev[toppingId] || 0) + delta);
+      const updated = { ...prev };
+
+      if (nextQuantity === 0) {
+        delete updated[toppingId];
+      } else {
+        updated[toppingId] = nextQuantity;
+      }
+
+      return updated;
+    });
+  };
+
+  const saveDrinkSelection = () => {
+    if (!selectedDrink || !Number.isFinite(selectedDrinkTotal)) {
+      closeToppingsScreen();
+      return;
+    }
+
+    const orderEntry = {
+      id: `drink-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      type: 'drink',
+      name: selectedDrink.name,
+      size: selectedDrinkSize,
+      price: selectedDrinkPrice,
+      sugarMultiplier,
+      iceLevel: iceLevelOptions[iceLevelIndex],
+      swapSugar,
+      useOatMilk,
+      toppings: selectedToppingEntries.map((topping) => ({
+        id: topping.id,
+        name: topping.name,
+        quantity: topping.quantity,
+        price: topping.price,
+      })),
+      totalPrice: selectedDrinkTotal,
+    };
+
+    setOrderItems((prev) => [...prev, orderEntry]);
+    closeToppingsScreen();
+  };
 
   if (isLoading) return <div className="spinner-border tea-spinner" />;
   return (
@@ -296,6 +398,38 @@ function Home() {
             )}
             {isError && <p className="backend-status error">{error.message}</p>}
 
+            <div className="order-list">
+              {orderItems.length === 0 && (
+                <p className="order-empty">No items in order yet.</p>
+              )}
+
+              {orderItems.map((item) => (
+                <div key={item.id} className="order-line-item">
+                  <div className="order-line-header">
+                    <span className="order-line-name">{item.name}</span>
+                    <span className="order-line-price">${item.totalPrice.toFixed(2)}</span>
+                  </div>
+
+                  {item.type === 'drink' && (
+                    <div className="order-line-details">
+                      <div>Size: {item.size}</div>
+                      <div>Sugar: {item.sugarMultiplier.toFixed(2)}x</div>
+                      <div>Ice: {item.iceLevel}</div>
+                      {item.swapSugar && <div>Swap Sugar: selected</div>}
+                      {item.useOatMilk && <div>Oat Milk: selected</div>}
+                      {item.toppings.length > 0 && (
+                        <div>
+                          Toppings: {item.toppings.map((topping) => `${topping.name} x${topping.quantity}`).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <p className="order-subtotal">Subtotal: ${orderSubtotal.toFixed(2)}</p>
+
             <button className="btn tea-btn-finish btn-sm" onClick={handleFinishOrder}>Finish Order</button>
           </aside>
         </div>
@@ -307,7 +441,7 @@ function Home() {
           aria-modal="true"
           aria-labelledby="toppings-modal-title"
         >
-          <div className="tea-modal-card">
+          <div className="tea-modal-card tea-modal-card--drink">
             <div className="tea-modal-header">
               <h3 id="toppings-modal-title" className="tea-modal-title">
                 Customize your {selectedDrink?.name}
@@ -341,15 +475,110 @@ function Home() {
                 ))}
               </div>
 
-              <p className="tea-modal-note">(Toppings fetched from database will map here...)</p>
+              <p className="tea-mod-heading">Toppings</p>
+              <div className="tea-toppings-list">
+                {toppingItems.length === 0 && (
+                  <p className="tea-modal-note">No toppings available from the database.</p>
+                )}
+
+                {toppingItems.map((topping) => (
+                  <div key={topping.id} className="tea-topping-row">
+                    <div className="tea-topping-meta">
+                      <span className="tea-topping-name">{topping.name}</span>
+                      <span className="tea-topping-price">+${topping.price.toFixed(2)}</span>
+                    </div>
+                    <div className="tea-topping-controls">
+                      <button
+                        type="button"
+                        className="btn tea-qty-btn"
+                        onClick={() => updateToppingQuantity(topping.id, -1)}
+                      >
+                        -
+                      </button>
+                      <span className="tea-qty-value">{selectedToppings[topping.id] || 0}</span>
+                      <button
+                        type="button"
+                        className="btn tea-qty-btn"
+                        onClick={() => updateToppingQuantity(topping.id, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="tea-mod-heading">Modifications</p>
+
+              {hasSugarSlider && (
+                <div className="tea-slider-block">
+                  <label htmlFor="sugar-slider" className="tea-slider-label">
+                    Sugar Multiplier: <strong>{sugarMultiplier.toFixed(2)}x</strong>
+                  </label>
+                  <input
+                    id="sugar-slider"
+                    type="range"
+                    min="0.5"
+                    max="1.5"
+                    step="0.25"
+                    value={sugarMultiplier}
+                    onChange={(e) => setSugarMultiplier(Number(e.target.value))}
+                  />
+                </div>
+              )}
+
+              {hasIceControl && (
+                <div className="tea-slider-block">
+                  <label htmlFor="ice-slider" className="tea-slider-label">
+                    Ice Level: <strong>{iceLevelOptions[iceLevelIndex]}</strong>
+                  </label>
+                  <input
+                    id="ice-slider"
+                    type="range"
+                    min="0"
+                    max="3"
+                    step="1"
+                    value={iceLevelIndex}
+                    onChange={(e) => setIceLevelIndex(Number(e.target.value))}
+                  />
+                </div>
+              )}
+
+              <div className="tea-toggle-list">
+                {hasSwapSugar && (
+                  <label className="tea-toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={swapSugar}
+                      onChange={(e) => setSwapSugar(e.target.checked)}
+                    />
+                    <span>Swap Sugar</span>
+                  </label>
+                )}
+
+                {hasOatMilkToggle && (
+                  <label className="tea-toggle-item">
+                    <input
+                      type="checkbox"
+                      checked={useOatMilk}
+                      onChange={(e) => setUseOatMilk(e.target.checked)}
+                    />
+                    <span>Oat Milk</span>
+                  </label>
+                )}
+              </div>
+
+              <p className="tea-modal-note">Toppings can be added in any quantity. Swap sugar and oat milk are stored in order details only for now.</p>
+
+              <p className="tea-modal-total">Current drink total: ${selectedDrinkTotal.toFixed(2)}</p>
             </div>
 
             <div className="tea-modal-actions">
               <button className="btn tea-modal-btn-secondary" onClick={closeToppingsScreen}>
                 Cancel
               </button>
-              <button className="btn tea-modal-btn-primary" onClick={closeToppingsScreen}>
-                Save Selection
+              <button className="btn tea-modal-btn-primary" onClick={saveDrinkSelection}>
+                Add Drink
               </button>
             </div>
           </div>
