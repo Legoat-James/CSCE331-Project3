@@ -16,7 +16,22 @@ async function apiClient(endpoint, { body, ...customConfig } = {}) {
   }
 
   const response = await fetch(endpoint, config);
-  const data = await response.json();
+
+  const responseClone = response.clone();
+  let data;
+
+  try {
+    data = await response.json();
+  } catch {
+    const textBody = await responseClone.text();
+    const looksLikeHtml = /^\s*<!DOCTYPE|^\s*<html/i.test(textBody);
+
+    if (looksLikeHtml) {
+      throw new Error('Received HTML instead of JSON from API. Ensure frontend is using the Vite dev URL and backend is running on port 5000.');
+    }
+
+    throw new Error('Received a non-JSON response from API.');
+  }
 
   if (response.ok) {
     return data;

@@ -8,7 +8,7 @@
     "backend"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
+    "dev": "concurrently -k -n backend,frontend -c yellow,cyan \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
     "build": "npm run build --workspace=frontend",
@@ -24,9 +24,9 @@
   "license": "ISC",
   "dependencies": {
     "bootstrap": "^5.3.8",
-    "chart.js": "^4.5.1",
-    "react-bootstrap": "^2.10.10",
-    "react-chartjs": "^1.2.0",
-    "react-chartjs-2": "^5.3.1"
+    "react-bootstrap": "^2.10.10"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }
