@@ -1,3 +1,4 @@
+import apiClient from '../../api/client_config.js';
 import React, { useState, useEffect } from 'react';
 import {Button } from 'react-bootstrap';
 import ModificationsWindow from './ModificationsWindow';
@@ -9,15 +10,24 @@ export default function Menuitems({ onAddItem }) {
     const [selectedItem, setSelectedItem] = useState(null);
 
     useEffect(() => {
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://project3-backend.duckdns.org';
-        fetch(`${apiUrl}/api/menu-items`)
-            .then(response => response.json())
-            .then(data => {
-                setMenuItems(data.filter(item => item.category !== 'topping' && item.category !== 'modifications'));
-                setModifications(data.filter(item => item.category === 'topping' || item.category === 'modifications'));
-            })
-            .catch(error => console.error('Error fetching menu items:', error));
-    }, []);
+    const fetchMenuItems = async () => {
+        try {
+            const data = await apiClient('/api/menu-items');
+            console.log('Menu items data:', data); // Debug log
+            if (Array.isArray(data)) {
+                setMenuItems(data);
+            } else {
+                console.error('Expected array but got:', typeof data, data);
+                setMenuItems([]); // Fallback to empty array
+            }
+        } catch (error) {
+            console.error('Error fetching menu items:', error);
+            setMenuItems([]); // Ensure it's always an array
+        }
+    };
+    
+    fetchMenuItems();
+}, []);
 
     const handleItemClick = (item) => {
         setSelectedItem(item);
