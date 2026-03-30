@@ -1,0 +1,71 @@
+/* Portal theme colors */
+:root {
+  --portal-bg: #ead8c0;
+  --portal-panel: #fbf4ea;
+  --portal-wood-dark: #6f4c36;
+  --portal-border: #7b543b;
+  --portal-accent: #b67a45;
+  --portal-muted: #7a5e4c;
+}
+
+/* Page background with texture */
+.portal-page {
+  background-color: var(--portal-bg);
+  background-image:
+    linear-gradient(180deg, rgba(255, 248, 237, 0.28), rgba(122, 94, 76, 0.08)),
+    repeating-linear-gradient(
+      8deg,
+      rgba(146, 108, 79, 0.16) 0px,
+      rgba(146, 108, 79, 0.16) 2px,
+      rgba(236, 217, 190, 0.08) 2px,
+      rgba(236, 217, 190, 0.08) 14px
+    ),
+    repeating-linear-gradient(
+      -6deg,
+      rgba(120, 82, 58, 0.08) 0px,
+      rgba(120, 82, 58, 0.08) 1px,
+      transparent 1px,
+      transparent 18px
+    );
+}
+
+/* Title and subtitle colors */
+.portal-title {
+  color: var(--portal-wood-dark);
+}
+
+.portal-subtitle {
+  color: var(--portal-muted);
+}
+
+/* Card styling */
+.portal-card {
+  background-color: var(--portal-panel);
+  border-color: var(--portal-border);
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.portal-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(111, 76, 54, 0.2);
+  border-color: var(--portal-accent);
+}
+
+.portal-card:active {
+  transform: translateY(-4px);
+}
+
+.portal-card:focus {
+  outline: 2px solid var(--portal-accent);
+  outline-offset: 2px;
+}
+
+/* Card content colors */
+.portal-card-title {
+  color: var(--portal-wood-dark);
+}
+
+.portal-card-description {
+  color: var(--portal-muted);
+}
