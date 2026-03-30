@@ -31,6 +31,13 @@ export default function Portal() {
       icon: '📺',
       path: '/menuboard',
     },
+    {
+      id: 'login',
+      title: 'Login',
+      description: 'Login to the system',
+      icon: '###',
+      path: '/login',
+    },
   ];
 
   return (
