@@ -1,4 +1,4 @@
-import { Container, Row, Col, Card, Button } from 'react-bootstrap';
+import { Container, Row, Col, Card } from 'react-bootstrap';
 import './Portal.css';
 
 export default function Portal() {
@@ -34,31 +34,38 @@ export default function Portal() {
   ];
 
   return (
-    <div className="portal-page">
+    <Container
+      fluid
+      className="portal-page min-vh-100 d-flex align-items-center justify-content-center py-4 px-3"
+    >
       <Container className="portal-container">
-        <div className="portal-header text-center mb-5">
-          <h1 className="portal-title mb-2">Restaurant POS System</h1>
-          <p className="portal-subtitle">Select a module to get started</p>
-        </div>
+        <header className="text-center mb-5">
+          <h1 className="display-4 fw-bold portal-title mb-2">Restaurant POS System</h1>
+          <p className="lead portal-subtitle">Select a module to get started</p>
+        </header>
 
         <Row className="g-4 justify-content-center">
           {sections.map((section) => (
-            <Col key={section.id} md={6} lg={5} xl={4} className="d-flex">
+            <Col key={section.id} xs={12} sm={6} lg={5} xl={3}>
               <Card
                 as="button"
-                className="portal-card w-100 border-0"
+                className="portal-card w-100 h-100 border-2 rounded-4 shadow-sm"
                 onClick={() => (window.location.href = section.path)}
               >
-                <Card.Body className="d-flex flex-column align-items-center text-center py-5">
-                  <div className="portal-icon mb-3">{section.icon}</div>
-                  <Card.Title className="portal-card-title mb-2">{section.title}</Card.Title>
-                  <Card.Text className="portal-card-description text-muted">{section.description}</Card.Text>
+                <Card.Body className="d-flex flex-column align-items-center text-center py-5 px-4">
+                  <span className="portal-icon display-3 mb-3">{section.icon}</span>
+                  <Card.Title as="h2" className="h4 fw-bold portal-card-title mb-2">
+                    {section.title}
+                  </Card.Title>
+                  <Card.Text className="text-muted portal-card-description">
+                    {section.description}
+                  </Card.Text>
                 </Card.Body>
               </Card>
             </Col>
           ))}
         </Row>
       </Container>
-    </div>
+    </Container>
   );
 }
