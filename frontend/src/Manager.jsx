@@ -1,6 +1,7 @@
 import {useGet} from './hooks/useApi.js';
 import { useMutate } from './hooks/useApi';
 import React, { useState, useEffect } from 'react';
+
 import {
   Container,
   Row,
@@ -13,7 +14,8 @@ import {
   Nav,
   InputGroup,
   ListGroup,
-  ButtonGroup
+  ButtonGroup,
+  Navbar,
 } from 'react-bootstrap';
 import { Line } from 'react-chartjs-2';
 import {
@@ -27,6 +29,12 @@ import {
   Legend,
 } from 'chart.js';
 
+// Import manager components
+import EmployeeList from './components/manager/EmployeeList';
+import InventoryTable from './components/manager/InventoryTable';
+import MenuEditor from './components/manager/MenuEditor';
+import RecipeBuilder from './components/manager/RecipeBuilder';
+
 // Register ChartJS components
 ChartJS.register(
   CategoryScale,
@@ -39,10 +47,14 @@ ChartJS.register(
 );
 
 
-
+/* Note: This manager view is the Main Manager View.
+  This will include the sales analytics and reports, but the employees, 
+  menu items, inventory, and recipe builder will be navigated to from the navbar to other jsx files
+*/
 
 export default function Manager() {
   // State management for different sections
+    const [activeView, setActiveView] = useState('dashboard');
     const { data: menuItems, isLoading, error } = useGet(['menu-items'], '/api/menu/manager-all', {
       retry: false
     });
@@ -63,6 +75,54 @@ export default function Manager() {
   // Sample data for tables
   //need to call backend api to get real data and set state accordingly
   //we used useGet to fetch menu items now actually have to load it and show.
+const NavBar = () => {
+    return (
+      <Navbar bg="primary" variant="dark" sticky="top" className="mb-4 px-3">
+        <Container fluid>
+          <Navbar.Brand>Manager Dashboard</Navbar.Brand>
+          <Nav className="me-auto">
+            <Nav.Link 
+              onClick={() => setActiveView('dashboard')}
+              className={activeView === 'dashboard' ? 'text-white fw-bold' : 'text-white-50'}
+            >
+              Dashboard
+            </Nav.Link>
+            <Nav.Link 
+              onClick={() => setActiveView('employees')}
+              className={activeView === 'employees' ? 'text-white fw-bold' : 'text-white-50'}
+            >
+              Employee List
+            </Nav.Link>
+            <Nav.Link 
+              onClick={() => setActiveView('inventory')}
+              className={activeView === 'inventory' ? 'text-white fw-bold' : 'text-white-50'}
+            >
+              Inventory Table
+            </Nav.Link>
+            <Nav.Link 
+              onClick={() => setActiveView('menu')}
+              className={activeView === 'menu' ? 'text-white fw-bold' : 'text-white-50'}
+            >
+              Menu Editor
+            </Nav.Link>
+            <Nav.Link 
+              onClick={() => setActiveView('recipes')}
+              className={activeView === 'recipes' ? 'text-white fw-bold' : 'text-white-50'}
+            >
+              Recipe Builder
+            </Nav.Link>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => {/* TODO: Implement sign out functionality */}}
+            >
+              Sign Out
+            </Button>
+          </Nav>
+        </Container>
+      </Navbar>
+    );
+  };
 
   const renderMenuItems = (items) => {
     // Split items into 2 columns
@@ -78,7 +138,6 @@ export default function Manager() {
             className="menu-item-row d-flex justify-content-between align-items-center px-3 py-2 rounded-3"
           >
             <span className="item-name fw-semibold">{item.name}</span>
-            <span className="item-price fw-bold">${parseFloat(item.cost).toFixed(2)}</span>
           </div>
         ))}
       </Col>
@@ -92,11 +151,13 @@ export default function Manager() {
     );
   };
 
-  const [employees] = useState([
-    { id: 1, name: 'John Doe', username: 'john.doe', isManager: true },
-    { id: 2, name: 'Jane Smith', username: 'jane.smith', isManager: false },
-    { id: 3, name: 'Mike Johnson', username: 'mike.j', isManager: false }
-  ]);
+  // TODO: Implement the X Report, Z Report, and Sales Report generation logic
+  const generateReport = (type) => {
+    setSelectedReport(type);
+
+  };
+
+  
 
   const [inventory] = useState([
     { id: 1, ingredient: 'Black Tea', quantity: 50, unit: 'lbs', cost: 25.00 },
@@ -143,38 +204,9 @@ export default function Manager() {
     },
   };
 
-  return (
-    <Container fluid className="manager-view p-4">
-      {/* Header Navigation */}
-      <Row className="mb-4">
-        <Col>
-          <Card>
-            <Card.Body>
-              <Nav className="justify-content-between align-items-center">
-                <Nav.Item>
-                  <h3 className="mb-0 text-primary">Manager Dashboard</h3>
-                </Nav.Item>
-                <Nav>
-                  <Button
-                    variant="outline-secondary"
-                    className="me-2"
-                    onClick={() => {/* TODO: Implement cashier view switch */}}
-                  >
-                    Switch to Cashier View
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    onClick={() => {/* TODO: Implement sign out functionality */}}
-                  >
-                    Sign Out
-                  </Button>
-                </Nav>
-              </Nav>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
+  // Dashboard Component
+  const DashboardContent = () => (
+    <>
       {/* Sales Analytics Section */}
       <Row className="mb-4">
         <Col lg={6}>
@@ -437,50 +469,6 @@ export default function Manager() {
             </Card.Body>
           </Card>
         </Col>
-
-        <Col md={6}>
-          <Card className="h-100">
-            <Card.Header>
-              <h5>Employee Management</h5>
-            </Card.Header>
-            <Card.Body>
-              <Table striped hover>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Username</th>
-                    <th>Role</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.map((emp) => (
-                    <tr key={emp.id}>
-                      <td>{emp.id}</td>
-                      <td>{emp.name}</td>
-                      <td>{emp.username}</td>
-                      <td>
-                        <Badge bg={emp.isManager ? 'warning' : 'secondary'}>
-                          {emp.isManager ? 'Manager' : 'Employee'}
-                        </Badge>
-                      </td>
-                      <td>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => {/* TODO: Remove employee */}}
-                        >
-                          Remove
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
       </Row>
 
       {/* Add/Remove Forms */}
@@ -540,71 +528,6 @@ export default function Manager() {
                   onClick={() => {/* TODO: Remove menu item */}}
                 >
                   Remove Item
-                </Button>
-                <Button
-                  variant="outline-secondary"
-                  className="w-100"
-                  onClick={() => {/* TODO: Clear form */}}
-                >
-                  Clear
-                </Button>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={3}>
-          <Card>
-            <Card.Header>
-              <h6><Badge bg="primary">Add Employee</Badge></h6>
-            </Card.Header>
-            <Card.Body>
-              <Form>
-                <Form.Group className="mb-2">
-                  <Form.Control type="text" placeholder="Employee name" />
-                </Form.Group>
-                <Form.Group className="mb-2">
-                  <Form.Control type="text" placeholder="Username" />
-                </Form.Group>
-                <Form.Group className="mb-2">
-                  <Form.Control type="password" placeholder="Password" />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Check type="checkbox" label="Manager privileges" />
-                </Form.Group>
-                <Button
-                  variant="primary"
-                  className="w-100"
-                  onClick={() => {/* TODO: Add employee */}}
-                >
-                  Add Employee
-                </Button>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={3}>
-          <Card>
-            <Card.Header>
-              <h6><Badge bg="warning">Remove Employee</Badge></h6>
-            </Card.Header>
-            <Card.Body>
-              <Form>
-                <Form.Group className="mb-3">
-                  <Form.Select>
-                    <option>Select employee...</option>
-                    {employees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>{emp.name}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-                <Button
-                  variant="warning"
-                  className="w-100 mb-2"
-                  onClick={() => {/* TODO: Remove employee */}}
-                >
-                  Remove Employee
                 </Button>
                 <Button
                   variant="outline-secondary"
@@ -726,6 +649,33 @@ export default function Manager() {
           </Card>
         </Col>
       </Row>
-    </Container>
+    </>
+  );
+
+  // Render active view based on state
+  const renderActiveView = () => {
+    switch(activeView) {
+      case 'dashboard':
+        return <DashboardContent />;
+      case 'employees':
+        return <EmployeeList />;
+      case 'inventory':
+        return <InventoryTable />;
+      case 'menu':
+        return <MenuEditor />;
+      case 'recipes':
+        return <RecipeBuilder />;
+      default:
+        return <DashboardContent />;
+    }
+  };
+
+  return (
+    <>
+      <NavBar />
+      <Container fluid className="manager-view p-4">
+        {renderActiveView()}
+      </Container>
+    </>
   );
 }
