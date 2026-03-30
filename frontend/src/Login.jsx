@@ -32,11 +32,12 @@ export default function Login() {
 
             //redirect after successful login
             setTimeout(() => {
-                if(response.user.is_manager) {
-                    window.location.href = '/Manager';
-                } else {
-                    window.location.href = '/Cashier';
-                }
+                window.location.href ='/';
+                // if(response.user.is_manager) {
+                //     window.location.href = '/Manager';
+                // } else {
+                //     window.location.href = '/Cashier';
+                // }
             }, 1500);
 
         } catch (err){
