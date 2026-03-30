@@ -135,7 +135,7 @@ app.get('/api/menu/all', async (req,res,next)=>{
   }
 });
 
-app.get('/api/menu/manager-all', requireAuth(true), async (req,res,next)=>{
+app.get('/api/menu/manager-all', requireAuth(false), async (req,res,next)=>{
   // #swagger.tags = ['Menu']
     // #swagger.summary = "Get all items in the menu for managers"
     // #swagger.security = [{"cookieAuth": []}]
