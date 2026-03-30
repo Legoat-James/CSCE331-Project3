@@ -895,42 +895,76 @@ app.get('/api/employee/auth', requireAuth(false), async (req,res,next)=>{
   }
 });
 
-const submitOrderHandler = async (req, res, next) => {
-  /* #swagger.tags = ['Orders']
-      #swagger.summary = 'Submit customer order, append history, and decrement ingredient stock'
-      #swagger.parameters['orderData'] = {
+//this is meant to take in a sanitized order object
+async function getOrderTotal(items){
+  const itemTotals = await Promise.all(items.map(async (item)=>{
+      const itemResult = await pool.query("SELECT * FROM menu WHERE menu_id = $1;", [item.menuId]);
+      if(itemResult.rowCount === 0){
+        throw new ApiError(404, "Could not find this item to get the cost of");
+      }
+      const itemCost = parseFloat(itemResult.rows[0].cost);
+      //now get the toppings cost
+      const toppingTotals = await Promise.all(item.toppings.map(async (topping)=>{
+        const toppingResult = await pool.query("SELECT * FROM menu WHERE menu_id = $1;", [topping.id]);
+        if(toppingResult.rowCount === 0){
+          throw new ApiError(404, "Could not find this topping to get the cost of");
+        }
+        const toppingCost = parseFloat(toppingResult.rows[0].cost) * parseInt(topping.quantity);
+        return toppingCost;
+      }));
+      
+      const totalToppingsCost = toppingTotals.reduce((acc,curCost)=> acc + curCost, 0);
+      const totalItemCost = (itemCost + totalToppingsCost) * parseInt(item.quantity);
+      return totalItemCost;
+  }));
+  const totalOrderCost = itemTotals.reduce((acc,curCost)=>acc+curCost, 0);
+  return totalOrderCost;
+}
+
+app.post('/api/orders/create', async (req,res,next)=>{
+   /* #swagger.tags = ['Orders']
+    #swagger.summary = "Creates a new order, either from a customer or cashier"
+    #swagger.responses[200] = { 
+          description: 'Successfully created the order',
+          schema: { 
+              menu_id: 67, 
+              name: 'Add Sugar', 
+              category: 'Modification',
+              cost: 4.99,
+              is_active: true 
+          }
+    } 
+    #swagger.parameters['order'] = {
           in: 'body',
-          description: 'Order payload',
+          description: 'Order object',
           required: true,
           schema: {
-            orderTotal: 12.5,
             employeeId: 1,
             customerName: 'Guest',
-            orderItems: [
+            items: [
               {
                 menuId: 41,
                 quantity: 1,
                 toppings: [
-                  { id: 61, qty: 1 }
+                  { id: 61, quantity: 1 }
                 ]
               }
             ]
           }
-      }
-  */
+      }      
+    */
+
+  
   const client = await pool.connect();
 
   try {
-    const { orderTotal, employeeId, customerName, orderItems } = req.body || {};
-
-    if (!Array.isArray(orderItems) || orderItems.length === 0) {
-      throw new ApiError(400, 'orderItems is required and must contain at least one item.', null, req.path);
+    const { employeeId, customerName, items} = req.body || {};
+    console.log(req.body);
+    
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new ApiError(400, 'order items array is required and must contain at least one item.', null, req.path);
     }
 
-    const parsedOrderTotal = Number(orderTotal);
-    if (!Number.isFinite(parsedOrderTotal) || parsedOrderTotal < 0) {
-      throw new ApiError(400, 'orderTotal must be a valid non-negative number.', null, req.path);
-    }
 
     const parsedEmployeeId = employeeId === null || employeeId === undefined
       ? null
@@ -942,33 +976,35 @@ const submitOrderHandler = async (req, res, next) => {
 
     const normalizedCustomerName = String(customerName || 'Guest').trim() || 'Guest';
 
-    const normalizedItems = orderItems.map((item, itemIndex) => {
+    const normalizedItems = items.map((item, itemIndex) => {
       const menuId = Number(item?.menuId);
       const quantity = Number(item?.quantity ?? 1);
 
       if (!Number.isInteger(menuId)) {
-        throw new ApiError(400, `orderItems[${itemIndex}].menuId must be an integer.`, null, req.path);
+        throw new ApiError(400, `items[${itemIndex}].menuId must be an integer.`, null, req.path);
       }
 
       if (!Number.isInteger(quantity) || quantity < 1) {
-        throw new ApiError(400, `orderItems[${itemIndex}].quantity must be an integer >= 1.`, null, req.path);
+        throw new ApiError(400, `items[${itemIndex}].quantity must be an integer >= 1.`, null, req.path);
       }
 
+
+      //sanitize toppings
       const toppings = (Array.isArray(item?.toppings) ? item.toppings : []).map((topping, toppingIndex) => {
         const toppingId = Number(topping?.id);
-        const toppingQty = Number(topping?.qty ?? topping?.quantity ?? 1);
+        const toppingQty = Number(topping?.quantity ?? topping?.quantity ?? 1);
 
         if (!Number.isInteger(toppingId)) {
-          throw new ApiError(400, `orderItems[${itemIndex}].toppings[${toppingIndex}].id must be an integer.`, null, req.path);
+          throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].id must be an integer.`, null, req.path);
         }
 
         if (!Number.isInteger(toppingQty) || toppingQty < 1) {
-          throw new ApiError(400, `orderItems[${itemIndex}].toppings[${toppingIndex}].qty must be an integer >= 1.`, null, req.path);
+          throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].qty must be an integer >= 1.`, null, req.path);
         }
 
         return {
           id: toppingId,
-          qty: toppingQty,
+          quantity: toppingQty,
         };
       });
 
@@ -979,25 +1015,20 @@ const submitOrderHandler = async (req, res, next) => {
       };
     });
 
+    const orderTotal = await getOrderTotal(normalizedItems);
+    
     await client.query('BEGIN');
 
-    // Manual IDs are used in this schema, so lock related tables before MAX(id)+1 generation.
-    await client.query('LOCK TABLE transactions IN EXCLUSIVE MODE');
-    await client.query('LOCK TABLE order_history IN EXCLUSIVE MODE');
-    await client.query('LOCK TABLE toppings IN EXCLUSIVE MODE');
+    //get the orderTotal from the database. We don't want to pass it in because it could be wrong/doctored
 
-    const nextOrderIdResult = await client.query('SELECT COALESCE(MAX(order_id), 0) + 1 AS next_id FROM transactions');
-    const nextHistoryIdResult = await client.query('SELECT COALESCE(MAX(history_id), 0) + 1 AS next_id FROM order_history');
-    const nextToppingIdResult = await client.query('SELECT COALESCE(MAX(topping_id), 0) + 1 AS next_id FROM toppings');
 
-    const orderId = Number(nextOrderIdResult.rows[0].next_id);
-    let nextHistoryId = Number(nextHistoryIdResult.rows[0].next_id);
-    let nextToppingId = Number(nextToppingIdResult.rows[0].next_id);
-
-    await client.query(
-      'INSERT INTO transactions (order_id, order_total, timestamp, employee_id, customer_name) VALUES ($1, $2, NOW(), $3, $4)',
-      [orderId, parsedOrderTotal, parsedEmployeeId, normalizedCustomerName],
+    const newOrder = await client.query(
+      'INSERT INTO transactions (order_total, timestamp, employee_id, customer_name) VALUES ($1, NOW(), $2, $3) RETURNING *;',
+      [orderTotal, parsedEmployeeId, normalizedCustomerName],
     );
+
+    const newOrderId = newOrder.rows[0].order_id;
+
 
     const menuUsageCounts = new Map();
     const addMenuUsage = (menuId, amount) => {
@@ -1009,26 +1040,25 @@ const submitOrderHandler = async (req, res, next) => {
 
     for (const item of normalizedItems) {
       await client.query(
-        'INSERT INTO order_history (history_id, order_id, item_id, quantity) VALUES ($1, $2, $3, $4)',
-        [nextHistoryId, orderId, item.menuId, item.quantity],
+        'INSERT INTO order_history (order_id, item_id, quantity) VALUES ($1, $2, $3)',
+        [newOrderId, item.menuId, item.quantity],
       );
-      nextHistoryId += 1;
       historyRowsInserted += 1;
 
       addMenuUsage(item.menuId, item.quantity);
 
       for (const topping of item.toppings) {
         await client.query(
-          'INSERT INTO toppings (topping_id, item_menu_id, transaction_id, topping_menu_id, quantity) VALUES ($1, $2, $3, $4, $5)',
-          [nextToppingId, item.menuId, orderId, topping.id, topping.qty],
+          'INSERT INTO toppings (item_menu_id, transaction_id, topping_menu_id, quantity) VALUES ($1, $2, $3, $4)',
+          [item.menuId, newOrderId, topping.id, topping.qty],
         );
-        nextToppingId += 1;
         toppingRowsInserted += 1;
 
         addMenuUsage(topping.id, topping.qty);
       }
     }
 
+    //try to get the ingredients usage for each order item and its toppings 
     const usedMenuIds = [...menuUsageCounts.keys()];
     if (usedMenuIds.length > 0) {
       const recipeResult = await client.query(
@@ -1053,7 +1083,7 @@ const submitOrderHandler = async (req, res, next) => {
       }
 
       const ingredientIds = [...ingredientNeeded.keys()];
-
+      //check to see if we can subtract the ingredients
       if (ingredientIds.length > 0) {
         const stockResult = await client.query(
           'SELECT ingredient_id, name, stock FROM ingredients WHERE ingredient_id = ANY($1::int[]) FOR UPDATE',
@@ -1103,13 +1133,15 @@ const submitOrderHandler = async (req, res, next) => {
 
     await client.query('COMMIT');
 
-    res.status(201).json({
+    const responseObject = {
       message: 'Order submitted successfully.',
-      orderId,
-      orderTotal: parsedOrderTotal,
+      orderId: newOrderId,
+      orderTotal: orderTotal,
       itemsRecorded: historyRowsInserted,
       toppingsRecorded: toppingRowsInserted,
-    });
+    }
+    console.log(responseObject);
+    res.status(201).json(responseObject);
   } catch (err) {
     try {
       await client.query('ROLLBACK');
@@ -1121,10 +1153,7 @@ const submitOrderHandler = async (req, res, next) => {
   } finally {
     client.release();
   }
-};
-
-app.post('/api/orders/submit', submitOrderHandler);
-app.post('/api/order/submit', submitOrderHandler);
+});
 
 
 app.get('/api/test', (req, res, next) => {

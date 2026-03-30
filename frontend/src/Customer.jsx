@@ -1,6 +1,7 @@
 import './Customer.css'
 import { useGet } from './hooks/useApi'
 import apiClient from './api/client_config'
+import { useMutate } from './hooks/useApi';
 import React, { useEffect, useState } from 'react'; // MUST import useState
 
 
@@ -23,11 +24,12 @@ function Home() {
   const [useOatMilk, setUseOatMilk] = useState(false);
   const [orderItems, setOrderItems] = useState([]);
   const [editingOrderItemId, setEditingOrderItemId] = useState(null);
-  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [orderSubmitMessage, setOrderSubmitMessage] = useState('');
   const [orderSubmitError, setOrderSubmitError] = useState('');
   const [resolvedImageByName, setResolvedImageByName] = useState({});
   const [requestedImageByName, setRequestedImageByName] = useState({});
+
+  const orderMutation = useMutate("/api/orders/create", "POST",[]);
 
   const fallbackCardImage = 'https://picsum.photos/id/1040/900/600';
 
@@ -574,11 +576,10 @@ function Home() {
   };
 
   const handleFinishOrder = async () => {
-    if (isSubmittingOrder || orderItems.length === 0) {
+    if (orderItems.length === 0) {
       return;
     }
 
-    setIsSubmittingOrder(true);
     setOrderSubmitMessage('');
     setOrderSubmitError('');
 
@@ -595,17 +596,17 @@ function Home() {
         const toppings = Array.isArray(item.toppings)
           ? item.toppings.map((topping) => ({
               id: topping.id,
-              qty: topping.quantity,
+              quantity: topping.quantity,
             }))
           : [];
 
         if (item.type === 'drink') {
           if (item.swapSugar && Number.isInteger(swapSugarMenuId)) {
-            toppings.push({ id: swapSugarMenuId, qty: 1 });
+            toppings.push({ id: swapSugarMenuId, quantity: 1 });
           }
 
           if (item.useOatMilk && Number.isInteger(oatMilkMenuId)) {
-            toppings.push({ id: oatMilkMenuId, qty: 1 });
+            toppings.push({ id: oatMilkMenuId, quantity: 1 });
           }
         }
 
@@ -616,23 +617,29 @@ function Home() {
         };
       });
 
-      const response = await apiClient('/api/orders/submit', {
-        method: 'POST',
-        body: {
+      orderMutation.mutate(
+        {
           orderTotal: Number(orderSubtotal.toFixed(2)),
           customerName: 'Guest',
-          orderItems: payloadItems,
-        },
-      });
+          items: payloadItems,
+        }
+      )
 
-      setOrderItems([]);
-      setOrderSubmitMessage(`Order #${response.orderId} submitted successfully.`);
     } catch (submitError) {
       setOrderSubmitError(submitError.message || 'Unable to submit order. Please try again.');
-    } finally {
-      setIsSubmittingOrder(false);
     }
   };
+
+  useEffect(()=>{
+    if(orderMutation.isSuccess){
+      setOrderItems([]);
+      setOrderSubmitMessage(`Order #${orderMutation.data.orderId} submitted successfully.`);
+    }
+    if(orderMutation.isError){
+      setOrderSubmitError(orderMutation.error.message || 'Unable to submit order. Please try again.');
+    }
+  },[orderMutation.data]);
+
 
   const removeOrderItem = (itemId) => {
     setOrderSubmitMessage('');
@@ -913,9 +920,9 @@ function Home() {
             <button
               className="btn tea-btn-finish btn-sm"
               onClick={handleFinishOrder}
-              disabled={isSubmittingOrder || orderItems.length === 0}
+              disabled={orderMutation.isPending || orderItems.length === 0}
             >
-              {isSubmittingOrder ? 'Submitting...' : 'Finish Order'}
+              {orderMutation.isPending ? 'Submitting...' : 'Finish Order'}
             </button>
           </aside>
         </div>

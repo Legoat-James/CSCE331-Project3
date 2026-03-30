@@ -19,7 +19,10 @@ const docInfo = {
         },
         {
             name: "Employees", description: "Endpoints for handling the Restaurant Employees"
-        }
+        },
+        {
+            name: "Orders", description: "Endpoints for handling Restaurant Orders"
+        },
 
     ],
     components: {
