@@ -1,8 +1,8 @@
-import express from "express"
-import cors from "cors"
-import dotenv from "dotenv"
-import fs from "fs"
-import path from "path"
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 import errorHandler from "./helpers/errorHandler.js";
 import ApiError from "./helpers/ApiError.js";
 import pg from "pg";
@@ -23,7 +23,7 @@ const envCandidates = [
 
 for (const envPath of envCandidates) {
   if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath, override: false });
+    dotenv.config({ path: envPath, override: false, quiet: true });
   }
 }
 
