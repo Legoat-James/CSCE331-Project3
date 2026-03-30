@@ -1,6 +1,7 @@
 import express from "express"
 import cors from "cors"
-import "dotenv/config"
+import dotenv from "dotenv"
+import fs from "fs"
 import path from "path"
 import errorHandler from "./helpers/errorHandler.js";
 import ApiError from "./helpers/ApiError.js";
@@ -11,7 +12,20 @@ import OAuth2 from "google-auth-library";
 import swaggerJSDoc from "swagger-jsdoc";
 import cookieParser from "cookie-parser";
 import swaggerUi from 'swagger-ui-express';
-import swaggerFile from "./swagger-out.json" with {type: "json"};
+
+// Support running backend from either repo root or backend/ folder.
+// This loads the first matching .env values without overriding already-set vars.
+const envCandidates = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'backend/.env'),
+  path.resolve(process.cwd(), '../.env'),
+];
+
+for (const envPath of envCandidates) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath, override: false });
+  }
+}
 
 
 const app = express();
@@ -34,10 +48,15 @@ app.use(cookieParser());
 
 
 if(process.env.NODE_ENV === "development"){
-  // const swaggerSpec = swaggerJSDoc(swaggerOptions);
-  // console.log('Found Paths:', Object.keys(swaggerSpec.paths));
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
-  console.log('API Docs available at http://localhost:5000/api-docs');
+  const swaggerFilePath = path.resolve(process.cwd(), "swagger-out.json");
+
+  if (fs.existsSync(swaggerFilePath)) {
+    const swaggerFile = JSON.parse(fs.readFileSync(swaggerFilePath, "utf-8"));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
+    console.log('API Docs available at http://localhost:5000/api-docs');
+  } else {
+    console.warn('Swagger docs disabled: swagger-out.json not found. Run `npm run swagger`.');
+  }
 }
 
 
@@ -876,6 +895,237 @@ app.get('/api/employee/auth', requireAuth(false), async (req,res,next)=>{
   }
 });
 
+const submitOrderHandler = async (req, res, next) => {
+  /* #swagger.tags = ['Orders']
+      #swagger.summary = 'Submit customer order, append history, and decrement ingredient stock'
+      #swagger.parameters['orderData'] = {
+          in: 'body',
+          description: 'Order payload',
+          required: true,
+          schema: {
+            orderTotal: 12.5,
+            employeeId: 1,
+            customerName: 'Guest',
+            orderItems: [
+              {
+                menuId: 41,
+                quantity: 1,
+                toppings: [
+                  { id: 61, qty: 1 }
+                ]
+              }
+            ]
+          }
+      }
+  */
+  const client = await pool.connect();
+
+  try {
+    const { orderTotal, employeeId, customerName, orderItems } = req.body || {};
+
+    if (!Array.isArray(orderItems) || orderItems.length === 0) {
+      throw new ApiError(400, 'orderItems is required and must contain at least one item.', null, req.path);
+    }
+
+    const parsedOrderTotal = Number(orderTotal);
+    if (!Number.isFinite(parsedOrderTotal) || parsedOrderTotal < 0) {
+      throw new ApiError(400, 'orderTotal must be a valid non-negative number.', null, req.path);
+    }
+
+    const parsedEmployeeId = employeeId === null || employeeId === undefined
+      ? null
+      : Number(employeeId);
+
+    if (parsedEmployeeId !== null && !Number.isInteger(parsedEmployeeId)) {
+      throw new ApiError(400, 'employeeId must be an integer when provided.', null, req.path);
+    }
+
+    const normalizedCustomerName = String(customerName || 'Guest').trim() || 'Guest';
+
+    const normalizedItems = orderItems.map((item, itemIndex) => {
+      const menuId = Number(item?.menuId);
+      const quantity = Number(item?.quantity ?? 1);
+
+      if (!Number.isInteger(menuId)) {
+        throw new ApiError(400, `orderItems[${itemIndex}].menuId must be an integer.`, null, req.path);
+      }
+
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        throw new ApiError(400, `orderItems[${itemIndex}].quantity must be an integer >= 1.`, null, req.path);
+      }
+
+      const toppings = (Array.isArray(item?.toppings) ? item.toppings : []).map((topping, toppingIndex) => {
+        const toppingId = Number(topping?.id);
+        const toppingQty = Number(topping?.qty ?? topping?.quantity ?? 1);
+
+        if (!Number.isInteger(toppingId)) {
+          throw new ApiError(400, `orderItems[${itemIndex}].toppings[${toppingIndex}].id must be an integer.`, null, req.path);
+        }
+
+        if (!Number.isInteger(toppingQty) || toppingQty < 1) {
+          throw new ApiError(400, `orderItems[${itemIndex}].toppings[${toppingIndex}].qty must be an integer >= 1.`, null, req.path);
+        }
+
+        return {
+          id: toppingId,
+          qty: toppingQty,
+        };
+      });
+
+      return {
+        menuId,
+        quantity,
+        toppings,
+      };
+    });
+
+    await client.query('BEGIN');
+
+    // Manual IDs are used in this schema, so lock related tables before MAX(id)+1 generation.
+    await client.query('LOCK TABLE transactions IN EXCLUSIVE MODE');
+    await client.query('LOCK TABLE order_history IN EXCLUSIVE MODE');
+    await client.query('LOCK TABLE toppings IN EXCLUSIVE MODE');
+
+    const nextOrderIdResult = await client.query('SELECT COALESCE(MAX(order_id), 0) + 1 AS next_id FROM transactions');
+    const nextHistoryIdResult = await client.query('SELECT COALESCE(MAX(history_id), 0) + 1 AS next_id FROM order_history');
+    const nextToppingIdResult = await client.query('SELECT COALESCE(MAX(topping_id), 0) + 1 AS next_id FROM toppings');
+
+    const orderId = Number(nextOrderIdResult.rows[0].next_id);
+    let nextHistoryId = Number(nextHistoryIdResult.rows[0].next_id);
+    let nextToppingId = Number(nextToppingIdResult.rows[0].next_id);
+
+    await client.query(
+      'INSERT INTO transactions (order_id, order_total, timestamp, employee_id, customer_name) VALUES ($1, $2, NOW(), $3, $4)',
+      [orderId, parsedOrderTotal, parsedEmployeeId, normalizedCustomerName],
+    );
+
+    const menuUsageCounts = new Map();
+    const addMenuUsage = (menuId, amount) => {
+      menuUsageCounts.set(menuId, (menuUsageCounts.get(menuId) || 0) + amount);
+    };
+
+    let historyRowsInserted = 0;
+    let toppingRowsInserted = 0;
+
+    for (const item of normalizedItems) {
+      await client.query(
+        'INSERT INTO order_history (history_id, order_id, item_id, quantity) VALUES ($1, $2, $3, $4)',
+        [nextHistoryId, orderId, item.menuId, item.quantity],
+      );
+      nextHistoryId += 1;
+      historyRowsInserted += 1;
+
+      addMenuUsage(item.menuId, item.quantity);
+
+      for (const topping of item.toppings) {
+        await client.query(
+          'INSERT INTO toppings (topping_id, item_menu_id, transaction_id, topping_menu_id, quantity) VALUES ($1, $2, $3, $4, $5)',
+          [nextToppingId, item.menuId, orderId, topping.id, topping.qty],
+        );
+        nextToppingId += 1;
+        toppingRowsInserted += 1;
+
+        addMenuUsage(topping.id, topping.qty);
+      }
+    }
+
+    const usedMenuIds = [...menuUsageCounts.keys()];
+    if (usedMenuIds.length > 0) {
+      const recipeResult = await client.query(
+        'SELECT menu_id, ingredient_id, quantity FROM recipes WHERE menu_id = ANY($1::int[]) AND is_active = true',
+        [usedMenuIds],
+      );
+
+      const ingredientNeeded = new Map();
+
+      for (const row of recipeResult.rows) {
+        const menuId = Number(row.menu_id);
+        const ingredientId = Number(row.ingredient_id);
+        const recipeQuantity = Number(row.quantity);
+        const menuCount = menuUsageCounts.get(menuId) || 0;
+
+        if (menuCount <= 0 || !Number.isFinite(recipeQuantity)) {
+          continue;
+        }
+
+        const requiredAmount = recipeQuantity * menuCount;
+        ingredientNeeded.set(ingredientId, (ingredientNeeded.get(ingredientId) || 0) + requiredAmount);
+      }
+
+      const ingredientIds = [...ingredientNeeded.keys()];
+
+      if (ingredientIds.length > 0) {
+        const stockResult = await client.query(
+          'SELECT ingredient_id, name, stock FROM ingredients WHERE ingredient_id = ANY($1::int[]) FOR UPDATE',
+          [ingredientIds],
+        );
+
+        const stockByIngredientId = new Map(
+          stockResult.rows.map((row) => [
+            Number(row.ingredient_id),
+            {
+              name: row.name,
+              stock: Number(row.stock),
+            },
+          ]),
+        );
+
+        for (const [ingredientId, requiredAmount] of ingredientNeeded.entries()) {
+          const stockRow = stockByIngredientId.get(ingredientId);
+
+          if (!stockRow) {
+            throw new ApiError(500, `Ingredient ${ingredientId} is referenced by recipes but missing from ingredients.`, null, req.path);
+          }
+
+          if (stockRow.stock < requiredAmount) {
+            throw new ApiError(
+              409,
+              `Insufficient stock for ingredient '${stockRow.name}'. Need ${requiredAmount.toFixed(2)}, have ${stockRow.stock.toFixed(2)}.`,
+              {
+                ingredientId,
+                ingredientName: stockRow.name,
+                needed: requiredAmount,
+                available: stockRow.stock,
+              },
+              req.path,
+            );
+          }
+        }
+
+        for (const [ingredientId, requiredAmount] of ingredientNeeded.entries()) {
+          await client.query(
+            'UPDATE ingredients SET stock = stock - $1 WHERE ingredient_id = $2',
+            [requiredAmount, ingredientId],
+          );
+        }
+      }
+    }
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      message: 'Order submitted successfully.',
+      orderId,
+      orderTotal: parsedOrderTotal,
+      itemsRecorded: historyRowsInserted,
+      toppingsRecorded: toppingRowsInserted,
+    });
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      // If rollback fails, continue propagating the original error.
+    }
+
+    next(err);
+  } finally {
+    client.release();
+  }
+};
+
+app.post('/api/orders/submit', submitOrderHandler);
+app.post('/api/order/submit', submitOrderHandler);
+
 
 app.get('/api/test', (req, res, next) => {
   try{
@@ -895,6 +1145,15 @@ app.get('/api/test', (req, res, next) => {
   }catch(err){
     next(err);
   }
+});
+
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    status: 404,
+    message: 'API endpoint not found.',
+    path: req.originalUrl || req.url,
+    method: req.method,
+  });
 });
 
 // Catch-all handler: send back React's index.html file for non-API routes

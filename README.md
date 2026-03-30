@@ -1,7 +1,7 @@
 # Full-Stack Application
 
 A full-stack web application built with:
-- **Frontend**: React + Vite + Tailwind CSS
+- **Frontend**: React + Vite
 - **Backend**: Node.js + Express.js
 - **Deployment**: Vercel
 
@@ -39,7 +39,7 @@ npm run dev
 ```
 
 This starts:
-- Frontend dev server on `http://localhost:5173`
+- Frontend dev server on `http://localhost:3000`
 - Backend API server on `http://localhost:5000`
 
 ### Option 2: Run Separately
@@ -68,24 +68,10 @@ npm run dev
 ## Testing the Connection
 
 1. Start both servers with `npm run dev`
-2. Open `http://localhost:5173` in your browser
+2. Open `http://localhost:3000` in your browser
 3. To test the backend connection:
-   - Visit `http://localhost:5000/api` directly
+   - Visit `http://localhost:5000/api/test` directly
    - Or use the Example component (see below)
-
-### Using the Example Component
-
-To see Tailwind CSS and backend connection in action, edit `frontend/src/main.jsx`:
-
-```jsx
-import Example from './Example.jsx'  // Instead of App
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <Example />  {/* Instead of <App /> */}
-  </StrictMode>,
-)
-```
 
 ## Building for Production
 
@@ -105,8 +91,10 @@ NODE_ENV=development
 
 ## API Endpoints
 
-- `GET /api` - Returns a welcome message
-- `GET /api/health` - Health check endpoint
+- `GET /api/test` - Simple API test endpoint
+- `GET /api/get-full-menu` - Get active menu items
+- `GET /api/get-manager-menu` - Get manager menu view
+- `GET /api/get-employees` - Get active employees
 
 ## Adding New Features
 
@@ -116,7 +104,7 @@ NODE_ENV=development
 - Import and use in your React components
 
 ### Backend
-- Add routes in `backend/server.js` or create separate route files
+- Add routes in `backend/index.js` or create separate route files
 - Use Express middleware as needed
 
 ## Deploying to Vercel
@@ -143,8 +131,12 @@ NODE_ENV=development
 - Verify backend is running on correct port
 
 **Tailwind not working:**
-- Ensure `@import "tailwindcss";` is in `frontend/src/index.css`
-- Restart dev server
+- This project currently uses component CSS files and Bootstrap.
+- Restart dev server after dependency or config changes.
+
+**Frontend not appearing when running `npm run dev`:**
+- Use the root `npm run dev` script (now uses `concurrently` for reliable parallel startup).
+- Confirm frontend URL is `http://localhost:3000` (not `5173`).
 
 ## Learn More
 
