@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Alert, Container, Card } from 'react-bootstrap';
+import { Form, Button, Alert, Container, Card} from 'react-bootstrap';
 import { loginUser } from './api/authAPI.js';
 
 export default function Login() {
@@ -33,6 +33,7 @@ export default function Login() {
             //redirect after successful login
             setTimeout(() => {
                 window.location.href ='/';
+                
                 // if(response.user.is_manager) {
                 //     window.location.href = '/Manager';
                 // } else {

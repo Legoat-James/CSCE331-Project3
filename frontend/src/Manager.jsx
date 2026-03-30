@@ -1,6 +1,7 @@
 import {useGet} from './hooks/useApi.js';
 import { useMutate } from './hooks/useApi';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Navbar, NavLink} from 'react';
+
 import {
   Container,
   Row,
@@ -13,7 +14,7 @@ import {
   Nav,
   InputGroup,
   ListGroup,
-  ButtonGroup
+  ButtonGroup,
 } from 'react-bootstrap';
 import { Line } from 'react-chartjs-2';
 import {
@@ -63,6 +64,20 @@ export default function Manager() {
   // Sample data for tables
   //need to call backend api to get real data and set state accordingly
   //we used useGet to fetch menu items now actually have to load it and show.
+  const NavBar = () => {
+
+    return (
+      <Navbar sticky="top">
+      <NavLink to='/components/manager/EmployeeList.jsx'>Employee List</NavLink>
+      <NavLink to='/components/manager/InventoryTable.jsx'>Inventory Table</NavLink>
+      <Navlink to='/components/manager/MenuEditor.jsx'>Menu Editor</Navlink>
+      <NavLink to='/components/manager/RecipeBuilder.jsx'>Recipe Builder</NavLink>
+      </Navbar>
+      
+
+    );
+
+  };
 
   const renderMenuItems = (items) => {
     // Split items into 2 columns
@@ -78,7 +93,6 @@ export default function Manager() {
             className="menu-item-row d-flex justify-content-between align-items-center px-3 py-2 rounded-3"
           >
             <span className="item-name fw-semibold">{item.name}</span>
-            <span className="item-price fw-bold">${parseFloat(item.cost).toFixed(2)}</span>
           </div>
         ))}
       </Col>
