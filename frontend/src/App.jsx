@@ -8,6 +8,7 @@ import NotFound from './NotFound';
 import Cashier from './Cashier';
 import Manager from './Manager';
 import Login from './Login';
+import MenuBoard from './MenuBoard';
 //create a client for react query
 const queryClient = new QueryClient();
 //create a theme context
@@ -43,6 +44,7 @@ export default function App(){
           <nav>
             <button onClick={() => window.location.href = '/Cashier'} className='btn btn-primary'> Cashier </button>
             <button onClick={() => window.location.href = '/Manager'} className='btn btn-primary'> Manager </button>
+            <button onClick={() => window.location.href = '/menu-board'} className='btn btn-primary'> Menu Board </button>
             <button onClick={() => window.location.href = '/'} className='btn btn-primary'> Home </button>
             <button onClick={() => window.location.href = '/Login'} className='btn btn-primary'> login (WIP) </button>
           </nav>
@@ -52,6 +54,7 @@ export default function App(){
                 <Route path="/" index element={<Customer />} />
                 <Route path="/cashier" element={<Cashier />} />
                 <Route path="/manager" element={<Manager />} />
+                <Route path="/menu-board" element={<MenuBoard />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
