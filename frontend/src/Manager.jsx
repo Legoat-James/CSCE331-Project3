@@ -1,3 +1,5 @@
+import {useGet} from './hooks/useApi.js';
+import { useMutate } from './hooks/useApi';
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -36,8 +38,14 @@ ChartJS.register(
   Legend
 );
 
+
+
+
 export default function Manager() {
   // State management for different sections
+    const { data: menuItems, isLoading, error } = useGet(['menu-items'], '/api/menu/manager-all', {
+      retry: false
+    });
   const [salesData, setSalesData] = useState({
     labels: ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'],
     datasets: [{
@@ -53,12 +61,36 @@ export default function Manager() {
   const [selectedReport, setSelectedReport] = useState(null);
 
   // Sample data for tables
-  const [menuItems] = useState([
-    { id: 1, name: 'Classic Milk Tea', price: 4.99 },
-    { id: 2, name: 'Taro Bubble Tea', price: 5.49 },
-    { id: 3, name: 'Matcha Latte', price: 5.99 },
-    { id: 4, name: 'Brown Sugar Milk Tea', price: 6.49 }
-  ]);
+  //need to call backend api to get real data and set state accordingly
+  //we used useGet to fetch menu items now actually have to load it and show.
+
+  const renderMenuItems = (items) => {
+    // Split items into 2 columns
+    const midpoint = Math.ceil(items.length / 2);
+    const leftColumn = items.slice(0, midpoint);
+    const rightColumn = items.slice(midpoint);
+
+    const renderColumn = (columnItems) => (
+      <Col xs={6} className="d-flex flex-column gap-2">
+        {columnItems.map((item) => (
+          <div 
+            key={item.menu_item_id || item.id} 
+            className="menu-item-row d-flex justify-content-between align-items-center px-3 py-2 rounded-3"
+          >
+            <span className="item-name fw-semibold">{item.name}</span>
+            <span className="item-price fw-bold">${parseFloat(item.cost).toFixed(2)}</span>
+          </div>
+        ))}
+      </Col>
+    );
+
+    return (
+      <Row>
+        {renderColumn(leftColumn)}
+        {renderColumn(rightColumn)}
+      </Row>
+    );
+  };
 
   const [employees] = useState([
     { id: 1, name: 'John Doe', username: 'john.doe', isManager: true },
@@ -398,21 +430,8 @@ export default function Manager() {
                   </tr>
                 </thead>
                 <tbody>
-                  {menuItems.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.name}</td>
-                      <td>${item.price}</td>
-                      <td>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => {/* TODO: Remove menu item */}}
-                        >
-                          Remove
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {/* TODO: use renderMenuItems */}
+                  {renderMenuItems(menuItems || [])}
                 </tbody>
               </Table>
             </Card.Body>
@@ -510,9 +529,9 @@ export default function Manager() {
                 <Form.Group className="mb-3">
                   <Form.Select>
                     <option>Select item to remove...</option>
-                    {menuItems.map((item) => (
+                    {/* {menuItems.map((item) => (
                       <option key={item.id} value={item.id}>{item.name}</option>
-                    ))}
+                    ))} */}
                   </Form.Select>
                 </Form.Group>
                 <Button
