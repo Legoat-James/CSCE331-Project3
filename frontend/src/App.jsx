@@ -1,13 +1,15 @@
 import { ErrorBoundary } from 'react-error-boundary';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { Routes, Route } from 'react-router';
-import { useState, useEffect,createContext, useContext } from 'react';
-import { Navbar} from 'react-bootstrap';
+import { Routes, Route, useLocation } from 'react-router';
+import { useState, useEffect, createContext, useContext } from 'react';
+import { Navbar } from 'react-bootstrap';
+import Portal from './Portal';
 import Customer from './Customer';
 import NotFound from './NotFound';
 import Cashier from './Cashier';
 import Manager from './Manager';
 import Login from './Login';
+import MenuBoard from './MenuBoard';
 //create a client for react query
 const queryClient = new QueryClient();
 //create a theme context
@@ -31,6 +33,11 @@ export default function App(){
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     //added line to track if signed in yet.
     const [signedIn, setSignedIn] = useState(false);
+    const location = useLocation();
+    
+    // Check if we're on the portal page
+    const isPortalPage = location.pathname === '/';
+    
     useEffect(() => {
         // Apply the theme to the HTML element for Bootstrap 5.3+
         document.documentElement.setAttribute('data-bs-theme', theme);
@@ -40,18 +47,20 @@ export default function App(){
     return (
       <ThemeContext.Provider value={{ theme, setTheme }}>
         <QueryClientProvider client={queryClient}>
-          <nav>
-            <button onClick={() => window.location.href = '/Cashier'} className='btn btn-primary'> Cashier </button>
-            <button onClick={() => window.location.href = '/Manager'} className='btn btn-primary'> Manager </button>
-            <button onClick={() => window.location.href = '/'} className='btn btn-primary'> Home </button>
-            <button onClick={() => window.location.href = '/Login'} className='btn btn-primary'> login (WIP) </button>
-          </nav>
+          {/* Only show full nav on portal}
+          {/* <nav>
+            {!isPortalPage && (
+              <button onClick={() => window.location.href = '/'} className='btn btn-primary'> Home </button>
+            )}
+          </nav> */}
           <div className="min-vh-100 transition-all">
             <ErrorBoundary FallbackComponent={ErrorFallback}>
               <Routes>
-                <Route path="/" index element={<Customer />} />
+                <Route path="/" index element={<Portal />} />
+                <Route path="/customer" element={<Customer />} />
                 <Route path="/cashier" element={<Cashier />} />
                 <Route path="/manager" element={<Manager />} />
+                <Route path="/menuboard" element={<MenuBoard />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
