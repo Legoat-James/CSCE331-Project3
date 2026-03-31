@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Modal, Button, ListGroup, Form } from 'react-bootstrap';
 
-export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem }) {
+export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems }) {
     const [selectedMods, setSelectedMods] = useState([]);
     const [iceLevel, setIceLevel] = useState('1x');
     const [sugarLevel, setSugarLevel] = useState('1x');
-    const levelOptions = ['0.5x', '0.75x', '1x', '1.25x', '1.5x'];
+    const [itemSize, setItemSize] = useState('medium');
+    const levelOptions = ['0.5x', '0.75x', '1x', '1.25x', '1.5x']
+    const sizeOptions = ['small', 'medium', 'large'];
 
     if (!item) {
         return null;
@@ -29,7 +31,25 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
         // });
         selectedMods.push({menu_id: 65, name: `Ice ${iceLevel}`, category: 'modifications' ,cost: 0});
         selectedMods.push({menu_id: 64, name: `Sugar ${sugarLevel}`, category: 'modifications' ,cost: 0});
-        onAddItem(+item.cost, item.name, item.menu_id, selectedMods);
+        //check for item size here,
+        let finalItem = item;
+        if(item.category === 'drink' && itemSize !== 'medium') {
+            //small and large items contain the substring 'small' or 'large' in their name
+            finalItem = menuItems.find(
+                menuItem => menuItem.name.includes(item.name) && menuItem.name.includes(itemSize));
+
+            if (finalItem) {
+                console.log(`found size variant for item: `, finalItem);
+            }
+            else {
+                console.error(`could not find size variant for item: ${item.name}`);
+                
+            }
+        }
+        console.log(`selected size:`, itemSize);
+        console.log('selected item:', item);
+        console.log(`modification array is:`, selectedMods);
+        onAddItem(+finalItem.cost, finalItem.name, finalItem.menu_id, selectedMods);
         // Add ice and sugar levels as modifications
         // onAddItem(0, `Ice: ${iceLevel}`, 'ice-level', 'level');
         // onAddItem(0, `Sugar: ${sugarLevel}`, 'sugar-level', 'level');
@@ -38,7 +58,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
         setIceLevel('1x');
         setSugarLevel('1x');
         onHide();
-        console.log(selectedMods);
+
     };
 
     const handleClose = () => {
@@ -47,6 +67,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
         setSugarLevel('1x');
         onHide();
     }
+
 
     return (
         <Modal show={show} onHide={handleClose}>
@@ -85,6 +106,24 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
                             />
                         ))}
                     </Form.Group>
+                    {/* only show size modification if the item is a drink */}
+                    {item.category === 'drink' && ( 
+                        <Form.Group className="mb-3">
+                            <Form.Label as="h5">Size</Form.Label>
+                            {sizeOptions.map(size => (
+                                <Form.Check
+                                    key={`size-${size}`}
+                                    type="radio"
+                                    id={`size-${size}`}
+                                    label={size}
+                                    name="itemSize"
+                                    value={size}
+                                    checked={itemSize === size}
+                                    onChange={(e) => setItemSize(e.target.value)}
+                                />
+                            ))}
+                        </Form.Group>
+                    )}
                 </Form>
 
                 <hr />
