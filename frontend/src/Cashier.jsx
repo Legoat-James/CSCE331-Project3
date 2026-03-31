@@ -31,9 +31,46 @@ export default function Cashier() {
         setOrderItems(prevItems => [...prevItems, { name, cost, menu_id, modifications_array }]);
     };
 
+    const sanitizeOrderItems = (orderItems) => {
+        //for now we do not have an epmployee ID so we will assume the employee ID is 1, and customer name is "guest"
+        // const employeeId = 1;
+        const user = JSON.parse(localStorage.getItem('user'));
+        const employeeId = user ? user.employee_id : null;
+        const customerName = "guest";
+
+        return {
+            employeeId: employeeId,
+            customerName: customerName,
+            items: orderItems.map(item => {
+                return {
+                    menuID: item.menu_id,
+                    quantity: 1,
+                    toppings: item.modifications_array ? item.modifications_array.map(mod => {
+                        let quantity = 1;
+                        if (mod.menu_id === 65 || mod.menu_id === 64) { // Ice or Sugar
+                            const parts = mod.name.split(' ');
+                            if (parts.length === 2 && parts[1].endsWith('x')) {
+                                quantity = parseFloat(parts[1].slice(0, -1));
+                            }
+                        }
+                        return { id: mod.menu_id, quantity: quantity };
+                    }) : []
+                }
+            })
+        }
+        // "toppings": [
+        // {
+        //   "id": 61,
+        //   "quantity": 1
+        // }
+    //   ]
+    }
+
     const handleCheckout = () => {
         //for testing purposes this does not reset the order yet
         console.log("checkout confirmed, order items:", orderItems);
+        let sanatizedOrderItems = sanitizeOrderItems(orderItems);
+        console.log("sanitized order items:", sanatizedOrderItems);
     }
 
     const handleCancel = () => {
