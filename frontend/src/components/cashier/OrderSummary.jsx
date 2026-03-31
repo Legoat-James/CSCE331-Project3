@@ -17,7 +17,15 @@ export default function OrderSummary({ orderItems }) {
                 {orderItems.map((item, index) => (
                     <li key={index}>
                         {item.name} - ${item.cost}
-                        
+                        {item.modifications_array && item.modifications_array.length > 0 && (
+                            <ul style={{ listStyleType: 'none', paddingLeft: '20px' }}>
+                                {item.modifications_array.map((mod, modIndex) => (
+                                    <li key={modIndex}>
+                                        {mod.name} - ${mod.cost}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </li>
                 ))}
             </ul>

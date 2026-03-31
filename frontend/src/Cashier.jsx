@@ -18,6 +18,15 @@ export default function Cashier() {
             const newTotal = prevTotal + parseFloat(cost);
             return Math.round(newTotal * 100) / 100; //this prevents floating point issues
         });
+        setTotal(prevTotal => {
+            let newTotal = prevTotal;
+            if (modifications_array && modifications_array.length > 0) {
+                modifications_array.forEach(mod => {
+                    newTotal += parseFloat(mod.cost);
+                });
+            }
+            return Math.round(newTotal * 100) / 100;
+        });
 
         setOrderItems(prevItems => [...prevItems, { name, cost, menu_id, modifications_array }]);
     };
@@ -25,6 +34,11 @@ export default function Cashier() {
     const handleCheckout = () => {
         //for testing purposes this does not reset the order yet
         console.log("checkout confirmed, order items:", orderItems);
+    }
+
+    const handleCancel = () => {
+        setOrderItems([]);
+        setTotal(0.00);
     }
 
     return (
@@ -52,7 +66,7 @@ export default function Cashier() {
                         <h3>Total: ${total}</h3>
                         <ButtonGroup>
                             <Button onClick={handleCheckout} variant='secondary'> Confirm Checkout </Button>
-                            <Button variant='secondary'> Cancel Order </Button>
+                            <Button onClick={handleCancel} variant='secondary'> Cancel Order </Button>
                         </ButtonGroup>
                     </Container>
                 </Col>

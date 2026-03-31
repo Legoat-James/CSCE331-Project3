@@ -12,10 +12,11 @@ export default function Menuitems({ onAddItem }) {
     useEffect(() => {
     const fetchMenuItems = async () => {
         try {
-            const data = await apiClient('/api/menu-items');
+            const data = await apiClient('/api/menu/all');
             console.log('Menu items data:', data); // Debug log
             if (Array.isArray(data)) {
-                setMenuItems(data);
+                setMenuItems(data.filter(item => (item.category === 'food' || item.category === 'drink')));
+                setModifications(data.filter(item => (item.category === 'modifications' || item.category === 'topping')));
             } else {
                 console.error('Expected array but got:', typeof data, data);
                 setMenuItems([]); // Fallback to empty array
@@ -27,7 +28,7 @@ export default function Menuitems({ onAddItem }) {
     };
     
     fetchMenuItems();
-}, []);
+    }, []);
 
     const handleItemClick = (item) => {
         setSelectedItem(item);
@@ -43,7 +44,9 @@ export default function Menuitems({ onAddItem }) {
         <div>
             <h1>Menu Items</h1>
             <ul>
-                {menuItems.map(item => (
+                {menuItems
+                .filter(item => (!item.name.includes('large') && !item.name.includes('small')))
+                .map(item => (
                     <Button onClick={() => handleItemClick(item)}  variant='secondary' key={item.menu_id}>
                         {item.name} - ${item.cost}
                     </Button>
@@ -55,6 +58,7 @@ export default function Menuitems({ onAddItem }) {
                 onHide={handleCloseModWindow}
                 item={selectedItem}
                 modifications={modifications}
+                menuItems={menuItems}
                 onAddItem={onAddItem}
             />
         </div>
