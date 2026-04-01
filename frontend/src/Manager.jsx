@@ -2,6 +2,9 @@ import {useGet} from './hooks/useApi.js';
 import { useMutate } from './hooks/useApi';
 import React, { useState, useEffect } from 'react';
 
+import apiClient from './api/client_config.js';
+
+
 import {
   Container,
   Row,
@@ -55,9 +58,7 @@ ChartJS.register(
 export default function Manager() {
   // State management for different sections
     const [activeView, setActiveView] = useState('dashboard');
-    const { data: menuItems, isLoading, error } = useGet(['menu-items'], '/api/menu/manager-all', {
-      retry: false
-    });
+
   const [salesData, setSalesData] = useState({
     labels: ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'],
     datasets: [{
@@ -69,9 +70,18 @@ export default function Manager() {
     }]
   });
 
+  const {data: recentOrders, isLoading, error} = useGet(['recent-orders'],'/api/orders/recent', {
+    retry: false,
+    onSuccess: (data) => {
+      renderRecentOrders(data);
+    },
+    onError: (err) => {
+      console.error('Failed to fetch recent orders:', err);
+    }
+  });
+
   const [timeframe, setTimeframe] = useState('Hour');
   const [selectedReport, setSelectedReport] = useState(null);
-
   // Sample data for tables
   //need to call backend api to get real data and set state accordingly
   //we used useGet to fetch menu items now actually have to load it and show.
@@ -124,32 +134,7 @@ const NavBar = () => {
     );
   };
 
-  // const renderMenuItems = (items) => {
-  //   // Split items into 2 columns
-  //   const midpoint = Math.ceil(items.length / 2);
-  //   const leftColumn = items.slice(0, midpoint);
-  //   const rightColumn = items.slice(midpoint);
-
-  //   const renderColumn = (columnItems) => (
-  //     <Col xs={6} className="d-flex flex-column gap-2">
-  //       {columnItems.map((item) => (
-  //         <div 
-  //           key={item.menu_item_id || item.id} 
-  //           className="menu-item-row d-flex justify-content-between align-items-center px-3 py-2 rounded-3"
-  //         >
-  //           <span className="item-name fw-semibold">{item.name}</span>
-  //         </div>
-  //       ))}
-  //     </Col>
-  //   );
-
-  //   return (
-  //     <Row>
-  //       {renderColumn(leftColumn)}
-  //       {renderColumn(rightColumn)}
-  //     </Row>
-  //   );
-  // };
+  
 
   // TODO: Implement the X Report, Z Report, and Sales Report generation logic
   const generateReport = (type) => {
@@ -158,6 +143,7 @@ const NavBar = () => {
     switch(type) {
       case 'X':
         console.log('Generating X Report...');
+        //Generate X Report
         break;
       case 'Z':
         console.log('Generating Z Report...');
@@ -172,13 +158,36 @@ const NavBar = () => {
 
   };
 
+  const renderRecentOrders = (orders) => {
+    const midpoint = Math.ceil(orders.length / 2);
+    const leftColumn = orders.slice(0, midpoint);
+    const rightColumn = orders.slice(midpoint);
 
-  const [recentOrders] = useState([
-    { id: '#001', time: '2:30 PM', items: 3, total: '$15.47' },
-    { id: '#002', time: '2:25 PM', items: 1, total: '$4.99' },
-    { id: '#003', time: '2:20 PM', items: 2, total: '$10.98' },
-    { id: '#004', time: '2:15 PM', items: 4, total: '$22.46' }
-  ]);
+    const renderColumn = (columnItems) => (
+      <Col xs={6} className="d-flex flex-column gap-2">
+        {columnItems.map((orders) => (
+          <div 
+            key={orders.order_id || orders.order_total} 
+            className="menu-item-row d-flex justify-content-between align-items-center px-3 py-2 rounded-3"
+          >
+            <span className="item-name fw-semibold">{orders.customer_name}</span>
+          </div>
+        ))}
+      </Col>
+    );
+
+    return (
+      <Row>
+        {renderColumn(leftColumn)}
+        {renderColumn(rightColumn)}
+      </Row>
+    );
+
+
+  };
+
+
+
 
 
   // Chart options
@@ -307,16 +316,7 @@ const NavBar = () => {
             </Card.Header>
             <Card.Body>
               <ListGroup variant="flush">
-                {recentOrders.map((order) => (
-                  <ListGroup.Item key={order.id} className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>{order.id}</strong>
-                      <br />
-                      <small className="text-muted">{order.time} • {order.items} items</small>
-                    </div>
-                    <Badge bg="success">{order.total}</Badge>
-                  </ListGroup.Item>
-                ))}
+                {renderRecentOrders(recentOrders || [])}
               </ListGroup>
             </Card.Body>
           </Card>
