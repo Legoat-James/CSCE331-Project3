@@ -94,7 +94,7 @@ export default function Cashier() {
             customerName: customerName,
             items: orderItems.map(item => {
                 return {
-                    menuID: item.menu_id,
+                    menuId: item.menu_id,
                     quantity: 1,
                     toppings: item.modifications_array ? item.modifications_array.map(mod => {
                         let quantity = 1;
@@ -123,7 +123,7 @@ export default function Cashier() {
         let sanatizedOrderItems = sanitizeOrderItems(orderItems);
         console.log("sanitized order items:", sanatizedOrderItems);
         try{
-            const response = await apiClient('api/orders/create', sanatizedOrderItems);
+            const response = await apiClient('api/orders/create', { body: sanatizedOrderItems });
             console.log('order submission response:', response);
             //reset order on successful submission
             setOrderItems([]);
