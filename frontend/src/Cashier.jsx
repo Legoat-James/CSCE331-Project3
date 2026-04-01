@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form } from 'react-bootstrap';
+import { Button, Form, Alert } from 'react-bootstrap';
 import './Cashier.css';
 import Menuitems from './components/cashier/MenuItems';
 import OrderSummary from './components/cashier/OrderSummary';
@@ -14,6 +14,7 @@ export default function Cashier() {
         return savedView ? savedView : '';
     })
     const [customerName, setCustomerName] = useState('');
+    const [error, setError] = useState(null);
 
 
     const handleAddItem = (cost, name, menu_id, modifications_array) => {
@@ -123,20 +124,26 @@ export default function Cashier() {
         let sanatizedOrderItems = sanitizeOrderItems(orderItems);
         console.log("sanitized order items:", sanatizedOrderItems);
         try{
-            const response = await apiClient('/api/orders/create', { body: sanatizedOrderItems });
+            // const response = await apiClient('/api/orders/create', { body: sanatizedOrderItems });
+            //the following line produces an error to test api errors and page alerts. 
+            // it should not be deleted or uncommented unless testing error handling
+            const response = await apiClient('/api/orders/create', sanatizedOrderItems); 
             console.log('order submission response:', response);
             //reset order on successful submission
             setOrderItems([]);
             setTotal(0.00);
+            setError(null);
 
         } catch (error) {
             console.error('error submitting order:', error);
+            setError('Error failed to submit. Check console for details.');
         }
     }
 
     const handleCancel = () => {
         setOrderItems([]);
         setTotal(0.00);
+        setError(null);
     }
 
     const changeMenuView = (view) => {
@@ -147,6 +154,7 @@ export default function Cashier() {
     return (
         <div className="cashier-page">
             <div className="cashier-shell">
+                {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
                 <div className="cashier-layout">
                     <div  className="cashier-menu-panel">
                         <h2 className="cashier-panel-title">Customer name</h2>
