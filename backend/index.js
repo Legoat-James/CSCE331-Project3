@@ -984,8 +984,8 @@ app.post('/api/orders/create', async (req,res,next)=>{
         throw new ApiError(400, `items[${itemIndex}].menuId must be an integer.`, null, req.path);
       }
 
-      if (!Number.isInteger(quantity) || quantity < 1) {
-        throw new ApiError(400, `items[${itemIndex}].quantity must be an integer >= 1.`, null, req.path);
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        throw new ApiError(400, `items[${itemIndex}].quantity must be a number > 0.`, null, req.path);
       }
 
 
@@ -998,8 +998,8 @@ app.post('/api/orders/create', async (req,res,next)=>{
           throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].id must be an integer.`, null, req.path);
         }
 
-        if (!Number.isInteger(toppingQty) || toppingQty < 1) {
-          throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].qty must be an integer >= 1.`, null, req.path);
+        if (!Number.isFinite(toppingQty) || toppingQty <= 0) {
+          throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].qty must be a number > 0.`, null, req.path);
         }
 
         return {
