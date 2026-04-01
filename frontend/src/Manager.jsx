@@ -1,5 +1,6 @@
 import {useGet} from './hooks/useApi.js';
 import { useMutate } from './hooks/useApi';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 import apiClient from './api/client_config.js';
@@ -61,7 +62,8 @@ ChartJS.register(
 
 export default function Manager() {
   // State management for different sections
-    const [activeView, setActiveView] = useState('dashboard');
+  const [activeView, setActiveView] = useState('dashboard');
+  const queryClient = useQueryClient();
 
   const [salesData, setSalesData] = useState({
     labels: ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'],
@@ -82,6 +84,8 @@ export default function Manager() {
 
   const [timeframe, setTimeframe] = useState('Hour');
   const [selectedReport, setSelectedReport] = useState(null);
+  const [reportData, setReportData] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
   // Sample data for tables
   //need to call backend api to get real data and set state accordingly
   //we used useGet to fetch menu items now actually have to load it and show.
@@ -139,24 +143,82 @@ const NavBar = () => {
   // TODO: Implement the X Report, Z Report, and Sales Report generation logic
   const generateReport = useCallback(async (type) => {
     setSelectedReport(type);
-    //selectedReport is the type:
-    switch(type) {
-      case 'X':
-        console.log('Generating X Report...');
-        //Generate X Report
-        break;
-      case 'Z':
-        console.log('Generating Z Report...');
-        // Generate Z Report
-        break;
-      case 'Sales':
-        console.log('Generating Sales Report...');
-        // Generate Sales Report
-        break;
+    setReportLoading(true);
+    
+    try {
+      switch(type) {
+        case 'X':
+          console.log('Generating X Report...');
+          /*TODO: Gives sales activites per hour for the current day of operation. 
+          Managers usually run this report to determine whether the "rush" they felt was really a large sales volume or the "lull" they felt really had almost no sales. 
+          You can do a web search on this, as it is an industry-standard. This report has no side effects and can be run as often as desired. Example types of totals include:
+          sales
+          returns
+          voids
+          discards
+          payment methods
+          */
+          
+          const xReportData = await queryClient.fetchQuery({
+            queryKey: ['x-report'],
+            queryFn: () => apiClient('/api/reports/x'),
+            staleTime: 30000,
+          });
+          
+          console.log('X Report data:', xReportData);
+          setReportData(xReportData);
+          break;
+          
+        case 'Z':
+          console.log('Generating Z Report...');
+          /* TODO: This report is similar to the X-Report, except it is run at the end of the day, when you close and will have no more customers. 
+          It gives all the totals for the day and resets the totals to zero for the next day and the next set of X reports. 
+          This report has side effects and should only be run once per day.
 
+          Example types of totals include:
+          sales and tax information
+          payment methods
+          total cash
+          discounts, voids, and service charges
+          employee signatures
+          Key considerations for successfully completing this requirement include:
+          Resetting the Z-report and X-report values in the database to zero after generating and displaying the Z-display.
+          Only allowing the Z-report to be generated once a day.
+          */
+          
+          const zReportData = await queryClient.fetchQuery({
+            queryKey: ['z-report'],
+            queryFn: () => apiClient('/api/reports/z'),
+            staleTime: 0, // Always fetch fresh for Z report
+          });
+          
+          console.log('Z Report data:', zReportData);
+          setReportData(zReportData);
+          break;
+          
+        case 'Sales':
+          console.log('Generating Sales Report...');
+          //TODO: Given a time window, display the sales by item from the order history.
+          //Should probably use a calendar type of view to select start and end date
+          
+          const salesReportData = await queryClient.fetchQuery({
+            queryKey: ['sales-report'],
+            queryFn: () => apiClient('/api/reports/sales'),
+            staleTime: 30000,
+          });
+          
+          console.log('Sales Report data:', salesReportData);
+          setReportData(salesReportData);
+          break;
+      }
+    } catch (err) {
+      console.error(`Error generating ${type} report:`, err);
+      setReportData(null);
+    } finally {
+      setReportLoading(false);
     }
 
-  }, []);
+  }, [queryClient]);
 
   const renderRecentOrders = (orders) => {
     const renderColumn = (columnItems) => (
