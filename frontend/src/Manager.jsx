@@ -19,6 +19,7 @@ import {
   ListGroup,
   ButtonGroup,
   Navbar,
+  Spinner
 } from 'react-bootstrap';
 import { Line } from 'react-chartjs-2';
 import {
@@ -70,14 +71,8 @@ export default function Manager() {
     }]
   });
 
-  const {data: recentOrders, isLoading, error} = useGet(['recent-orders'],'/api/orders/recent', {
-    retry: false,
-    onSuccess: (data) => {
-      renderRecentOrders(data);
-    },
-    onError: (err) => {
-      console.error('Failed to fetch recent orders:', err);
-    }
+  const {data: recentOrders, isPending, error, isSuccess} = useGet(['recent-orders'],'/api/orders/recent', {
+    retry: true,
   });
 
   const [timeframe, setTimeframe] = useState('Hour');
@@ -137,7 +132,7 @@ const NavBar = () => {
   
 
   // TODO: Implement the X Report, Z Report, and Sales Report generation logic
-  const generateReport = (type) => {
+  const generateReport = async (type) => {
     setSelectedReport(type);
     //selectedReport is the type:
     switch(type) {
@@ -159,29 +154,59 @@ const NavBar = () => {
   };
 
   const renderRecentOrders = (orders) => {
-    const midpoint = Math.ceil(orders.length / 2);
-    const leftColumn = orders.slice(0, midpoint);
-    const rightColumn = orders.slice(midpoint);
-
     const renderColumn = (columnItems) => (
       <Col xs={6} className="d-flex flex-column gap-2">
-        {columnItems.map((orders) => (
-          <div 
-            key={orders.order_id || orders.order_total} 
-            className="menu-item-row d-flex justify-content-between align-items-center px-3 py-2 rounded-3"
-          >
-            <span className="item-name fw-semibold">{orders.customer_name}</span>
-          </div>
+        {/*Need to do a for loop through each item in the orders list */}
+        {columnItems.map((order) => (
+          <Card key={order.order_id} className="mb-2">
+            <Card.Body>
+              <Card.Title>Order #{order.order_id}</Card.Title>
+              <Card.Subtitle className="mb-2 text-muted">{new Date(order.timestamp).toLocaleString()}</Card.Subtitle>
+              <Card.Text>
+                Customer: {String(order.customer_name).toLocaleString()}<br />
+                Total: ${parseFloat(order.order_total)}
+              </Card.Text>
+            </Card.Body>
+          </Card>
         ))}
       </Col>
     );
-
-    return (
-      <Row>
-        {renderColumn(leftColumn)}
-        {renderColumn(rightColumn)}
-      </Row>
-    );
+    console.log('Rendering recent orders:', orders);
+    if(isPending) {
+      return <Spinner animation="border" role="status">
+        <span className="visually-hidden .text-center">Loading...</span>
+      </Spinner>;
+    }
+    else if(isSuccess && orders.length === 0) {
+      return <div>No recent orders found.</div>;
+    }
+    else if(isSuccess && orders.length > 0) {
+      console.log('Successfully loaded recent orders:', orders);
+      //need to parse through orders list and show in nice format. Split into 2 columns if more than 5 orders. Show customer name, order total, timestamp, and order_id of order at minimum.
+      if(orders.length > 5) {
+        console.log('More than 5 recent orders, splitting into columns.');
+        return (
+          <Row>
+            {renderColumn(orders.slice(0, Math.ceil(orders.length / 2)))}
+            {renderColumn(orders.slice(Math.ceil(orders.length / 2)))}
+          </Row>
+        );
+      }
+      else{
+        console.log('5 or fewer recent orders, showing in single column.');
+        return (
+          <Row>
+            {renderColumn(orders)}
+          </Row>
+        );
+      }
+    }
+    else if(error) {
+      return <div>Error loading recent orders: {error.message}</div>;
+    }
+    else{
+      return <div>Unexpected state while loading recent orders.</div>;
+    }
 
 
   };
@@ -324,11 +349,6 @@ const NavBar = () => {
 
         
       </Row>
-
-
-
-    
-
     </>
   );
 
