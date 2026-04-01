@@ -1238,7 +1238,24 @@ app.post('/api/orders/create', async (req,res,next)=>{
   }
 });
 
+/*
+Report API Endpoints: restricted to managers
 
+ */
+/* TODO */
+app.get('/api/reports/x', requireAuth(true), async (req, res, next) =>{
+
+});
+
+/*TODO */
+app.get('/api/reports/z', requireAuth(true), async (req, res, next) =>{
+  
+});
+
+/*TODO */
+app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
+  
+});
 
 app.get('/api/ingredients/all', requireAuth(true), async (req, res, next) => {
     /* #swagger.tags = ['Ingredients']
