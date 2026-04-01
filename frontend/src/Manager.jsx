@@ -1,6 +1,6 @@
 import {useGet} from './hooks/useApi.js';
 import { useMutate } from './hooks/useApi';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 import apiClient from './api/client_config.js';
 
@@ -39,6 +39,9 @@ import InventoryTable from './components/manager/InventoryTable';
 import MenuEditor from './components/manager/MenuEditor';
 import RecipeBuilder from './components/manager/RecipeBuilder';
 
+// Import manager styles
+import './Manager.css';
+
 // Register ChartJS components
 ChartJS.register(
   CategoryScale,
@@ -73,6 +76,8 @@ export default function Manager() {
 
   const {data: recentOrders, isPending, error, isSuccess} = useGet(['recent-orders'],'/api/orders/recent', {
     retry: true,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   const [timeframe, setTimeframe] = useState('Hour');
@@ -132,7 +137,7 @@ const NavBar = () => {
   
 
   // TODO: Implement the X Report, Z Report, and Sales Report generation logic
-  const generateReport = async (type) => {
+  const generateReport = useCallback(async (type) => {
     setSelectedReport(type);
     //selectedReport is the type:
     switch(type) {
@@ -151,7 +156,7 @@ const NavBar = () => {
 
     }
 
-  };
+  }, []);
 
   const renderRecentOrders = (orders) => {
     const renderColumn = (columnItems) => (
@@ -163,7 +168,6 @@ const NavBar = () => {
               <Card.Title>Order #{order.order_id}</Card.Title>
               <Card.Subtitle className="mb-2 text-muted">{new Date(order.timestamp).toLocaleString()}</Card.Subtitle>
               <Card.Text>
-                Customer: {String(order.customer_name).toLocaleString()}<br />
                 Total: ${parseFloat(order.order_total)}
               </Card.Text>
             </Card.Body>
@@ -214,9 +218,8 @@ const NavBar = () => {
 
 
 
-
-  // Chart options
-  const chartOptions = {
+  // Chart options - memoized to prevent re-creation
+  const chartOptions = useMemo(() => ({
     responsive: true,
     plugins: {
       legend: {
@@ -232,30 +235,30 @@ const NavBar = () => {
         beginAtZero: true,
       },
     },
-  };
+  }), [timeframe]);
 
-  // Dashboard Component
-  const DashboardContent = () => (
-    <>
+  // Dashboard Content - memoized to prevent unnecessary re-renders and scroll resets
+  const dashboardContent = useMemo(() => (
+    <div className="dashboard-content">
       {/* Sales Analytics Section */}
-      <Row className="mb-4">
-        <Col lg={6}>
-          <Card className="h-100">
-            <Card.Header>
-              <h5>Sales Analytics</h5>
+      <Row className="g-3 mb-4">
+        <Col lg={10}>
+          <Card className="dashboard-card h-100">
+            <Card.Header className="dashboard-card-header">
+              <h5 className="mb-0">Sales Analytics</h5>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="dashboard-card-body">
               <Line data={salesData} options={chartOptions} />
             </Card.Body>
           </Card>
         </Col>
 
         <Col lg={2}>
-          <Card className="h-100">
-            <Card.Header>
-              <h6>Timeframe</h6>
+          <Card className="dashboard-card h-100">
+            <Card.Header className="dashboard-card-header">
+              <h6 className="mb-0">Timeframe</h6>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="dashboard-card-body d-flex flex-column justify-content-center">
               <ButtonGroup vertical className="w-100">
                 {['Hour', 'Day', 'Week', 'Month'].map((period) => (
                   <Button
@@ -265,7 +268,7 @@ const NavBar = () => {
                       setTimeframe(period);
                       /* TODO: Fetch data for selected timeframe */
                     }}
-                    className="mb-2"
+                    className="mb-2 dashboard-btn"
                   >
                     {period}
                   </Button>
@@ -274,31 +277,48 @@ const NavBar = () => {
             </Card.Body>
           </Card>
         </Col>
+      </Row>
 
-        <Col lg={2}>
-          <Card className="h-100">
-            <Card.Header>
-              <h6>Reports</h6>
+      {/* Orders and Reports Section */}
+      <Row className="g-3 mb-4">
+        <Col lg={5}>
+          <Card className="dashboard-card h-100">
+            <Card.Header className="dashboard-card-header">
+              <h5 className="mb-0">Recent Orders</h5>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="dashboard-card-body">
+              <ListGroup variant="flush" className="dashboard-list">
+                {renderRecentOrders(recentOrders || [])}
+              </ListGroup>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col lg={3}>
+          <Card className="dashboard-card h-100">
+            <Card.Header className="dashboard-card-header">
+              <h6 className="mb-0">Reports</h6>
+            </Card.Header>
+            <Card.Body className="dashboard-card-body d-flex flex-column justify-content-center">
               <ButtonGroup vertical className="w-100">
                 <Button
                   variant="outline-success"
-                  className="mb-2"
-                  onClick={() => {generateReport('X')}}
+                  className="mb-2 dashboard-btn"
+                  onClick={() => generateReport('X')}
                 >
                   X Report
                 </Button>
                 <Button
                   variant="outline-success"
-                  className="mb-2"
-                  onClick={() => {generateReport('Z')}}
+                  className="mb-2 dashboard-btn"
+                  onClick={() => generateReport('Z')}
                 >
                   Z Report
                 </Button>
                 <Button
                   variant="outline-success"
-                  onClick={() => {generateReport('Sales')}}
+                  className="dashboard-btn"
+                  onClick={() => generateReport('Sales')}
                 >
                   Sales Report
                 </Button>
@@ -307,13 +327,13 @@ const NavBar = () => {
           </Card>
         </Col>
 
-        <Col lg={2}>
-          <Card className="h-100">
-            <Card.Header>
-              <h6>Report Data</h6>
+        <Col lg={4}>
+          <Card className="dashboard-card h-100">
+            <Card.Header className="dashboard-card-header">
+              <h6 className="mb-0">Report Data</h6>
             </Card.Header>
-            <Card.Body>
-              <Table size="sm" responsive>
+            <Card.Body className="dashboard-card-body">
+              <Table size="sm" responsive className="dashboard-table mb-0">
                 <thead>
                   <tr>
                     <th>Item</th>
@@ -331,32 +351,14 @@ const NavBar = () => {
           </Card>
         </Col>
       </Row>
-
-      {/* Orders and Inventory Section */}
-      <Row className="mb-4">
-        <Col md={8}>
-          <Card className="h-100">
-            <Card.Header>
-              <h5>Recent Orders</h5>
-            </Card.Header>
-            <Card.Body>
-              <ListGroup variant="flush">
-                {renderRecentOrders(recentOrders || [])}
-              </ListGroup>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        
-      </Row>
-    </>
-  );
+    </div>
+  ), [salesData, chartOptions, timeframe, recentOrders, isPending, error, isSuccess, generateReport]);
 
   // Render active view based on state
   const renderActiveView = () => {
     switch(activeView) {
       case 'dashboard':
-        return <DashboardContent />;
+        return dashboardContent;
       case 'employees':
         return <EmployeeList />;
       case 'inventory':
@@ -366,7 +368,7 @@ const NavBar = () => {
       case 'recipes':
         return <RecipeBuilder />;
       default:
-        return <DashboardContent />;
+        return dashboardContent;
     }
   };
 
