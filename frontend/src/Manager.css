@@ -1,0 +1,141 @@
+/* Manager Dashboard Styles - Reusable across all manager tabs */
+
+/* Base dashboard container */
+.manager-view {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Dashboard content wrapper */
+.dashboard-content {
+  padding: 0.5rem 0;
+}
+
+/* Card styling - reusable for all tabs */
+.dashboard-card {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-card-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem 0.75rem 0 0 !important;
+}
+
+.dashboard-card-header h5,
+.dashboard-card-header h6 {
+  font-weight: 600;
+  color: #212529;
+}
+
+.dashboard-card-body {
+  padding: 1.25rem;
+  background-color: #fff;
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+/* Button styling - reusable for all tabs */
+.dashboard-btn {
+  border-radius: 0.5rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.dashboard-btn:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Table styling - reusable for all tabs */
+.dashboard-table {
+  font-size: 0.9rem;
+}
+
+.dashboard-table thead th {
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  padding: 0.75rem 0.5rem;
+}
+
+.dashboard-table tbody td {
+  padding: 0.65rem 0.5rem;
+  vertical-align: middle;
+}
+
+.dashboard-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* List styling - reusable for all tabs */
+.dashboard-list .list-group-item {
+  border-left: none;
+  border-right: none;
+  padding: 0.75rem 0;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.dashboard-list .list-group-item:first-child {
+  border-top: none;
+}
+
+.dashboard-list .list-group-item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-list .list-group-item:hover {
+  background-color: #f8f9fa;
+}
+
+/* Badge styling */
+.dashboard-badge {
+  font-weight: 500;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.375rem;
+}
+
+/* Form control styling - reusable for all tabs */
+.dashboard-form-control {
+  border-radius: 0.5rem;
+  border: 1px solid #ced4da;
+  padding: 0.5rem 0.75rem;
+}
+
+.dashboard-form-control:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+/* Section spacing utilities */
+.section-spacing {
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .dashboard-card-body {
+    padding: 1rem;
+  }
+  
+  .dashboard-card-header {
+    padding: 0.875rem 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .manager-view {
+    padding: 1rem !important;
+  }
+  
+  .dashboard-card {
+    margin-bottom: 1rem;
+  }
+}
