@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Button, ListGroup, Form } from 'react-bootstrap';
+import './ModificationsWindow.css';
 
 export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems }) {
     const [selectedMods, setSelectedMods] = useState([]);
@@ -9,7 +9,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
     const levelOptions = ['0.5x', '0.75x', '1x', '1.25x', '1.5x']
     const sizeOptions = ['small', 'medium', 'large'];
 
-    if (!item) {
+    if (!item || !show) {
         return null;
     }
 
@@ -24,17 +24,11 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
     };
 
     const handleConfirm = () => {
-        // Add the main item
-        // let item_total_cost = parseFloat(item.cost);
-        // selectedMods.forEach(mod => {
-        //     item_total_cost += parseFloat(mod.cost);
-        // });
         selectedMods.push({menu_id: 65, name: `Ice ${iceLevel}`, category: 'modifications' ,cost: 0});
         selectedMods.push({menu_id: 64, name: `Sugar ${sugarLevel}`, category: 'modifications' ,cost: 0});
-        //check for item size here,
+        
         let finalItem = item;
         if(item.category === 'drink' && itemSize !== 'medium') {
-            //small and large items contain the substring 'small' or 'large' in their name
             finalItem = menuItems.find(
                 menuItem => menuItem.name.includes(item.name) && menuItem.name.includes(itemSize));
 
@@ -43,115 +37,126 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
             }
             else {
                 console.error(`could not find size variant for item: ${item.name}`);
-                
             }
         }
         console.log(`selected size:`, itemSize);
         console.log('selected item:', item);
         console.log(`modification array is:`, selectedMods);
         onAddItem(+finalItem.cost, finalItem.name, finalItem.menu_id, selectedMods);
-        // Add ice and sugar levels as modifications
-        // onAddItem(0, `Ice: ${iceLevel}`, 'ice-level', 'level');
-        // onAddItem(0, `Sugar: ${sugarLevel}`, 'sugar-level', 'level');
+        
         // Reset and close
         setSelectedMods([]);
         setIceLevel('1x');
         setSugarLevel('1x');
+        setItemSize('medium');
         onHide();
-
     };
 
     const handleClose = () => {
         setSelectedMods([]);
         setIceLevel('1x');
         setSugarLevel('1x');
+        setItemSize('medium');
         onHide();
     }
 
-
     return (
-        <Modal show={show} onHide={handleClose}>
-            <Modal.Header closeButton>
-                <Modal.Title>Add Modifications for {item.name}</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <Form>
-                    <Form.Group className="mb-3">
-                        <Form.Label as="h5">Ice Level</Form.Label>
-                        {levelOptions.map(level => (
-                            <Form.Check
-                                key={`ice-${level}`}
-                                type="radio"
-                                id={`ice-${level}`}
-                                label={level}
-                                name="iceLevel"
-                                value={level}
-                                checked={iceLevel === level}
-                                onChange={(e) => setIceLevel(e.target.value)}
-                            />
-                        ))}
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label as="h5">Sugar Level</Form.Label>
-                        {levelOptions.map(level => (
-                            <Form.Check
-                                key={`sugar-${level}`}
-                                type="radio"
-                                id={`sugar-${level}`}
-                                label={level}
-                                name="sugarLevel"
-                                value={level}
-                                checked={sugarLevel === level}
-                                onChange={(e) => setSugarLevel(e.target.value)}
-                            />
-                        ))}
-                    </Form.Group>
-                    {/* only show size modification if the item is a drink */}
-                    {item.category === 'drink' && ( 
-                        <Form.Group className="mb-3">
-                            <Form.Label as="h5">Size</Form.Label>
-                            {sizeOptions.map(size => (
-                                <Form.Check
-                                    key={`size-${size}`}
-                                    type="radio"
-                                    id={`size-${size}`}
-                                    label={size}
-                                    name="itemSize"
-                                    value={size}
-                                    checked={itemSize === size}
-                                    onChange={(e) => setItemSize(e.target.value)}
-                                />
-                            ))}
-                        </Form.Group>
+        <div className="tea-modal-overlay" onClick={handleClose}>
+            <div className="tea-modal-card tea-modal-card--drink" onClick={(e) => e.stopPropagation()}>
+                <div className="tea-modal-header">
+                    <h3 className="tea-modal-title">Add Modifications for {item.name}</h3>
+                    <button className="tea-modal-close" onClick={handleClose} aria-label="Close">
+                        ×
+                    </button>
+                </div>
+
+                <div className="tea-modal-price">
+                    <strong>Base Price:</strong> ${parseFloat(item.cost).toFixed(2)}
+                </div>
+
+                <div className="tea-modal-body">
+                    {/* Size Selection */}
+                    {item.category === 'drink' && (
+                        <div className="tea-mod-section">
+                            <h4 className="tea-mod-heading">Size</h4>
+                            <div className="tea-size-options">
+                                {sizeOptions.map(size => (
+                                    <button
+                                        key={size}
+                                        className={`tea-size-btn ${itemSize === size ? 'is-active' : ''}`}
+                                        onClick={() => setItemSize(size)}
+                                    >
+                                        {size.charAt(0).toUpperCase() + size.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     )}
-                </Form>
 
-                <hr />
+                    {/* Ice Level */}
+                    <div className="tea-mod-section">
+                        <h4 className="tea-mod-heading">Ice Level</h4>
+                        <div className="tea-size-options">
+                            {levelOptions.map(level => (
+                                <button
+                                    key={`ice-${level}`}
+                                    className={`tea-size-btn ${iceLevel === level ? 'is-active' : ''}`}
+                                    onClick={() => setIceLevel(level)}
+                                >
+                                    {level}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
-                <h5>Select toppings and modifications:</h5>
-                <ListGroup>
-                    {modifications
-                    .filter(mod => mod.category === 'topping')
-                    .map(mod => (
-                        <ListGroup.Item 
-                            key={mod.menu_id} 
-                            action 
-                            onClick={() => handleModSelection(mod)}
-                            active={!!selectedMods.find(m => m.menu_id === mod.menu_id)}
-                        >
-                            {mod.name} - ${mod.cost}
-                        </ListGroup.Item>
-                    ))}
-                </ListGroup>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={handleClose}>
-                    Cancel
-                </Button>
-                <Button variant="primary" onClick={handleConfirm}>
-                    Add to Order
-                </Button>
-            </Modal.Footer>
-        </Modal>
+                    {/* Sugar Level */}
+                    <div className="tea-mod-section">
+                        <h4 className="tea-mod-heading">Sugar Level</h4>
+                        <div className="tea-size-options">
+                            {levelOptions.map(level => (
+                                <button
+                                    key={`sugar-${level}`}
+                                    className={`tea-size-btn ${sugarLevel === level ? 'is-active' : ''}`}
+                                    onClick={() => setSugarLevel(level)}
+                                >
+                                    {level}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Toppings */}
+                    <div className="tea-mod-section">
+                        <h4 className="tea-mod-heading">Toppings & Add-ons</h4>
+                        <div className="tea-toppings-grid">
+                            {modifications
+                                .filter(mod => mod.category === 'topping')
+                                .map(mod => {
+                                    const isSelected = !!selectedMods.find(m => m.menu_id === mod.menu_id);
+                                    return (
+                                        <button
+                                            key={mod.menu_id}
+                                            className={`tea-topping-btn ${isSelected ? 'is-selected' : ''}`}
+                                            onClick={() => handleModSelection(mod)}
+                                        >
+                                            <span className="tea-topping-btn-name">{mod.name}</span>
+                                            <span className="tea-topping-btn-price">+${parseFloat(mod.cost).toFixed(2)}</span>
+                                        </button>
+                                    );
+                                })}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="tea-modal-actions">
+                    <button className="tea-modal-btn-secondary" onClick={handleClose}>
+                        Cancel
+                    </button>
+                    <button className="tea-modal-btn-primary" onClick={handleConfirm}>
+                        Add to Order
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }

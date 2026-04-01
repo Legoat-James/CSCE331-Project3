@@ -1,0 +1,284 @@
+.tea-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(40, 26, 18, 0.38);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 1rem;
+  animation: tea-modal-overlay-in 160ms ease-out;
+}
+
+.tea-modal-card {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 2rem);
+  border: 2px solid #6f4c36;
+  border-radius: 16px;
+  background: #fff8ef;
+  box-shadow: 0 16px 42px rgba(69, 45, 30, 0.3);
+  padding: 1.05rem;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: tea-modal-card-in 220ms ease-out;
+}
+
+.tea-modal-card--drink {
+  width: min(760px, 100%);
+}
+
+.tea-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.tea-modal-title {
+  margin: 0;
+  color: var(--tea-wood-dark, #6f4c36);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.tea-modal-close {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid #8a6245;
+  background: #f2ddc2;
+  color: var(--tea-wood-dark, #6f4c36);
+  font-size: 1.5rem;
+  line-height: 1;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.tea-modal-close:hover,
+.tea-modal-close:focus-visible {
+  background: #e9cfae;
+  transform: scale(1.05);
+}
+
+.tea-modal-price {
+  margin: 0 0 0.85rem;
+  color: var(--tea-muted, #7a5e4c);
+  font-size: 0.95rem;
+}
+
+.tea-modal-price strong {
+  color: var(--tea-wood-dark, #6f4c36);
+}
+
+.tea-modal-body {
+  border: 1px dashed #b88f6e;
+  border-radius: 12px;
+  background: #f8efe1;
+  padding: 0.85rem;
+  margin-bottom: 0.95rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.tea-mod-section {
+  margin-bottom: 1rem;
+}
+
+.tea-mod-section:last-child {
+  margin-bottom: 0;
+}
+
+.tea-mod-heading {
+  margin: 0 0 0.5rem;
+  color: var(--tea-wood-dark, #6f4c36);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.tea-size-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tea-size-btn {
+  border-radius: 999px;
+  border: 1px solid #b99474;
+  background: #efe1ce;
+  color: #5a4334;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tea-size-btn:hover,
+.tea-size-btn:focus-visible {
+  background: #e6d2b9;
+  color: #5a4334;
+  transform: translateY(-1px);
+}
+
+.tea-size-btn.is-active {
+  border-color: var(--tea-wood, #8a6245);
+  background: var(--tea-wood, #8a6245);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(111, 76, 54, 0.3);
+}
+
+.tea-toppings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.tea-topping-btn {
+  border: 1px solid #d8bf9f;
+  border-radius: 10px;
+  background: #fff9f1;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.tea-topping-btn:hover,
+.tea-topping-btn:focus-visible {
+  background: #f5ede3;
+  border-color: #c8ab85;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(95, 65, 42, 0.1);
+}
+
+.tea-topping-btn.is-selected {
+  border-color: var(--tea-wood, #8a6245);
+  background: #f2e5d3;
+  box-shadow: 0 2px 8px rgba(111, 76, 54, 0.2);
+}
+
+.tea-topping-btn-name {
+  flex: 1;
+  color: #5b4434;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.tea-topping-btn.is-selected .tea-topping-btn-name {
+  color: var(--tea-wood-dark, #6f4c36);
+  font-weight: 600;
+}
+
+.tea-topping-btn-price {
+  font-size: 0.82rem;
+  color: var(--tea-muted, #7a5e4c);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tea-topping-btn.is-selected .tea-topping-btn-price {
+  color: var(--tea-wood, #8a6245);
+}
+
+.tea-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.tea-modal-btn-secondary,
+.tea-modal-btn-primary {
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  padding: 0.55rem 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.tea-modal-btn-secondary {
+  background: #efe1ce;
+  color: #5a4334;
+  border-color: #b99474;
+}
+
+.tea-modal-btn-secondary:hover,
+.tea-modal-btn-secondary:focus-visible {
+  background: #e6d2b9;
+  color: #5a4334;
+  transform: translateY(-1px);
+}
+
+.tea-modal-btn-primary {
+  background: var(--tea-wood, #8a6245);
+  color: #fff;
+}
+
+.tea-modal-btn-primary:hover,
+.tea-modal-btn-primary:focus-visible {
+  background: var(--tea-wood-dark, #6f4c36);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(111, 76, 54, 0.3);
+}
+
+@keyframes tea-modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tea-modal-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .tea-modal-card--drink {
+    width: min(640px, 100%);
+  }
+
+  .tea-toppings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .tea-modal-card {
+    padding: 0.85rem;
+    max-height: calc(100vh - 1.4rem);
+  }
+
+  .tea-modal-title {
+    font-size: 1.05rem;
+  }
+
+  .tea-size-btn {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.84rem;
+  }
+}
