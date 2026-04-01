@@ -748,8 +748,8 @@ app.post('/api/employee/login', async (req,res,next)=>{
           in: 'body',
           description: 'Provide username/password OR a googleToken',
           schema: {
-              username: 'John_Doe@gmail.com',
-              password: 'Password123',
+              username: 'Test',
+              password: '1',
               googleToken: 'eyJhbGciOiJSUzI1NiIs...'
           }
       }
@@ -890,6 +890,84 @@ app.get('/api/employee/auth', requireAuth(false), async (req,res,next)=>{
       user: restUser
     });
 
+  }catch(err){
+    next(err);
+  }
+});
+
+
+app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
+    /* #swagger.tags = ['Orders']
+    #swagger.summary = "Get's the most recent orders, and their items"
+    #swagger.security = [{"cookieAuth": []}]
+    #swagger.responses[200] = { 
+            description: 'Successfully retrieved recent orders',
+            schema: [{ 
+                order_id: 0, 
+                order_total: 67.00, 
+                timestamp: '2025-02-13 14:06:52+00',
+                employee_id: 3,
+                customer_name: 'Burt'
+            }]
+    } 
+    #swagger.parameters['numRecent'] = {
+      in: 'query',                        
+            description: 'The number of recent orders to get. Default is 10',
+            required: false,                        
+            type: 'integer',                   
+            example: 10                    
+    }        
+    */
+  try{
+    //default to 10 if not present
+    const numRecent = req.query.numRecent ? req.query.numRecent : 10;
+    if(Number.isNaN(Number(numRecent))) {
+       throw new ApiError(400, "numResent must be an integer",null,req.path);
+    }
+
+    const query = `
+      WITH recent_order_ids AS (
+            SELECT order_id, timestamp 
+            FROM transactions 
+            ORDER BY timestamp DESC 
+            LIMIT $1
+        )
+      SELECT 
+            roi.order_id,
+            roi.timestamp,
+            oh.item_id,
+            oh.quantity,
+            m.name
+        FROM recent_order_ids roi
+        JOIN order_history oh ON roi.order_id = oh.order_id
+        JOIN menu m ON oh.item_id = m.menu_id
+        ORDER BY roi.timestamp DESC, roi.order_id;
+    `
+    const result = await pool.query(query, [numRecent]);
+    const recentOrders = result.rows;
+    //format them so orders have items nested inside
+    const formattedOrders = recentOrders.reduce((acc, row)=>{
+      let order = acc.find(order => order.order_id === row.order_id);
+      if(!order){
+        //if the order is not already in the accumulated list, create it
+        order = {
+          order_id: row.order_id,
+          timestamp: row.timestamp,
+          items: []
+        };
+        acc.push(order);
+      }
+
+      //add items to the order
+      order.items.push({
+        name: row.name,
+        quantity: row.quantity,
+        menuId: row.item_id
+      });
+      return acc;
+    },[])
+
+    res.json(formattedOrders);
   }catch(err){
     next(err);
   }
@@ -1155,6 +1233,317 @@ app.post('/api/orders/create', async (req,res,next)=>{
   }
 });
 
+
+
+app.get('/api/ingredients/all', requireAuth(true), async (req, res, next) => {
+    /* #swagger.tags = ['Ingredients']
+    #swagger.summary = "Get all Ingredients"
+    #swagger.security = [{"cookieAuth": []}]
+    #swagger.responses[200] = { 
+            description: 'Successfully retrieved the ingredients list',
+            schema: [{ 
+                ingredient_id: 0, 
+                name: 'Matcha Powder', 
+                cost: 12.00,
+                stock: 25500.00,
+                unit: 'Cup',
+                is_active: true
+            }]
+    } */
+  try{
+    const result = await pool.query('SELECT * FROM ingredients WHERE is_active = true ORDER BY ingredient_id');
+    const ingredientList = result.rows;
+    res.json(ingredientList);
+  }catch(err){
+    next(err);
+  }
+});
+
+app.put('/api/ingredients/update', requireAuth(true), async (req,res,next)=>{
+  /* #swagger.tags = ['Ingredients']
+    #swagger.summary = "Updates an ingredient's attributes"
+    #swagger.security = [{"cookieAuth": []}]
+      #swagger.responses[200] = { 
+            description: 'Successfully updated the ingredient',
+            schema: { 
+                ingredient_id: 0, 
+                name: 'Matcha Powder', 
+                cost: 12.00,
+                stock: 25500.00,
+                unit: 'Cup',
+                is_active: true
+            }
+    } 
+    #swagger.parameters['ingredientID'] = {
+      in: 'query',                        
+            description: 'The ID of the ingredient to be updated',
+            required: true,                        
+            type: 'integer',                   
+            example: 0                    
+    }
+    #swagger.parameters['ingredient'] = {
+            in: 'body',
+            description: 'updated ingredient data',
+            required: true,
+            schema: { 
+                name: 'Matcha Powder', 
+                cost: 12.00,
+                unit: 'Cup',
+            }
+        }        
+    */
+  try{
+    const ingredientID = req.query.ingredientID;
+    if(!ingredientID) {
+       throw new ApiError(400, "Missing Ingredient ID",null,req.path);
+    }
+    if(Number.isNaN(Number(ingredientID))) {
+       throw new ApiError(400, "Ingredient ID must be an integer",null,req.path);
+    }
+    if(!req.body){
+      throw new ApiError(400, "Missing 'ingredient'",null,req.path);
+    }
+    const { name, cost, unit } = req.body
+    if(!name || !cost || !unit){
+      throw new ApiError(400, "Missing fields in 'ingredient'",null,req.path);
+    }
+    
+
+    const query = "UPDATE ingredients SET name = $1, cost = $2, unit = $3 WHERE ingredient_id = $4 RETURNING *;"
+    const insertValues = [name, cost, unit, ingredientID];
+
+    const result = await pool.query(query, insertValues);
+
+    //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
+    if(result.rowCount == 0){
+      throw new ApiError(404, "Could not find a ingredient to update with this ID", null,req.path);
+    }
+    const updatedIngredient = result.rows[0];
+    res.json(updatedIngredient);
+
+  }catch(err){
+    next(err);
+  }
+});
+
+app.patch('/api/ingredients/restock', requireAuth(true), async (req,res,next)=>{
+  /* #swagger.tags = ['Ingredients']
+    #swagger.summary = "Adds to an ingredient's stock by a provided amount"
+    #swagger.security = [{"cookieAuth": []}]
+      #swagger.responses[200] = { 
+            description: 'Successfully updated the ingredient stock',
+            schema: { 
+                ingredient_id: 0, 
+                name: 'Matcha Powder', 
+                cost: 12.00,
+                stock: 25500.00,
+                unit: 'Cup',
+                is_active: true
+            }
+    } 
+    #swagger.parameters['ingredientID'] = {
+      in: 'query',                        
+            description: 'The ID of the ingredient to be updated',
+            required: true,                        
+            type: 'integer',                   
+            example: 0                    
+    }
+    #swagger.parameters['stock'] = {
+            in: 'body',
+            description: 'quantity of stock to be added to existing stock',
+            required: true,
+            schema: { 
+                stock: 67.00, 
+            }
+        }        
+    */
+  try{
+    const ingredientID = req.query.ingredientID;
+    if(!ingredientID) {
+       throw new ApiError(400, "Missing Ingredient ID",null,req.path);
+    }
+    if(Number.isNaN(Number(ingredientID))) {
+       throw new ApiError(400, "Ingredient ID must be an integer",null,req.path);
+    }
+    if(!req.body){
+      throw new ApiError(400, "Missing 'ingredient'",null,req.path);
+    }
+    const { stock } = req.body
+    if(!stock){
+      throw new ApiError(400, "Missing stock in body",null,req.path);
+    }
+    
+
+    const query = "UPDATE ingredients SET stock = stock + $1 WHERE ingredient_id = $2 RETURNING *;"
+    const insertValues = [stock, ingredientID];
+
+    const result = await pool.query(query, insertValues);
+
+    //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
+    if(result.rowCount == 0){
+      throw new ApiError(404, "Could not find a ingredient to update stock with this ID", null,req.path);
+    }
+    const updatedIngredient = result.rows[0];
+    res.json(updatedIngredient);
+
+  }catch(err){
+    next(err);
+  }
+});
+
+app.patch('/api/ingredients/enable', requireAuth(true), async (req,res,next)=>{
+  /* #swagger.tags = ['Ingredients']
+    #swagger.summary = "Re-enables an ingredient to be used again"
+    #swagger.security = [{"cookieAuth": []}]
+      #swagger.responses[200] = { 
+            description: 'Successfully re-enabled the ingredient',
+            schema: { 
+                ingredient_id: 0, 
+                name: 'Matcha Powder', 
+                cost: 12.00,
+                stock: 25500.00,
+                unit: 'Cup',
+                is_active: true
+            }
+    } 
+    #swagger.parameters['ingredientID'] = {
+      in: 'query',                        
+            description: 'The ID of the ingredient to be updated',
+            required: true,                        
+            type: 'integer',                   
+            example: 0                    
+    }     
+    */
+  try{
+    const ingredientID = req.query.ingredientID;
+    if(!ingredientID) {
+       throw new ApiError(400, "Missing Ingredient ID",null,req.path);
+    }
+    if(Number.isNaN(Number(ingredientID))) {
+       throw new ApiError(400, "Ingredient ID must be an integer",null,req.path);
+    }
+    
+
+    const query = "UPDATE ingredients SET is_active = true WHERE ingredient_id = $1 RETURNING *;"
+    const insertValues = [ingredientID];
+
+    const result = await pool.query(query, insertValues);
+
+    //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
+    if(result.rowCount == 0){
+      throw new ApiError(404, "Could not find a ingredient to enable with this ID", null,req.path);
+    }
+    const updatedIngredient = result.rows[0];
+    res.json(updatedIngredient);
+
+  }catch(err){
+    next(err);
+  }
+});
+
+app.delete('/api/ingredients/disable', requireAuth(true), async (req,res,next)=>{
+  /* #swagger.tags = ['Ingredients']
+    #swagger.summary = "Disables an ingredient"
+    #swagger.security = [{"cookieAuth": []}]
+      #swagger.responses[200] = { 
+            description: 'Successfully disabled (deleted) the ingredient',
+            schema: { 
+                ingredient_id: 0, 
+                name: 'Matcha Powder', 
+                cost: 12.00,
+                stock: 25500.00,
+                unit: 'Cup',
+                is_active: false
+            }
+    } 
+    #swagger.parameters['ingredientID'] = {
+      in: 'query',                        
+            description: 'The ID of the ingredient to be updated',
+            required: true,                        
+            type: 'integer',                   
+            example: 0                    
+    }     
+    */
+  try{
+    const ingredientID = req.query.ingredientID;
+    if(!ingredientID) {
+       throw new ApiError(400, "Missing Ingredient ID",null,req.path);
+    }
+    if(Number.isNaN(Number(ingredientID))) {
+       throw new ApiError(400, "Ingredient ID must be an integer",null,req.path);
+    }
+    
+
+    const query = "UPDATE ingredients SET is_active = false WHERE ingredient_id = $1 RETURNING *;"
+    const insertValues = [ingredientID];
+
+    const result = await pool.query(query, insertValues);
+
+    //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
+    if(result.rowCount == 0){
+      throw new ApiError(404, "Could not find a ingredient to disable with this ID", null,req.path);
+    }
+    const updatedIngredient = result.rows[0];
+    res.json(updatedIngredient);
+
+  }catch(err){
+    next(err);
+  }
+});
+
+app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
+  /* #swagger.tags = ['Ingredients']
+    #swagger.summary = "Creates a new ingredient"
+    #swagger.security = [{"cookieAuth": []}]
+      #swagger.responses[200] = { 
+            description: 'Successfully created the ingredient',
+            schema: { 
+                ingredient_id: 0, 
+                name: 'Matcha Powder', 
+                cost: 12.00,
+                stock: 25500.00,
+                unit: 'Cup',
+                is_active: true
+            }
+    } 
+
+    #swagger.parameters['ingredient'] = {
+            in: 'body',
+            description: 'new ingredient data, including a preset stock',
+            required: true,
+            schema: { 
+                name: 'Matcha Powder', 
+                cost: 12.00,
+                unit: 'Cup',
+                stock: 100.00
+            }
+        }        
+    */
+  try{
+    if(!req.body){
+      throw new ApiError(400, "Missing 'ingredient'",null,req.path);
+    }
+    const { name, cost, unit, stock } = req.body
+    if(!name || !cost || !unit || !stock){
+      throw new ApiError(400, "Missing fields in 'ingredient'",null,req.path);
+    }
+    
+    const query = "INSERT INTO ingredients (name, cost, stock, unit) VALUES ($1, $2, $3, $4) RETURNING *;"
+    const insertValues = [name, cost, stock, unit];
+
+    const result = await pool.query(query, insertValues);
+
+    //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
+    if(result.rowCount == 0){
+      throw new ApiError(404, "Could not create a new ingredient", null,req.path);
+    }
+    const updatedIngredient = result.rows[0];
+    res.json(updatedIngredient);
+
+  }catch(err){
+    next(err);
+  }
+});
 
 app.get('/api/test', (req, res, next) => {
   try{
