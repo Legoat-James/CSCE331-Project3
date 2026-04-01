@@ -1,9 +1,9 @@
 import apiClient from '../../api/client_config.js';
 import React, { useState, useEffect } from 'react';
-import {Button } from 'react-bootstrap';
 import ModificationsWindow from './ModificationsWindow';
+import './MenuItems.css';
 
-export default function Menuitems({ onAddItem }) {
+export default function Menuitems({ onAddItem, menuView }) {
     const [menuItems, setMenuItems] = useState([]);
     const [modifications, setModifications] = useState([]);
     const [showModWindow, setShowModWindow] = useState(false);
@@ -32,7 +32,11 @@ export default function Menuitems({ onAddItem }) {
 
     const handleItemClick = (item) => {
         setSelectedItem(item);
-        setShowModWindow(true);
+        if (item.category === 'drink'){
+            setShowModWindow(true);
+        }
+        //food items have no modifications so we directly add them to the order
+        else { setShowModWindow(false); onAddItem(+item.cost, item.name, item.menu_id, []); }
     };
 
     const handleCloseModWindow = () => {
@@ -41,17 +45,21 @@ export default function Menuitems({ onAddItem }) {
     };
 
     return (
-        <div>
-            <h1>Menu Items</h1>
-            <ul>
+        <div className="menu-container">
+            <div className="menu-grid">
                 {menuItems
-                .filter(item => (!item.name.includes('large') && !item.name.includes('small')))
+                .filter(item => (!item.name.includes('large') && !item.name.includes('small') && item.category.includes(menuView)))
                 .map(item => (
-                    <Button onClick={() => handleItemClick(item)}  variant='secondary' key={item.menu_id}>
-                        {item.name} - ${item.cost}
-                    </Button>
+                    <button 
+                        onClick={() => handleItemClick(item)} 
+                        className="menu-item-btn"
+                        key={item.menu_id}
+                    >
+                        <div className="menu-item-name">{item.name}</div>
+                        <div className="menu-item-price">${parseFloat(item.cost).toFixed(2)}</div>
+                    </button>
                 ))}
-            </ul>
+            </div>
 
             <ModificationsWindow 
                 show={showModWindow}

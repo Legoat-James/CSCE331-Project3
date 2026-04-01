@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Container, ButtonGroup, Button } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import './Cashier.css';
 import Menuitems from './components/cashier/MenuItems';
 import OrderSummary from './components/cashier/OrderSummary';
@@ -7,6 +7,10 @@ import OrderSummary from './components/cashier/OrderSummary';
 export default function Cashier() {
     const [total, setTotal] = useState(0.00);
     const [orderItems, setOrderItems] = useState([]); // this will hold the items in the current order, we can use this to display the order summary and calculate the total
+    const [menuView, setMenuView] = useState(() =>{
+        const savedView = localStorage.getItem('menuView');
+        return savedView ? savedView : '';
+    })
 
     useEffect(() => {
         // this is just a placeholder until we implement the backend, 
@@ -29,6 +33,56 @@ export default function Cashier() {
         });
 
         setOrderItems(prevItems => [...prevItems, { name, cost, menu_id, modifications_array }]);
+    };
+
+    const handleRemoveItem = (itemIndex, modIndex = null) => {
+        if (modIndex === null) {
+            // Remove entire item and all its modifications
+            const item = orderItems[itemIndex];
+            let totalToRemove = parseFloat(item.cost);
+            
+            // Add up modification costs
+            if (item.modifications_array && item.modifications_array.length > 0) {
+                item.modifications_array.forEach(mod => {
+                    totalToRemove += parseFloat(mod.cost);
+                });
+            }
+            
+            // Update total
+            setTotal(prevTotal => Math.round((prevTotal - totalToRemove) * 100) / 100);
+            
+            // Remove item from order
+            setOrderItems(prevItems => prevItems.filter((_, index) => index !== itemIndex));
+        } else {
+            // Remove or reset specific modification
+            setOrderItems(prevItems => {
+                const newItems = [...prevItems];
+                const item = newItems[itemIndex];
+                const mod = item.modifications_array[modIndex];
+                
+                // Check if it's ice or sugar level modification
+                const isIceLevel = mod.menu_id === 65; // Ice modification
+                const isSugarLevel = mod.menu_id === 64; // Sugar modification
+                
+                if (isIceLevel || isSugarLevel) {
+                    // Reset to 1x instead of removing
+                    const modType = isIceLevel ? 'Ice' : 'Sugar';
+                    item.modifications_array[modIndex] = {
+                        menu_id: mod.menu_id,
+                        name: `${modType} 1x`,
+                        category: 'modifications',
+                        cost: 0
+                    };
+                } else {
+                    // Remove the modification and update total
+                    const costToRemove = parseFloat(mod.cost);
+                    setTotal(prevTotal => Math.round((prevTotal - costToRemove) * 100) / 100);
+                    item.modifications_array.splice(modIndex, 1);
+                }
+                
+                return newItems;
+            });
+        }
     };
 
     const sanitizeOrderItems = (orderItems) => {
@@ -78,36 +132,54 @@ export default function Cashier() {
         setTotal(0.00);
     }
 
+    const changeMenuView = (view) => {
+        setMenuView(view);
+        localStorage.setItem('menuView', view);
+    }
+
     return (
-        <Container>
-            <Row className='g-10'>
-                <Col md={7} id="cashier-left-container" className="d-flex flex-column align-items-center red-border m-1">
-                    <h1>Cashier</h1>
-                    <h2>menu</h2>
-                    <Container>
-                        <ButtonGroup>
-                            <Button variant='secondary'> Default </Button>
-                            <Button variant='secondary'> Drinks </Button>
-                            <Button variant='secondary'> Food </Button>
-                        </ButtonGroup>
-                        {/* this will fetch all of our menu items and display them */}
-                        <Menuitems onAddItem={handleAddItem} /> 
-                    </Container>
-                </Col>
-                <Col md={4} id="cashier-right-container" className="d-flex flex-column align-items-center red-border m-1">
-                    <Container>
-                        <h2>Order Summary</h2>
-                        {/* this is where we add code to load the order summary */} 
-                        {/* we likely will want the order summary as a component. i.e.: <Ordersummary /> */}
-                        <OrderSummary orderItems={orderItems} />
-                        <h3>Total: ${total}</h3>
-                        <ButtonGroup>
-                            <Button onClick={handleCheckout} variant='secondary'> Confirm Checkout </Button>
-                            <Button onClick={handleCancel} variant='secondary'> Cancel Order </Button>
-                        </ButtonGroup>
-                    </Container>
-                </Col>
-            </Row>
-        </Container>
+        <div className="cashier-page">
+            <div className="cashier-shell">
+                <div className="cashier-layout">
+                    <div className="cashier-menu-panel">
+                        <h1 className="cashier-panel-title">Menu</h1>
+                        <div className="cashier-category-group">
+                            <Button 
+                                onClick={() => changeMenuView('')} 
+                                className={`cashier-category-btn ${menuView === '' ? 'active' : ''}`}
+                            >
+                                All Items
+                            </Button>
+                            <Button 
+                                onClick={() => changeMenuView('drink')} 
+                                className={`cashier-category-btn ${menuView === 'drink' ? 'active' : ''}`}
+                            >
+                                Drinks
+                            </Button>
+                            <Button 
+                                onClick={() => changeMenuView('food')} 
+                                className={`cashier-category-btn ${menuView === 'food' ? 'active' : ''}`}
+                            >
+                                Food
+                            </Button>
+                        </div>
+                        <Menuitems onAddItem={handleAddItem} menuView={menuView}/> 
+                    </div>
+                    <div className="cashier-order-panel">
+                        <h2 className="cashier-panel-title">Order Summary</h2>
+                        <OrderSummary orderItems={orderItems} onRemoveItem={handleRemoveItem} />
+                        <div className="cashier-order-total">Total: ${total.toFixed(2)}</div>
+                        <div className="cashier-action-group">
+                            <Button onClick={handleCheckout} className="cashier-btn-confirm">
+                                Confirm Checkout
+                            </Button>
+                            <Button onClick={handleCancel} className="cashier-btn-cancel">
+                                Cancel Order
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
