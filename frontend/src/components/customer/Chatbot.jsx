@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import './Chatbot.css';
 
-const TAMUS_AI_ENDPOINT = import.meta.env.VITE_TAMUS_AI_CHAT_API_ENDPOINT;
-const TAMUS_AI_KEY = import.meta.env.VITE_TAMUS_AI_CHAT_API_KEY;
+// Use backend proxy to avoid CORS issues
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 /**
  * Chatbot component - Testbench for TAMU AI API connection
- * Tests connectivity with Claude models via TAMU's AI chat endpoint
+ * Uses backend proxy at /api/chat to communicate with TAMU AI
  */
 export default function Chatbot() {
   const [messages, setMessages] = useState([]);
@@ -16,7 +16,7 @@ export default function Chatbot() {
   const [errorDetails, setErrorDetails] = useState(null);
 
   // System prompt to guide the chatbot's behavior for the food ordering app
-  const systemPrompt = `You are a helpful assistant for a food ordering application called Claudes Teahouse. 
+  const systemPrompt = `You are a helpful assistant for a food ordering application called Panda Express POS. 
 You help customers with:
 - Placing orders for menu items like bagel sandwiches, bowls, plates, and other food items
 - Explaining menu options and customizations
@@ -26,17 +26,16 @@ You help customers with:
 Be friendly, concise, and helpful. If you don't know something specific about the menu, 
 suggest that the customer check the menu board or ask a staff member.`;
 
-  // Test the API connection
+  // Test the API connection via backend proxy
   const testConnection = async () => {
     setConnectionStatus('testing');
     setErrorDetails(null);
     
     try {
-      const response = await fetch(`${TAMUS_AI_ENDPOINT}/v1/chat/completions`, {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${TAMUS_AI_KEY}`,
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5-20250514',
@@ -54,10 +53,10 @@ suggest that the customer check the menu board or ask a staff member.`;
         console.log('API Connection Test Successful:', data);
         return true;
       } else {
-        const errorText = await response.text();
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         setConnectionStatus('error');
-        setErrorDetails(`HTTP ${response.status}: ${errorText}`);
-        console.error('API Connection Test Failed:', response.status, errorText);
+        setErrorDetails(`HTTP ${response.status}: ${errorData.message || JSON.stringify(errorData)}`);
+        console.error('API Connection Test Failed:', response.status, errorData);
         return false;
       }
     } catch (error) {
@@ -68,7 +67,7 @@ suggest that the customer check the menu board or ask a staff member.`;
     }
   };
 
-  // Send a message to the AI
+  // Send a message to the AI via backend proxy
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!inputMessage.trim() || isLoading) return;
@@ -80,18 +79,17 @@ suggest that the customer check the menu board or ask a staff member.`;
     setErrorDetails(null);
 
     try {
-      // Build conversation history for context
+      // Build conversation history with system prompt
       const conversationHistory = [
         { role: 'system', content: systemPrompt },
         ...messages.map(msg => ({ role: msg.role, content: msg.content })),
         { role: 'user', content: userMessage }
       ];
 
-      const response = await fetch(`${TAMUS_AI_ENDPOINT}/v1/chat/completions`, {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${TAMUS_AI_KEY}`,
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5-20250514',
@@ -102,12 +100,14 @@ suggest that the customer check the menu board or ask a staff member.`;
 
       if (response.ok) {
         const data = await response.json();
-        const assistantMessage = data.choices?.[0]?.message?.content || 'No response received';
-        setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+        const assistantMessage = data.choices?.[0]?.message?.content || 
+                                 data.choices?.[0]?.text ||
+                                 'No response received';
+        setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage.trim() }]);
         setConnectionStatus('connected');
       } else {
-        const errorText = await response.text();
-        setErrorDetails(`HTTP ${response.status}: ${errorText}`);
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        setErrorDetails(`HTTP ${response.status}: ${errorData.message || JSON.stringify(errorData)}`);
         setMessages(prev => [...prev, { 
           role: 'assistant', 
           content: `Error: Unable to get response (${response.status})` 
@@ -179,8 +179,8 @@ suggest that the customer check the menu board or ask a staff member.`;
 
       <div className="api-info">
         <small>
-          <strong>Endpoint:</strong> {TAMUS_AI_ENDPOINT || 'Not configured'}<br />
-          <strong>API Key:</strong> {TAMUS_AI_KEY ? '***configured***' : 'Not configured'}
+          <strong>Endpoint:</strong> {API_BASE_URL}/api/chat (proxy)<br />
+          <strong>Status:</strong> Backend proxies to TAMU AI
         </small>
       </div>
 
@@ -200,7 +200,7 @@ suggest that the customer check the menu board or ask a staff member.`;
         ))}
         {isLoading && (
           <div className="message assistant loading">
-            <div className="message-content">�� Thinking...</div>
+            <div className="message-content">🤖 Thinking...</div>
           </div>
         )}
       </div>
