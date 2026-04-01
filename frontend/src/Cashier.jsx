@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from 'react-bootstrap';
+import { Button, Form } from 'react-bootstrap';
 import './Cashier.css';
 import Menuitems from './components/cashier/MenuItems';
 import OrderSummary from './components/cashier/OrderSummary';
@@ -11,11 +11,8 @@ export default function Cashier() {
         const savedView = localStorage.getItem('menuView');
         return savedView ? savedView : '';
     })
+    const [customerName, setCustomerName] = useState('');
 
-    useEffect(() => {
-        // this is just a placeholder until we implement the backend, 
-        
-    }, []); //becuase i used empty brace [] it will render only once, on the initial render
 
     const handleAddItem = (cost, name, menu_id, modifications_array) => {
         setTotal(prevTotal => {
@@ -90,7 +87,6 @@ export default function Cashier() {
         // const employeeId = 1;
         const user = JSON.parse(localStorage.getItem('user'));
         const employeeId = user ? user.employee_id : null;
-        const customerName = "guest";
 
         return {
             employeeId: employeeId,
@@ -141,7 +137,19 @@ export default function Cashier() {
         <div className="cashier-page">
             <div className="cashier-shell">
                 <div className="cashier-layout">
-                    <div className="cashier-menu-panel">
+                    <div  className="cashier-menu-panel">
+                        <h2 className="cashier-panel-title">Customer name</h2>
+                        <Form>
+                            <Form.Group className="mb-3" controlId="customerName">
+                                <Form.Control
+                                type="text"
+                                placeholder="type here..."
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                />
+                            </Form.Group>
+
+                        </Form>
                         <h1 className="cashier-panel-title">Menu</h1>
                         <div className="cashier-category-group">
                             <Button 
