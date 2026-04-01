@@ -1,0 +1,146 @@
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+
+.order-empty {
+  margin: 0;
+  color: var(--tea-muted, #7a5e4c);
+  text-align: center;
+  padding: 2rem 1rem;
+  font-style: italic;
+}
+
+.order-line-item {
+  border: 1px solid var(--tea-border, #d7c2aa);
+  border-radius: 10px;
+  background: #f8efe2;
+  padding: 0.65rem 0.75rem;
+  transition: box-shadow 0.2s;
+}
+
+.order-line-item:hover {
+  box-shadow: 0 2px 8px rgba(95, 65, 42, 0.12);
+}
+
+.order-line-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 700;
+  color: var(--tea-wood-dark, #6f4c36);
+}
+
+.order-line-name {
+  overflow-wrap: anywhere;
+  flex: 1;
+}
+
+.order-line-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.order-line-price {
+  font-weight: 700;
+  color: var(--tea-wood-dark, #6f4c36);
+}
+
+.order-remove-btn,
+.order-mod-remove-btn,
+.order-reset-btn {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.order-remove-btn {
+  border-color: #c99d82;
+  background: #f4dcc8;
+  color: #7d352f;
+}
+
+.order-remove-btn:hover,
+.order-remove-btn:focus-visible {
+  background: #eec3b2;
+  border-color: #b76d63;
+  transform: scale(1.05);
+}
+
+.order-line-details {
+  margin-top: 0.45rem;
+  font-size: 0.88rem;
+  color: var(--tea-muted, #7a5e4c);
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 0.5rem;
+}
+
+.order-mod-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.order-mod-name {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.order-mod-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.order-mod-price {
+  font-weight: 600;
+  color: var(--tea-muted, #7a5e4c);
+}
+
+.order-mod-remove-btn {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-color: #c99d82;
+  background: #f4dcc8;
+  color: #7d352f;
+  font-size: 1rem;
+}
+
+.order-mod-remove-btn:hover,
+.order-mod-remove-btn:focus-visible {
+  background: #eec3b2;
+  border-color: #b76d63;
+  transform: scale(1.05);
+}
+
+.order-reset-btn {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-color: #d4a574;
+  background: #f9e5c8;
+  color: #8a5a2d;
+  font-size: 1rem;
+}
+
+.order-reset-btn:hover,
+.order-reset-btn:focus-visible {
+  background: #f0d4a8;
+  border-color: #b68850;
+  transform: scale(1.05);
+}

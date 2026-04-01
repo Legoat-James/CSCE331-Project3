@@ -1,34 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { Row, Col, Container, ButtonGroup, Button } from 'react-bootstrap';
+import React from 'react';
+import './OrderSummary.css';
 
-export default function OrderSummary({ orderItems }) {
-    //we want each item listed with the price to its right, and then a button to the right of the price
-    //clicking the button should remove the item and any of its modifications from the order and order summary
-    //modifications should be placed indented and beneath each item it applies to
-    
-
+export default function OrderSummary({ orderItems, onRemoveItem }) {
     if (!orderItems || orderItems.length === 0) {
-        return <Container>No items in order.</Container>;
+        return <div className="order-empty">No items in order.</div>;
     }
 
+    const getButtonLabel = (mod) => {
+        const isIceOrSugar = mod.menu_id === 65 || mod.menu_id === 64;
+        return isIceOrSugar ? '↻' : '×';
+    };
+
     return (
-        <Container>
-            <ul style={{ listStyleType: 'none', padding: 0 }}>
-                {orderItems.map((item, index) => (
-                    <li key={index}>
-                        {item.name} - ${item.cost}
-                        {item.modifications_array && item.modifications_array.length > 0 && (
-                            <ul style={{ listStyleType: 'none', paddingLeft: '20px' }}>
-                                {item.modifications_array.map((mod, modIndex) => (
-                                    <li key={modIndex}>
-                                        {mod.name} - ${mod.cost}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </li>
-                ))}
-            </ul>
-        </Container>
+        <div className="order-list">
+            {orderItems.map((item, index) => (
+                <div key={index} className="order-line-item">
+                    <div className="order-line-header">
+                        <span className="order-line-name">{item.name}</span>
+                        <div className="order-line-actions">
+                            <span className="order-line-price">${parseFloat(item.cost).toFixed(2)}</span>
+                            <button 
+                                className="order-remove-btn"
+                                onClick={() => onRemoveItem(index)}
+                                title="Remove from order"
+                                aria-label="Remove item"
+                            >
+                                <span>×</span>
+                            </button>
+                        </div>
+                    </div>
+                    {item.modifications_array && item.modifications_array.length > 0 && (
+                        <div className="order-line-details">
+                            {item.modifications_array.map((mod, modIndex) => (
+                                <div key={modIndex} className="order-mod-row">
+                                    <span className="order-mod-name">• {mod.name}</span>
+                                    <div className="order-mod-actions">
+                                        <span className="order-mod-price">${parseFloat(mod.cost).toFixed(2)}</span>
+                                        <button 
+                                            className={mod.menu_id === 65 || mod.menu_id === 64 ? "order-reset-btn" : "order-mod-remove-btn"}
+                                            onClick={() => onRemoveItem(index, modIndex)}
+                                            title={mod.menu_id === 65 || mod.menu_id === 64 ? "Reset to 1x" : "Remove modification"}
+                                            aria-label={mod.menu_id === 65 || mod.menu_id === 64 ? "Reset modification" : "Remove modification"}
+                                        >
+                                            <span>{getButtonLabel(mod)}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
     );
 }
