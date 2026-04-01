@@ -1,3 +1,9 @@
+/* Customer Page - Tea Shop Theme
+ * Custom CSS for visual styling that complements react-bootstrap
+ * Maintains visual parity with original design
+ */
+
+/* CSS Custom Properties */
 :root {
   --tea-bg: #f2e5d3;
   --tea-bg-soft: #f8f0e5;
@@ -11,6 +17,7 @@
   --tea-accent-soft: #f2d9bc;
 }
 
+/* Page Layout */
 .customer-page {
   min-height: 100vh;
   background-color: #ead8c0;
@@ -39,9 +46,10 @@
   margin: 0 auto;
 }
 
+/* Navigation */
 .tea-nav {
   margin-bottom: 1rem;
-  border: 2px solid #6f4c36;
+  border: 2px solid var(--tea-wood-dark);
   border-radius: 14px;
   padding: 0.65rem 1rem;
   background: var(--tea-bg-soft);
@@ -71,6 +79,7 @@
   color: var(--tea-wood-dark);
   font-weight: 600;
   padding: 0.45rem 0.95rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .tea-link:hover,
@@ -84,32 +93,33 @@
   color: #fff;
 }
 
+/* Kiosk Layout */
 .kiosk-layout {
   display: grid;
   grid-template-columns: minmax(0, 2.2fr) minmax(280px, 1fr);
   gap: 1rem;
   align-items: start;
-  border: 2px solid #6f4c36;
+  border: 2px solid var(--tea-wood-dark);
   border-radius: 16px;
   padding: 1rem;
   background: rgba(251, 244, 234, 0.55);
 }
 
+/* Panels */
 .menu-panel,
 .order-panel {
   border: 1px solid var(--tea-border);
   border-radius: 16px;
   background: var(--tea-panel);
   box-shadow: 0 8px 26px rgba(95, 65, 42, 0.1);
+  padding: 1rem;
 }
 
 .menu-panel {
-  padding: 1rem;
   min-height: 460px;
 }
 
 .order-panel {
-  padding: 1rem;
   min-height: 460px;
   position: sticky;
   top: 1rem;
@@ -129,17 +139,14 @@
   color: var(--tea-wood-dark);
 }
 
-.order-subtitle {
-  color: var(--tea-muted);
-  margin: 0.4rem 0 0.9rem;
-}
-
+/* Menu Grid */
 .menu-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 1rem;
 }
 
+/* Tea Cards */
 .tea-card {
   border: 2px solid #7b543b;
   border-radius: 14px;
@@ -148,14 +155,9 @@
   box-shadow: 0 3px 0 rgba(111, 76, 54, 0.2);
 }
 
-.tea-card img {
+.tea-card .card-img-top {
   height: 155px;
   object-fit: cover;
-}
-
-.tea-card .card-body {
-  display: flex;
-  flex-direction: column;
 }
 
 .tea-description {
@@ -164,7 +166,6 @@
   line-height: 1.3;
   margin-bottom: 0.45rem;
   display: -webkit-box;
-  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -176,6 +177,7 @@
   color: var(--tea-wood-dark);
 }
 
+/* Buttons */
 .tea-btn-select,
 .tea-btn-finish {
   border-radius: 999px;
@@ -186,7 +188,6 @@
 .tea-btn-select {
   background: var(--tea-accent-soft);
   color: var(--tea-wood-dark);
-  margin-top: auto;
 }
 
 .tea-btn-select:hover,
@@ -195,15 +196,35 @@
   color: var(--tea-wood-dark);
 }
 
-.tea-btn-finish {
-  background: var(--tea-wood);
-  color: #fff;
+.tea-btn-finish,
+.tea-btn-finish.btn {
+  background: var(--tea-wood) !important;
+  color: #fff !important;
+  border-color: var(--tea-wood-dark) !important;
 }
 
 .tea-btn-finish:hover,
-.tea-btn-finish:focus-visible {
-  background: var(--tea-wood-dark);
-  color: #fff;
+.tea-btn-finish:focus-visible,
+.tea-btn-finish.btn:hover,
+.tea-btn-finish.btn:focus-visible {
+  background: var(--tea-wood-dark) !important;
+  color: #fff !important;
+  border-color: var(--tea-wood-dark) !important;
+}
+
+.tea-btn-finish:disabled,
+.tea-btn-finish.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  background: var(--tea-accent-soft) !important;
+  color: var(--tea-muted) !important;
+  border-color: var(--tea-border) !important;
+}
+
+/* Order Panel */
+.order-subtitle {
+  color: var(--tea-muted);
+  margin: 0.4rem 0 0.9rem;
 }
 
 .backend-status {
@@ -246,6 +267,10 @@
   color: var(--tea-wood-dark);
 }
 
+.order-line-name {
+  overflow-wrap: anywhere;
+}
+
 .order-line-actions {
   display: inline-flex;
   align-items: center;
@@ -260,6 +285,7 @@
   display: inline-grid;
   place-items: center;
   padding: 0;
+  border: none;
 }
 
 .order-edit-btn {
@@ -293,10 +319,6 @@
   border-color: #b76d63;
 }
 
-.order-line-name {
-  overflow-wrap: anywhere;
-}
-
 .order-line-details {
   margin-top: 0.25rem;
   font-size: 0.88rem;
@@ -328,17 +350,14 @@
   color: #7e2f2a;
 }
 
-.tea-btn-finish:disabled {
-  cursor: not-allowed;
-  opacity: 0.72;
-}
-
+/* Spinner */
 .tea-spinner {
   margin: 2rem auto;
   display: block;
   color: var(--tea-wood-dark);
 }
 
+/* Modal Styles */
 .tea-modal-overlay {
   position: fixed;
   inset: 0;
@@ -356,7 +375,7 @@
 .tea-modal-card {
   width: min(520px, 100%);
   max-height: calc(100vh - 2rem);
-  border: 2px solid #6f4c36;
+  border: 2px solid var(--tea-wood-dark);
   border-radius: 16px;
   background: #fff8ef;
   box-shadow: 0 16px 42px rgba(69, 45, 30, 0.3);
@@ -391,7 +410,7 @@
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
-  border: 1px solid #8a6245;
+  border: 1px solid var(--tea-wood);
   background: #f2ddc2;
   color: var(--tea-wood-dark);
   font-size: 1.1rem;
@@ -436,6 +455,7 @@
   font-size: 0.96rem;
 }
 
+/* Size Selection */
 .tea-size-options {
   display: flex;
   flex-wrap: wrap;
@@ -465,6 +485,7 @@
   color: #fff;
 }
 
+/* Toppings */
 .tea-toppings-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -535,6 +556,7 @@
   font-size: 0.86rem;
 }
 
+/* Sliders */
 .tea-slider-block {
   margin-bottom: 0.5rem;
 }
@@ -546,11 +568,12 @@
   font-size: 0.92rem;
 }
 
-.tea-slider-block input[type='range'] {
+.tea-slider-block .form-range {
   width: 100%;
   accent-color: var(--tea-wood);
 }
 
+/* Toggles */
 .tea-toggle-list {
   display: grid;
   gap: 0.3rem;
@@ -571,6 +594,7 @@
   font-size: 0.96rem;
 }
 
+/* Modal Actions */
 .tea-modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -610,13 +634,10 @@
   color: #fff;
 }
 
+/* Animations */
 @keyframes tea-modal-overlay-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes tea-modal-card-in {
@@ -630,6 +651,7 @@
   }
 }
 
+/* Responsive Breakpoints */
 @media (max-width: 992px) {
   .kiosk-layout {
     grid-template-columns: 1fr;

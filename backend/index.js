@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import errorHandler from "./helpers/errorHandler.js";
 import ApiError from "./helpers/ApiError.js";
 import pg from "pg";
@@ -12,6 +13,10 @@ import OAuth2 from "google-auth-library";
 import swaggerJSDoc from "swagger-jsdoc";
 import cookieParser from "cookie-parser";
 import swaggerUi from 'swagger-ui-express';
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Support running backend from either repo root or backend/ folder.
 // This loads the first matching .env values without overriding already-set vars.
@@ -1128,11 +1133,11 @@ app.post('/api/orders/create', async (req,res,next)=>{
       for (const topping of item.toppings) {
         await client.query(
           'INSERT INTO toppings (item_menu_id, transaction_id, topping_menu_id, quantity) VALUES ($1, $2, $3, $4)',
-          [item.menuId, newOrderId, topping.id, topping.qty],
+          [item.menuId, newOrderId, topping.id, topping.quantity],
         );
         toppingRowsInserted += 1;
 
-        addMenuUsage(topping.id, topping.qty);
+        addMenuUsage(topping.id, topping.quantity);
       }
     }
 
