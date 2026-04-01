@@ -3,6 +3,7 @@ import { Button, Form } from 'react-bootstrap';
 import './Cashier.css';
 import Menuitems from './components/cashier/MenuItems';
 import OrderSummary from './components/cashier/OrderSummary';
+import apiClient from './api/client_config';
 
 export default function Cashier() {
     const [total, setTotal] = useState(0.00);
@@ -116,11 +117,24 @@ export default function Cashier() {
     //   ]
     }
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         //for testing purposes this does not reset the order yet
         console.log("checkout confirmed, order items:", orderItems);
         let sanatizedOrderItems = sanitizeOrderItems(orderItems);
         console.log("sanitized order items:", sanatizedOrderItems);
+        try{
+            const response = await apiClient('api/orders/create', sanatizedOrderItems);
+            console.log('order submission response:', response);
+            //reset order on successful submission
+            setOrderItems([]);
+            setTotal(0.00);
+            setCustomerName('');
+
+        } catch (error) {
+            console.error('error submitting order:', error);
+        }
+        
+
     }
 
     const handleCancel = () => {
