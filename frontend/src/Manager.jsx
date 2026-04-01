@@ -124,47 +124,54 @@ const NavBar = () => {
     );
   };
 
-  const renderMenuItems = (items) => {
-    // Split items into 2 columns
-    const midpoint = Math.ceil(items.length / 2);
-    const leftColumn = items.slice(0, midpoint);
-    const rightColumn = items.slice(midpoint);
+  // const renderMenuItems = (items) => {
+  //   // Split items into 2 columns
+  //   const midpoint = Math.ceil(items.length / 2);
+  //   const leftColumn = items.slice(0, midpoint);
+  //   const rightColumn = items.slice(midpoint);
 
-    const renderColumn = (columnItems) => (
-      <Col xs={6} className="d-flex flex-column gap-2">
-        {columnItems.map((item) => (
-          <div 
-            key={item.menu_item_id || item.id} 
-            className="menu-item-row d-flex justify-content-between align-items-center px-3 py-2 rounded-3"
-          >
-            <span className="item-name fw-semibold">{item.name}</span>
-          </div>
-        ))}
-      </Col>
-    );
+  //   const renderColumn = (columnItems) => (
+  //     <Col xs={6} className="d-flex flex-column gap-2">
+  //       {columnItems.map((item) => (
+  //         <div 
+  //           key={item.menu_item_id || item.id} 
+  //           className="menu-item-row d-flex justify-content-between align-items-center px-3 py-2 rounded-3"
+  //         >
+  //           <span className="item-name fw-semibold">{item.name}</span>
+  //         </div>
+  //       ))}
+  //     </Col>
+  //   );
 
-    return (
-      <Row>
-        {renderColumn(leftColumn)}
-        {renderColumn(rightColumn)}
-      </Row>
-    );
-  };
+  //   return (
+  //     <Row>
+  //       {renderColumn(leftColumn)}
+  //       {renderColumn(rightColumn)}
+  //     </Row>
+  //   );
+  // };
 
   // TODO: Implement the X Report, Z Report, and Sales Report generation logic
   const generateReport = (type) => {
     setSelectedReport(type);
+    //selectedReport is the type:
+    switch(type) {
+      case 'X':
+        console.log('Generating X Report...');
+        break;
+      case 'Z':
+        console.log('Generating Z Report...');
+        // Generate Z Report
+        break;
+      case 'Sales':
+        console.log('Generating Sales Report...');
+        // Generate Sales Report
+        break;
+
+    }
 
   };
 
-  
-
-  const [inventory] = useState([
-    { id: 1, ingredient: 'Black Tea', quantity: 50, unit: 'lbs', cost: 25.00 },
-    { id: 2, ingredient: 'Tapioca Pearls', quantity: 30, unit: 'lbs', cost: 45.00 },
-    { id: 3, ingredient: 'Milk Powder', quantity: 25, unit: 'lbs', cost: 35.00 },
-    { id: 4, ingredient: 'Sugar', quantity: 60, unit: 'lbs', cost: 20.00 }
-  ]);
 
   const [recentOrders] = useState([
     { id: '#001', time: '2:30 PM', items: 3, total: '$15.47' },
@@ -173,17 +180,6 @@ const NavBar = () => {
     { id: '#004', time: '2:15 PM', items: 4, total: '$22.46' }
   ]);
 
-  const [recipes] = useState([
-    { id: 1, name: 'Classic Milk Tea', status: 'Active' },
-    { id: 2, name: 'Taro Bubble Tea', status: 'Active' },
-    { id: 3, name: 'Matcha Latte', status: 'Inactive' }
-  ]);
-
-  const [recipeIngredients] = useState([
-    { ingredient: 'Black Tea', quantity: 2, unit: 'oz' },
-    { ingredient: 'Milk Powder', quantity: 1, unit: 'oz' },
-    { ingredient: 'Sugar', quantity: 0.5, unit: 'oz' }
-  ]);
 
   // Chart options
   const chartOptions = {
@@ -255,20 +251,20 @@ const NavBar = () => {
                 <Button
                   variant="outline-success"
                   className="mb-2"
-                  onClick={() => {/* TODO: Generate X Report */}}
+                  onClick={() => {generateReport('X')}}
                 >
                   X Report
                 </Button>
                 <Button
                   variant="outline-success"
                   className="mb-2"
-                  onClick={() => {/* TODO: Generate Z Report */}}
+                  onClick={() => {generateReport('Z')}}
                 >
                   Z Report
                 </Button>
                 <Button
                   variant="outline-success"
-                  onClick={() => {/* TODO: Generate Sales Report */}}
+                  onClick={() => {generateReport('Sales')}}
                 >
                   Sales Report
                 </Button>
@@ -304,7 +300,7 @@ const NavBar = () => {
 
       {/* Orders and Inventory Section */}
       <Row className="mb-4">
-        <Col md={4}>
+        <Col md={8}>
           <Card className="h-100">
             <Card.Header>
               <h5>Recent Orders</h5>
@@ -326,329 +322,13 @@ const NavBar = () => {
           </Card>
         </Col>
 
-        <Col md={8}>
-          <Card className="h-100">
-            <Card.Header className="d-flex justify-content-between align-items-center">
-              <h5>Inventory Management</h5>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {/* TODO: Refresh inventory */}}
-              >
-                Refresh
-              </Button>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col lg={8}>
-                  <Table striped hover responsive>
-                    <thead>
-                      <tr>
-                        <th>Ingredient</th>
-                        <th>Quantity</th>
-                        <th>Unit</th>
-                        <th>Cost</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {inventory.map((item) => (
-                        <tr key={item.id}>
-                          <td>{item.ingredient}</td>
-                          <td>
-                            <Badge bg={item.quantity < 20 ? 'danger' : 'success'}>
-                              {item.quantity}
-                            </Badge>
-                          </td>
-                          <td>{item.unit}</td>
-                          <td>${item.cost.toFixed(2)}</td>
-                          <td>
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              onClick={() => {/* TODO: Restock item */}}
-                            >
-                              Restock
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                </Col>
-
-                <Col lg={4}>
-                  <Card>
-                    <Card.Header>Inventory Actions</Card.Header>
-                    <Card.Body>
-                      <Form>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Restock Item</Form.Label>
-                          <Form.Select>
-                            <option>Select ingredient...</option>
-                            {inventory.map((item) => (
-                              <option key={item.id} value={item.id}>{item.ingredient}</option>
-                            ))}
-                          </Form.Select>
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                          <Form.Control type="number" placeholder="Restock amount" />
-                        </Form.Group>
-                        <Button
-                          variant="success"
-                          className="w-100"
-                          onClick={() => {/* TODO: Process restock */}}
-                        >
-                          Confirm Restock
-                        </Button>
-
-                        <hr />
-
-                        <h6>Add New Ingredient</h6>
-                        <Form.Group className="mb-2">
-                          <Form.Control type="text" placeholder="Ingredient name" />
-                        </Form.Group>
-                        <Form.Group className="mb-2">
-                          <Form.Control type="number" placeholder="Initial stock" />
-                        </Form.Group>
-                        <Form.Group className="mb-2">
-                          <Form.Control type="text" placeholder="Unit (lbs, oz, etc.)" />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                          <Form.Control type="number" step="0.01" placeholder="Cost per unit" />
-                        </Form.Group>
-                        <Button
-                          variant="primary"
-                          className="w-100"
-                          onClick={() => {/* TODO: Add new ingredient */}}
-                        >
-                          Add Ingredient
-                        </Button>
-                      </Form>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-        </Col>
+        
       </Row>
 
-      {/* Manager Control Panel */}
-      <Row className="mb-4">
-        <Col>
-          <Card>
-            <Card.Header className="text-center">
-              <h4>Manager Control Panel</h4>
-            </Card.Header>
-          </Card>
-        </Col>
-      </Row>
 
-      {/* Menu and Employee Management */}
-      <Row className="mb-4">
-        <Col md={6}>
-          <Card className="h-100">
-            <Card.Header>
-              <h5>Menu Management</h5>
-            </Card.Header>
-            <Card.Body>
-              <Table striped hover>
-                <thead>
-                  <tr>
-                    <th>Item Name</th>
-                    <th>Price</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* TODO: use renderMenuItems */}
-                  {renderMenuItems(menuItems || [])}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
 
-      {/* Add/Remove Forms */}
-      <Row className="mb-4">
-        <Col md={3}>
-          <Card>
-            <Card.Header>
-              <h6><Badge bg="success">Add Menu Item</Badge></h6>
-            </Card.Header>
-            <Card.Body>
-              <Form>
-                <Form.Group className="mb-3">
-                  <Form.Control type="text" placeholder="Item name" />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Select>
-                    <option>Select category...</option>
-                    <option>Tea</option>
-                    <option>Coffee</option>
-                    <option>Smoothie</option>
-                    <option>Snack</option>
-                  </Form.Select>
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Control type="number" step="0.01" placeholder="Price" />
-                </Form.Group>
-                <Button
-                  variant="success"
-                  className="w-100"
-                  onClick={() => {/* TODO: Add menu item */}}
-                >
-                  Add Item
-                </Button>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
+    
 
-        <Col md={3}>
-          <Card>
-            <Card.Header>
-              <h6><Badge bg="danger">Remove Menu Item</Badge></h6>
-            </Card.Header>
-            <Card.Body>
-              <Form>
-                <Form.Group className="mb-3">
-                  <Form.Select>
-                    <option>Select item to remove...</option>
-                    {/* {menuItems.map((item) => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
-                    ))} */}
-                  </Form.Select>
-                </Form.Group>
-                <Button
-                  variant="danger"
-                  className="w-100 mb-2"
-                  onClick={() => {/* TODO: Remove menu item */}}
-                >
-                  Remove Item
-                </Button>
-                <Button
-                  variant="outline-secondary"
-                  className="w-100"
-                  onClick={() => {/* TODO: Clear form */}}
-                >
-                  Clear
-                </Button>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Recipe Management */}
-      <Row className="mb-4">
-        <Col md={4}>
-          <Card className="h-100">
-            <Card.Header>
-              <h5>Recipe Management</h5>
-            </Card.Header>
-            <Card.Body>
-              <Table striped hover>
-                <thead>
-                  <tr>
-                    <th>Drink Name</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recipes.map((recipe) => (
-                    <tr key={recipe.id}>
-                      <td>{recipe.name}</td>
-                      <td>
-                        <Badge bg={recipe.status === 'Active' ? 'success' : 'secondary'}>
-                          {recipe.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={8}>
-          <Card className="h-100">
-            <Card.Header>
-              <h5>Recipe Ingredients</h5>
-            </Card.Header>
-            <Card.Body>
-              <Table striped hover className="mb-3">
-                <thead>
-                  <tr>
-                    <th>Ingredient</th>
-                    <th>Quantity</th>
-                    <th>Unit</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recipeIngredients.map((ingredient, index) => (
-                    <tr key={index}>
-                      <td>{ingredient.ingredient}</td>
-                      <td>{ingredient.quantity}</td>
-                      <td>{ingredient.unit}</td>
-                      <td>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => {/* TODO: Remove ingredient from recipe */}}
-                        >
-                          Remove
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-
-              <Row>
-                <Col md={4}>
-                  <Form.Select className="mb-2">
-                    <option>Select ingredient...</option>
-                    {inventory.map((item) => (
-                      <option key={item.id} value={item.id}>{item.ingredient}</option>
-                    ))}
-                  </Form.Select>
-                </Col>
-                <Col md={3}>
-                  <Form.Control
-                    type="number"
-                    step="0.1"
-                    placeholder="Amount"
-                    className="mb-2"
-                  />
-                </Col>
-                <Col md={2}>
-                  <Button
-                    variant="outline-primary"
-                    className="mb-2"
-                    onClick={() => {/* TODO: Add ingredient to recipe */}}
-                  >
-                    Add
-                  </Button>
-                </Col>
-                <Col md={3}>
-                  <Button
-                    variant="success"
-                    className="w-100 mb-2"
-                    onClick={() => {/* TODO: Save complete recipe */}}
-                  >
-                    Save Recipe
-                  </Button>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
     </>
   );
 
