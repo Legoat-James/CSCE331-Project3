@@ -23,6 +23,9 @@ const docInfo = {
         {
             name: "Orders", description: "Endpoints for handling Restaurant Orders"
         },
+        {
+            name: "Ingredients", description: "Endpoints for handling Item Ingredients"
+        }
 
     ],
     components: {
