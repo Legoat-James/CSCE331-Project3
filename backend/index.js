@@ -499,9 +499,10 @@ app.get('/api/employee/all', requireAuth(false), async (req, res, next) => {
             }]
     } */
   try{
-    const result = await pool.query('SELECT username FROM employees WHERE is_active = true ORDER BY employee_id');
+    const result = await pool.query('SELECT * FROM employees WHERE is_active = true ORDER BY employee_id');
     const employeeList = result.rows;
-    res.json(employeeList);
+    const sanitizedEmployees = employeeList.map(({password, session_token, google_id, ...stitchedUser})=>stitchedUser);
+    res.json(sanitizedEmployees);
   }catch(err){
     next(err);
   }
@@ -1491,6 +1492,7 @@ app.delete('/api/ingredients/disable', requireAuth(true), async (req,res,next)=>
   }
 });
 
+
 app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
   /* #swagger.tags = ['Ingredients']
     #swagger.summary = "Creates a new ingredient"
@@ -1519,6 +1521,8 @@ app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
             }
         }        
     */
+
+
   try{
     if(!req.body){
       throw new ApiError(400, "Missing 'ingredient'",null,req.path);
