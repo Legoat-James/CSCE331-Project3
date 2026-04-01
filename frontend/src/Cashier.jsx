@@ -4,7 +4,7 @@ import './Cashier.css';
 import Menuitems from './components/cashier/MenuItems';
 import OrderSummary from './components/cashier/OrderSummary';
 import apiClient from './api/client_config.js';
-// import apiClient from '../../api/client_config.js';
+import ChatBot from './components/customer/Chatbot.jsx';
 
 export default function Cashier() {
     const [total, setTotal] = useState(0.00);
@@ -204,6 +204,9 @@ export default function Cashier() {
                             <Button onClick={handleCancel} className="cashier-btn-cancel">
                                 Cancel Order
                             </Button>
+                        </div>
+                        <div>
+                            <ChatBot />
                         </div>
                     </div>
                 </div>

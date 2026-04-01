@@ -1565,6 +1565,79 @@ app.get('/api/test', (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/chat:
+ *   post:
+ *     summary: Proxy endpoint for TAMU AI Chat API
+ *     description: Forwards chat requests to TAMU AI to avoid CORS issues
+ *     tags: [AI Chat]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                     content:
+ *                       type: string
+ *               model:
+ *                 type: string
+ *               max_tokens:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: AI response
+ *       500:
+ *         description: Error communicating with AI service
+ */
+app.post('/api/chat', async (req, res, next) => {
+  try {
+    const { messages, model = 'protected.Claude Sonnet 4.5', max_tokens = 500 } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      throw new ApiError(400, 'messages array is required', null, req.path);
+    }
+
+    const tamuEndpoint = process.env.TAMUS_AI_CHAT_API_ENDPOINT;
+    const tamuApiKey = process.env.TAMUS_AI_CHAT_API_KEY;
+
+    if (!tamuEndpoint || !tamuApiKey) {
+      throw new ApiError(500, 'TAMU AI API not configured', null, req.path);
+    }
+
+    const response = await fetch(`${tamuEndpoint}/openai/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tamuApiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new ApiError(response.status, `TAMU AI Error: ${errorText}`, null, req.path);
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use('/api', (req, res) => {
   res.status(404).json({
     status: 404,
