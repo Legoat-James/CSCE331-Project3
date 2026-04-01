@@ -1224,27 +1224,70 @@ app.post('/api/chat', async (req, res, next) => {
       throw new ApiError(500, 'TAMU AI API not configured', null, req.path);
     }
 
+    const requestBody = {
+      model,
+      messages,
+      max_tokens,
+    };
+
+    console.log('TAMU AI Request:', {
+      url: `${tamuEndpoint}/openai/chat/completions`,
+      model,
+      messageCount: messages.length,
+    });
+
     const response = await fetch(`${tamuEndpoint}/openai/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${tamuApiKey}`,
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('TAMU AI Error Response:', response.status, errorText);
       throw new ApiError(response.status, `TAMU AI Error: ${errorText}`, null, req.path);
     }
 
-    const data = await response.json();
-    res.json(data);
+    // TAMU AI always returns SSE format (text/event-stream)
+    const responseText = await response.text();
+    
+    // Parse SSE format: each line is "data: {...}" or "data: [DONE]"
+    let fullContent = '';
+    const lines = responseText.split('\n');
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('data: ') && trimmedLine !== 'data: [DONE]') {
+        try {
+          const jsonStr = trimmedLine.slice(6); // Remove 'data: ' prefix
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content || '';
+          if (content) {
+            fullContent += content;
+          }
+        } catch (e) {
+          // Skip invalid JSON chunks
+        }
+      }
+    }
+
+    console.log('TAMU AI Full Response:', fullContent.substring(0, 200));
+
+    // Return in OpenAI format
+    res.json({
+      choices: [{
+        message: {
+          role: 'assistant',
+          content: fullContent.trim()
+        },
+        finish_reason: 'stop'
+      }]
+    });
   } catch (err) {
+    console.error('Chat endpoint error:', err);
     next(err);
   }
 });

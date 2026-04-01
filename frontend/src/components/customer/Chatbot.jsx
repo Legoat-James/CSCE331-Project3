@@ -16,7 +16,7 @@ export default function Chatbot() {
   const [errorDetails, setErrorDetails] = useState(null);
 
   // System prompt to guide the chatbot's behavior for the food ordering app
-  const systemPrompt = `You are a helpful assistant for a food ordering application called Panda Express POS. 
+  const systemPrompt = `You are a helpful assistant for a food ordering application called Claudes Teahouse. 
 You help customers with:
 - Placing orders for menu items like bagel sandwiches, bowls, plates, and other food items
 - Explaining menu options and customizations
