@@ -1211,7 +1211,7 @@ app.get('/api/test', (req, res, next) => {
  */
 app.post('/api/chat', async (req, res, next) => {
   try {
-    const { messages, model = 'claude-sonnet-4-5-20250514', max_tokens = 500 } = req.body;
+    const { messages, model = 'protected.Claude Sonnet 4.5', max_tokens = 500 } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       throw new ApiError(400, 'messages array is required', null, req.path);

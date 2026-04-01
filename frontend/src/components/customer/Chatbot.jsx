@@ -38,7 +38,7 @@ suggest that the customer check the menu board or ask a staff member.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5-20250514',
+          model: 'protected.Claude Sonnet 4.5',
           messages: [
             { role: 'system', content: 'You are a helpful assistant. Respond with "Connection successful!" only.' },
             { role: 'user', content: 'Test connection' }
@@ -92,7 +92,7 @@ suggest that the customer check the menu board or ask a staff member.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5-20250514',
+          model: 'protected.Claude Sonnet 4.5',
           messages: conversationHistory,
           max_tokens: 500,
         }),
