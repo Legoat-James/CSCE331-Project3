@@ -1,8 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Chatbot.css';
-
-// Use backend proxy to avoid CORS issues
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 /**
  * Chatbot component - Testbench for TAMU AI API connection
@@ -14,17 +11,132 @@ export default function Chatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('untested');
   const [errorDetails, setErrorDetails] = useState(null);
+  const [menuData, setMenuData] = useState({ drinks: [], foods: [], toppings: [] });
 
-  // System prompt to guide the chatbot's behavior for the food ordering app
-  const systemPrompt = `You are a helpful assistant for a food ordering application called Claudes Teahouse. 
+  // Fetch menu data on component mount
+  useEffect(() => {
+    const fetchMenuData = async () => {
+      try {
+        const response = await fetch('/api/menu/all');
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Group items by category
+          const drinks = [];
+          const foods = [];
+          const toppings = [];
+          const drinkGroups = {};
+          
+          data.forEach(item => {
+            if (!item.is_active) return;
+            
+            const category = (item.category || '').toLowerCase();
+            const name = item.name || '';
+            const price = Number(item.cost) || 0;
+            
+            if (category.startsWith('drink')) {
+              // Group drinks by base name (removing Small/Large suffix)
+              let baseName = name;
+              let size = 'Medium';
+              if (name.toLowerCase().endsWith(' small')) {
+                baseName = name.slice(0, -6).trim();
+                size = 'Small';
+              } else if (name.toLowerCase().endsWith(' large')) {
+                baseName = name.slice(0, -6).trim();
+                size = 'Large';
+              }
+              
+              if (!drinkGroups[baseName.toLowerCase()]) {
+                drinkGroups[baseName.toLowerCase()] = { name: baseName, sizes: {} };
+              }
+              drinkGroups[baseName.toLowerCase()].sizes[size] = price;
+            } else if (category.startsWith('food')) {
+              foods.push({ name, price });
+            } else if (category.startsWith('topping')) {
+              toppings.push({ name, price });
+            }
+          });
+          
+          // Convert drink groups to array
+          Object.values(drinkGroups).forEach(drink => {
+            drinks.push(drink);
+          });
+          
+          setMenuData({ drinks, foods, toppings });
+        }
+      } catch (error) {
+        console.error('Failed to fetch menu data for chatbot:', error);
+      }
+    };
+    
+    fetchMenuData();
+  }, []);
+
+  // Build system prompt with menu information
+  const buildSystemPrompt = () => {
+    let menuSection = '';
+    
+    // Add drinks
+    if (menuData.drinks.length > 0) {
+      menuSection += '\n\n## DRINKS MENU\n';
+      menuData.drinks.forEach(drink => {
+        const sizes = Object.entries(drink.sizes)
+          .map(([size, price]) => `${size}: $${price.toFixed(2)}`)
+          .join(', ');
+        menuSection += `- ${drink.name} (${sizes})\n`;
+      });
+    }
+    
+    // Add foods
+    if (menuData.foods.length > 0) {
+      menuSection += '\n## FOOD MENU\n';
+      menuData.foods.forEach(food => {
+        menuSection += `- ${food.name}: $${food.price.toFixed(2)}\n`;
+      });
+    }
+    
+    // Add toppings
+    if (menuData.toppings.length > 0) {
+      menuSection += '\n## TOPPINGS & ADD-ONS\n';
+      menuData.toppings.forEach(topping => {
+        menuSection += `- ${topping.name}: +$${topping.price.toFixed(2)}\n`;
+      });
+    }
+
+    return `You are a helpful assistant for a food ordering application called Claude's Teahouse (a bubble tea and snack shop). 
+
 You help customers with:
-- Placing orders for menu items like bagel sandwiches, bowls, plates, and other food items
-- Explaining menu options and customizations
-- Answering questions about the ordering process
+- Recommending menu items based on their preferences
+- Explaining menu options, flavors, and customizations
+- Answering questions about ingredients and pricing
+- Helping customers build their order
 - Providing helpful tips for using the app
 
-Be friendly, concise, and helpful. If you don't know something specific about the menu, 
-suggest that the customer check the menu board or ask a staff member.`;
+## CUSTOMIZATION OPTIONS
+- Drink sizes: Small, Medium, Large
+- Sugar levels: 0%, 25%, 50%, 75%, 100%, 125%
+- Ice levels: No Ice, Light Ice, Regular Ice, Extra Ice
+- Milk alternatives: Oat milk available (+$0.75)
+- Sugar alternatives: Sugar substitute available
+${menuSection}
+
+## ORDERING INSTRUCTIONS
+To order, customers should:
+1. Browse drinks or food from the menu categories
+2. Click on an item to customize it
+3. Select size, sugar level, ice level for drinks
+4. Add any toppings they want
+5. Click "Add to Order"
+6. Review their order in the cart
+7. Click "Submit Order" when ready
+
+Be friendly, concise, and helpful. When recommending drinks, consider:
+- Pearl Milk Tea and Tiger Boba are customer favorites
+- Honey drinks are great for those who prefer natural sweetness
+- Matcha drinks have a nice earthy flavor
+- Mango drinks are refreshing and fruity
+- Coffee options are available for those who need caffeine`;
+  };
 
   // Test the API connection via backend proxy
   const testConnection = async () => {
@@ -32,7 +144,7 @@ suggest that the customer check the menu board or ask a staff member.`;
     setErrorDetails(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,12 +193,12 @@ suggest that the customer check the menu board or ask a staff member.`;
     try {
       // Build conversation history with system prompt
       const conversationHistory = [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: buildSystemPrompt() },
         ...messages.map(msg => ({ role: msg.role, content: msg.content })),
         { role: 'user', content: userMessage }
       ];
 
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -179,7 +291,7 @@ suggest that the customer check the menu board or ask a staff member.`;
 
       <div className="api-info">
         <small>
-          <strong>Endpoint:</strong> {API_BASE_URL}/api/chat (proxy)<br />
+          <strong>Endpoint:</strong> /api/chat (proxy)<br />
           <strong>Status:</strong> Backend proxies to TAMU AI
         </small>
       </div>
@@ -187,8 +299,14 @@ suggest that the customer check the menu board or ask a staff member.`;
       <div className="chatbot-messages">
         {messages.length === 0 && (
           <div className="welcome-message">
-            <p>👋 Welcome! I am here to help you with ordering.</p>
-            <p>Try asking: <em>"How can I place an order for a bagel sandwich?"</em></p>
+            <p>👋 Welcome to Claude's Teahouse! I'm here to help you with your order.</p>
+            <p>Try asking:</p>
+            <ul style={{ textAlign: 'left', paddingLeft: '20px', margin: '8px 0' }}>
+              <li><em>"What drinks do you recommend?"</em></li>
+              <li><em>"How much is a Pearl Milk Tea?"</em></li>
+              <li><em>"What toppings can I add?"</em></li>
+              <li><em>"Do you have any food options?"</em></li>
+            </ul>
           </div>
         )}
         {messages.map((msg, index) => (
