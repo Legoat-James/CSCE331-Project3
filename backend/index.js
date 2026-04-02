@@ -961,7 +961,7 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
     const recentOrders = result.rows;
     //format them so orders have items nested inside
     const formattedOrders = recentOrders.reduce((acc, row)=>{
-      let order = acc.find(order => order.order_id === row.order_id);
+      let order = acc.find(order => order.orderId === row.order_id);
       if(!order){
         //if the order is not already in the accumulated list, create it
         order = {
@@ -983,7 +983,7 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
       });
       return acc;
     },[])
-
+    console.log(formattedOrders);
     res.json(formattedOrders);
   }catch(err){
     next(err);
