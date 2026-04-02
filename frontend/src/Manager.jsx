@@ -86,6 +86,7 @@ export default function Manager() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportData, setReportData] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [zReportGenerated, setZReportGenerated] = useState(false); // Track if Z report has been generated for the day
   // Sample data for tables
   //need to call backend api to get real data and set state accordingly
   //we used useGet to fetch menu items now actually have to load it and show.
@@ -153,7 +154,7 @@ const NavBar = () => {
         case 'X':
           console.log('Rendering X Report data:', reportData);
           // Calculate totals for the day
-          const totals = reportData.reduce((acc, hourData) => ({
+          const totalX = reportData.reduce((acc, hourData) => ({
             drinks_sold: acc.drinks_sold + (hourData.drinks_sold || 0),
             food_sold: acc.food_sold + (hourData.food_sold || 0),
             total_items_sold: acc.total_items_sold + (hourData.total_items_sold || 0),
@@ -188,17 +189,60 @@ const NavBar = () => {
               <tfoot>
                 <tr className="fw-bold table-secondary">
                   <td className="text-start">Total</td>
-                  <td className="text-end">{totals.drinks_sold}</td>
-                  <td className="text-end">{totals.food_sold}</td>
-                  <td className="text-end">{totals.total_items_sold}</td>
-                  <td className="text-end">${totals.total_sales_amount.toFixed(2)}</td>
-                  <td className="text-end">{totals.total_transactions}</td>
+                  <td className="text-end">{totalX.drinks_sold}</td>
+                  <td className="text-end">{totalX.food_sold}</td>
+                  <td className="text-end">{totalX.total_items_sold}</td>
+                  <td className="text-end">${totalX.total_sales_amount.toFixed(2)}</td>
+                  <td className="text-end">{totalX.total_transactions}</td>
                 </tr>
               </tfoot>
             </Table>
           );
         case 'Z':
-          return <pre className="report-data">{JSON.stringify(reportData, null, 2)}</pre>;
+          console.log('Rendering Z Report data:', reportData);
+          // Calculate totals for the day
+          try{
+            if(zReportGenerated) {
+              return <div className="text-center text-danger">Z Report has already been generated for today. Totals have not been reset. Please contact support if you believe this is an error.</div>;
+            }
+            const totalZ = reportData.reduce((acc, hourData) => ({
+            drinks_sold: acc.drinks_sold + (hourData.drinks_sold || 0),
+            food_sold: acc.food_sold + (hourData.food_sold || 0),
+            total_items_sold: acc.total_items_sold + (hourData.total_items_sold || 0),
+            total_sales_amount: acc.total_sales_amount + (parseFloat(hourData.total_sales_amount) || 0),
+            total_transactions: acc.total_transactions + (hourData.total_transactions || 0),
+          }), { drinks_sold: 0, food_sold: 0, total_items_sold: 0, total_sales_amount: 0, total_transactions: 0 });
+          //now set the zReportGenerated to true to prevent multiple generations in the same day
+          setZReportGenerated(true);
+          return (
+            <Table striped hover responsive size="sm" className="dashboard-table">
+              <thead>
+                <tr>
+                  <th className="text-start"></th>
+                  <th className="text-end">Drinks Sold</th>
+                  <th className="text-end">Food Sold</th>
+                  <th className="text-end">Total Items</th>
+                  <th className="text-end">Sales ($)</th>
+                  <th className="text-end">Transactions</th>
+                </tr>
+              </thead>
+              <tfoot>
+                <tr className="fw-bold table-secondary">
+                  <td className="text-start">Today's Totals</td>
+                  <td className="text-end">{totalZ.drinks_sold}</td>
+                  <td className="text-end">{totalZ.food_sold}</td>
+                  <td className="text-end">{totalZ.total_items_sold}</td>
+                  <td className="text-end">${totalZ.total_sales_amount.toFixed(2)}</td>
+                  <td className="text-end">{totalZ.total_transactions}</td>
+                </tr>
+              </tfoot>
+            </Table>
+          );
+          } catch(err){
+            console.error('Error calculating Z Report totals:', err);
+            return <div>Error calculating Z Report totals. Please try again later.</div>;
+          }
+          
         case 'Sales':
           return <pre className="report-data">{JSON.stringify(reportData, null, 2)}</pre>;
         default:
@@ -258,13 +302,23 @@ const NavBar = () => {
           */
           
           const zReportData = await queryClient.fetchQuery({
-            queryKey: ['z-report'],
-            queryFn: () => apiClient('/api/reports/z'),
+            queryKey: ['z-report-fetch'],
+            queryFn: () => apiClient('/api/reports/x'),
             staleTime: 0, // Always fetch fresh for Z report
           });
-          
-          console.log('Z Report data:', zReportData);
-          setReportData(zReportData);
+          //instead of query to databse, handle the if generated here on the frontend!
+
+          // console.log('Z Report data:', zReportData);
+          // setReportData(zReportData);
+          // const zResponse = await queryClient.fetchQuery({
+          //   queryKey: ['z-report-reset'],
+          //   queryFn: () => apiClient('/api/reports/z'),
+          //   staleTime: 0, // Always fetch fresh for Z report
+          // });
+          // //now check if the z-report had already been grabbed and handle accordingly:
+          // if(zResponse.status === 'Z report already generated for today') {
+          //   alert('Z report has already been generated for today. Totals have not been reset. Please contact support if you believe this is an error.');
+          // }
           break;
           
         case 'Sales':
