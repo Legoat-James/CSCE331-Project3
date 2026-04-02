@@ -22,13 +22,12 @@ import {
   Navbar,
   Spinner
 } from 'react-bootstrap';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -47,8 +46,7 @@ import './Manager.css';
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -65,16 +63,26 @@ export default function Manager() {
   const [activeView, setActiveView] = useState('dashboard');
   const queryClient = useQueryClient();
 
+  //Todo: get real sales data from a timeframe specified
   const [salesData, setSalesData] = useState({
-    labels: ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'],
-    datasets: [{
-      label: 'Sales ($)',
-      data: [120, 190, 300, 500, 200, 300, 450, 600, 750],
-      borderColor: 'rgb(75, 192, 192)',
-      backgroundColor: 'rgba(75, 192, 192, 0.2)',
-      tension: 0.4
-    }]
+    labels: [],
+    datasets: []
   });
+  
+  // Date range state for Sales report
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7); // Default to 7 days ago
+    return date.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().split('T')[0]; // Default to today
+  });
+  
+  // Hour selection for single-day reports
+  const [startHour, setStartHour] = useState('00');
+  const [endHour, setEndHour] = useState('23');
+  const isSingleDay = startDate === endDate;
 
   const {data: recentOrders, isPending, error, isSuccess} = useGet(['recent-orders'],'/api/orders/recent', {
     retry: true,
@@ -85,6 +93,7 @@ export default function Manager() {
   const [timeframe, setTimeframe] = useState('Hour');
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportData, setReportData] = useState(null);
+  const [salesReportMode, setSalesReportMode] = useState('quantity'); // 'quantity', 'revenue', or 'netRevenue'
   const [reportLoading, setReportLoading] = useState(false);
   const [zReportGenerated, setZReportGenerated] = useState(false); // Track if Z report has been generated for the day
   // Sample data for tables
@@ -244,7 +253,49 @@ const NavBar = () => {
           }
           
         case 'Sales':
-          return <pre className="report-data">{JSON.stringify(reportData, null, 2)}</pre>;
+          const isMoneyMode = salesReportMode === 'revenue' || salesReportMode === 'netRevenue';
+          let columnHeader, dataArray;
+          
+          if (salesReportMode === 'revenue') {
+            columnHeader = 'Gross Revenue';
+            dataArray = reportData.revenue;
+          } else if (salesReportMode === 'netRevenue') {
+            columnHeader = 'Net Revenue';
+            dataArray = reportData.netRevenue;
+          } else {
+            columnHeader = 'Quantity Sold';
+            dataArray = reportData.quantities;
+          }
+          
+          const total = dataArray?.reduce((sum, val) => sum + val, 0) || 0;
+          return (
+            <Table striped bordered hover size="sm" className="report-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th className="text-end">{columnHeader}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.labels && reportData.labels.map((label, index) => (
+                  <tr key={index}>
+                    <td>{label}</td>
+                    <td className="text-end">
+                      {isMoneyMode ? `$${dataArray[index]?.toFixed(2)}` : dataArray[index]}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="table-dark">
+                  <td><strong>Total</strong></td>
+                  <td className="text-end">
+                    <strong>{isMoneyMode ? `$${total.toFixed(2)}` : total}</strong>
+                  </td>
+                </tr>
+              </tfoot>
+            </Table>
+          );
         default:
           return <div>Unknown report type.</div>;
       }
@@ -255,7 +306,7 @@ const NavBar = () => {
   }
 
   // TODO: Implement the X Report, Z Report, and Sales Report generation logic
-  const generateReport = useCallback(async (type) => {
+  const generateReport = useCallback(async (type, options = {}) => {
     setSelectedReport(type);
     setReportLoading(true);
     
@@ -301,24 +352,25 @@ const NavBar = () => {
           Only allowing the Z-report to be generated once a day.
           */
           
-          const zReportData = await queryClient.fetchQuery({
-            queryKey: ['z-report-fetch'],
-            queryFn: () => apiClient('/api/reports/x'),
-            staleTime: 0, // Always fetch fresh for Z report
-          });
-          //instead of query to databse, handle the if generated here on the frontend!
-
-          // console.log('Z Report data:', zReportData);
-          // setReportData(zReportData);
-          // const zResponse = await queryClient.fetchQuery({
-          //   queryKey: ['z-report-reset'],
-          //   queryFn: () => apiClient('/api/reports/z'),
-          //   staleTime: 0, // Always fetch fresh for Z report
-          // });
-          // //now check if the z-report had already been grabbed and handle accordingly:
-          // if(zResponse.status === 'Z report already generated for today') {
-          //   alert('Z report has already been generated for today. Totals have not been reset. Please contact support if you believe this is an error.');
-          // }
+          // First, check if Z report was already generated by calling /api/reports/z
+          try {
+            await apiClient('/api/reports/z');
+            // If successful, Z report was not yet generated - now fetch the data
+            const zReportData = await queryClient.fetchQuery({
+              queryKey: ['z-report-fetch'],
+              queryFn: () => apiClient('/api/reports/x'),
+              staleTime: 0, // Always fetch fresh for Z report
+            });
+            console.log('Z Report data:', zReportData);
+            setReportData(zReportData);
+          } catch (zError) {
+            // Check if error is because Z report was already generated
+            if (zError.message?.includes('already been generated') || zError.status === 400) {
+              alert('Z report has already been generated for today. Totals have not been reset. Please contact support if you believe this is an error.');
+            } else {
+              throw zError; // Re-throw other errors to be handled by outer catch
+            }
+          }
           break;
           
         case 'Sales':
@@ -326,9 +378,14 @@ const NavBar = () => {
           //TODO: Given a time window, display the sales by item from the order history.
           //Should probably use a calendar type of view to select start and end date
           
+          const { startDate: start, endDate: end, startHour: sHour, endHour: eHour } = options;
+          let salesUrl = `/api/reports/sales?startDate=${start}&endDate=${end}`;
+          if (start === end && sHour && eHour) {
+            salesUrl += `&startHour=${sHour}&endHour=${eHour}`;
+          }
           const salesReportData = await queryClient.fetchQuery({
-            queryKey: ['sales-report'],
-            queryFn: () => apiClient('/api/reports/sales'),
+            queryKey: ['sales-report', start, end, sHour, eHour],
+            queryFn: () => apiClient(salesUrl),
             staleTime: 30000,
           });
           
@@ -344,6 +401,43 @@ const NavBar = () => {
     }
 
   }, [queryClient]);
+
+  // Update chart data when salesReportMode or reportData changes
+  useEffect(() => {
+    if (reportData && reportData.labels && reportData.revenue) {
+      let label, data, backgroundColor, borderColor;
+      
+      if (salesReportMode === 'revenue') {
+        label = 'Gross Revenue ($)';
+        data = reportData.revenue;
+        backgroundColor = 'rgba(255, 159, 64, 0.6)';
+        borderColor = 'rgb(255, 159, 64)';
+      } else if (salesReportMode === 'netRevenue') {
+        label = 'Net Revenue ($)';
+        data = reportData.netRevenue;
+        backgroundColor = 'rgba(75, 192, 75, 0.6)';
+        borderColor = 'rgb(75, 192, 75)';
+      } else {
+        label = 'Quantity Sold';
+        data = reportData.quantities;
+        backgroundColor = 'rgba(75, 192, 192, 0.6)';
+        borderColor = 'rgb(75, 192, 192)';
+      }
+      
+      setSalesData({
+        labels: reportData.labels,
+        datasets: [
+          {
+            label,
+            data,
+            backgroundColor,
+            borderColor,
+            borderWidth: 1,
+          },
+        ],
+      });
+    }
+  }, [salesReportMode, reportData]);
 
   const renderRecentOrders = (orders) => {
     const renderColumn = (columnItems) => (
@@ -414,15 +508,25 @@ const NavBar = () => {
       },
       title: {
         display: true,
-        text: `Sales Report - ${timeframe}`,
+        text: `Sales by Item - ${startDate}${startDate !== endDate ? ` to ${endDate}` : ''}`,
       },
     },
     scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Menu Item',
+        },
+      },
       y: {
         beginAtZero: true,
+        title: {
+          display: true,
+          text: salesReportMode === 'revenue' ? 'Gross Revenue ($)' : salesReportMode === 'netRevenue' ? 'Net Revenue ($)' : 'Quantity Sold',
+        },
       },
     },
-  }), [timeframe]);
+  }), [startDate, endDate, salesReportMode]);
 
   // Dashboard Content - memoized to prevent unnecessary re-renders and scroll resets
   const dashboardContent = useMemo(() => (
@@ -435,7 +539,7 @@ const NavBar = () => {
               <h5 className="mb-0">Sales Analytics</h5>
             </Card.Header>
             <Card.Body className="dashboard-card-body">
-              <Line data={salesData} options={chartOptions} />
+              <Bar data={salesData} options={chartOptions} />
             </Card.Body>
           </Card>
         </Col>
@@ -443,24 +547,105 @@ const NavBar = () => {
         <Col lg={2}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
-              <h6 className="mb-0">Timeframe</h6>
+              <h6 className="mb-0">Sales Report Date Range</h6>
             </Card.Header>
             <Card.Body className="dashboard-card-body d-flex flex-column justify-content-center">
-              <ButtonGroup vertical className="w-100">
-                {['Hour', 'Day', 'Week', 'Month'].map((period) => (
+              <Form.Group className="mb-2">
+                <Form.Label className="small mb-1">Start Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  max={endDate}
+                  size="sm"
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label className="small mb-1">End Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate}
+                  max={new Date().toISOString().split('T')[0]}
+                  size="sm"
+                />
+              </Form.Group>
+              {isSingleDay && (
+                <>
+                  <Row className="mb-2">
+                    <Col xs={6}>
+                      <Form.Group>
+                        <Form.Label className="small mb-1">Start Hour</Form.Label>
+                        <Form.Select
+                          value={startHour}
+                          onChange={(e) => setStartHour(e.target.value)}
+                          size="sm"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => {
+                            const hour = i.toString().padStart(2, '0');
+                            const displayHour = i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`;
+                            return <option key={hour} value={hour} disabled={parseInt(hour) > parseInt(endHour)}>{displayHour}</option>;
+                          })}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col xs={6}>
+                      <Form.Group>
+                        <Form.Label className="small mb-1">End Hour</Form.Label>
+                        <Form.Select
+                          value={endHour}
+                          onChange={(e) => setEndHour(e.target.value)}
+                          size="sm"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => {
+                            const hour = i.toString().padStart(2, '0');
+                            const displayHour = i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`;
+                            return <option key={hour} value={hour} disabled={parseInt(hour) < parseInt(startHour)}>{displayHour}</option>;
+                          })}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </>
+              )}
+              <Form.Group className="mb-2">
+                <Form.Label className="small mb-1">Display Mode</Form.Label>
+                <div className="d-flex gap-1 flex-wrap">
                   <Button
-                    key={period}
-                    variant={timeframe === period ? 'primary' : 'outline-primary'}
-                    onClick={() => {
-                      setTimeframe(period);
-                      /* TODO: Fetch data for selected timeframe */
-                    }}
-                    className="mb-2 dashboard-btn"
+                    size="sm"
+                    variant={salesReportMode === 'quantity' ? 'primary' : 'outline-primary'}
+                    onClick={() => setSalesReportMode('quantity')}
+                    className="flex-fill"
                   >
-                    {period}
+                    Quantity
                   </Button>
-                ))}
-              </ButtonGroup>
+                  <Button
+                    size="sm"
+                    variant={salesReportMode === 'revenue' ? 'primary' : 'outline-primary'}
+                    onClick={() => setSalesReportMode('revenue')}
+                    className="flex-fill"
+                  >
+                    Gross
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={salesReportMode === 'netRevenue' ? 'primary' : 'outline-primary'}
+                    onClick={() => setSalesReportMode('netRevenue')}
+                    className="flex-fill"
+                  >
+                    Net
+                  </Button>
+                </div>
+              </Form.Group>
+              <Button
+                variant="primary"
+                className="w-100 dashboard-btn mt-2"
+                onClick={() => generateReport('Sales', { startDate, endDate, startHour, endHour })}
+                disabled={!startDate || !endDate}
+              >
+                Generate Sales Report
+              </Button>
             </Card.Body>
           </Card>
         </Col>
@@ -502,13 +687,6 @@ const NavBar = () => {
                 >
                   Z Report
                 </Button>
-                <Button
-                  variant="outline-success"
-                  className="dashboard-btn"
-                  onClick={() => generateReport('Sales')}
-                >
-                  Sales Report
-                </Button>
               </ButtonGroup>
             </Card.Body>
           </Card>
@@ -526,7 +704,7 @@ const NavBar = () => {
         </Col>
       </Row>
     </div>
-  ), [salesData, chartOptions, timeframe, recentOrders, isPending, error, isSuccess, generateReport, selectedReport, reportData, reportLoading]);
+  ), [salesData, chartOptions, timeframe, recentOrders, isPending, error, isSuccess, generateReport, selectedReport, reportData, reportLoading, startDate, endDate, startHour, endHour, isSingleDay, salesReportMode]);
 
   // Render active view based on state
   const renderActiveView = () => {
