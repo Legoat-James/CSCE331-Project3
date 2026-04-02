@@ -1291,7 +1291,7 @@ app.get('/api/reports/z', requireAuth(true), async (req, res, next) =>{
   const checkResult = await pool.query(checkQuery);
 
   if (checkResult.rows.length > 0) {
-    return res.status(400).json({ error: 'Z report for today has already been generated.' });
+    return res.status(400).json({ message: 'Z report for today has already been generated.' });
   }
   else{
     const query = 'INSERT INTO z_report_log (report_date) VALUES (CURRENT_DATE)';
