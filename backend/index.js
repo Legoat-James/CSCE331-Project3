@@ -504,10 +504,9 @@ app.get('/api/employee/all', requireAuth(false), async (req, res, next) => {
             }]
     } */
   try{
-    const result = await pool.query('SELECT * FROM employees WHERE is_active = true ORDER BY employee_id');
+    const result = await pool.query('SELECT username FROM employees WHERE is_active = true ORDER BY employee_id');
     const employeeList = result.rows;
-    const sanitizedEmployees = employeeList.map(({password, session_token, google_id, ...stitchedUser})=>stitchedUser);
-    res.json(sanitizedEmployees);
+    res.json(employeeList);
   }catch(err){
     next(err);
   }
@@ -913,12 +912,7 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
                 order_total: 67.00, 
                 timestamp: '2025-02-13 14:06:52+00',
                 employee_id: 3,
-                customer_name: 'Burt',
-                items: [{
-                  name: "Black Tea",
-                  quantity: 1,
-                  menuId: 0
-                }]
+                customer_name: 'Burt'
             }]
     } 
     #swagger.parameters['numRecent'] = {
@@ -938,7 +932,7 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
 
     const query = `
       WITH recent_order_ids AS (
-            SELECT order_id, timestamp, order_total, customer_name, employee_id 
+            SELECT order_id, timestamp 
             FROM transactions 
             ORDER BY timestamp DESC 
             LIMIT $1
@@ -946,9 +940,6 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
       SELECT 
             roi.order_id,
             roi.timestamp,
-            roi.order_total,
-            roi.customer_name,
-            roi.employee_id,
             oh.item_id,
             oh.quantity,
             m.name
@@ -961,15 +952,12 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
     const recentOrders = result.rows;
     //format them so orders have items nested inside
     const formattedOrders = recentOrders.reduce((acc, row)=>{
-      let order = acc.find(order => order.orderId === row.order_id);
+      let order = acc.find(order => order.order_id === row.order_id);
       if(!order){
         //if the order is not already in the accumulated list, create it
         order = {
-          orderId: row.order_id,
+          order_id: row.order_id,
           timestamp: row.timestamp,
-          orderTotal: row.order_total,
-          customerName: row.customer_name,
-          employeeId: row.employee_id,
           items: []
         };
         acc.push(order);
@@ -983,7 +971,7 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
       });
       return acc;
     },[])
-    console.log(formattedOrders);
+
     res.json(formattedOrders);
   }catch(err){
     next(err);
@@ -1093,9 +1081,9 @@ app.post('/api/orders/create', async (req,res,next)=>{
           throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].id must be an integer.`, null, req.path);
         }
 
-        // if (!Number.isFinite(toppingQty) || toppingQty <= 0) {
-        //   throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].qty must be a number > 0.`, null, req.path);
-        // }
+        if (!Number.isFinite(toppingQty) || toppingQty <= 0) {
+          throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].qty must be a number > 0.`, null, req.path);
+        }
 
         return {
           id: toppingId,
@@ -1256,7 +1244,6 @@ X report requires: nothing, just returns the last 24 hours of sales data broken 
 Z report requires: date query parameter in YYYY-MM-DD format
 Sales report requires: startDate, endDate query parameters in YYYY-MM-DD format
  */
-/* TODO */
 app.get('/api/reports/x', requireAuth(true), async (req, res, next) =>{
   /* Helper: This is the query we used from project 2:
   SELECT
@@ -1297,6 +1284,20 @@ app.get('/api/reports/x', requireAuth(true), async (req, res, next) =>{
 
 /*TODO */
 app.get('/api/reports/z', requireAuth(true), async (req, res, next) =>{
+  //Can probably just use the x report query and here just send a query to say we have generated the report
+  //for the day and have frontend call this endpoint once the report is done.
+  //before query, check if the entry already existed in the z_report_log table for the current date, if it does, throw an error saying you can only generate one report per day. If not, insert a new entry with the current date and return success.
+  const checkQuery = 'SELECT * FROM z_report_log WHERE report_date = CURRENT_DATE';
+  const checkResult = await pool.query(checkQuery);
+
+  if (checkResult.rows.length > 0) {
+    return res.status(400).json({ error: 'Z report for today has already been generated.' });
+  }
+  else{
+    const query = 'INSERT INTO z_report_log (report_date) VALUES (CURRENT_DATE)';
+    await pool.query(query);
+    res.json({ message: 'Z report generated successfully.' });
+  }
   
 });
 
@@ -1561,7 +1562,6 @@ app.delete('/api/ingredients/disable', requireAuth(true), async (req,res,next)=>
   }
 });
 
-
 app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
   /* #swagger.tags = ['Ingredients']
     #swagger.summary = "Creates a new ingredient"
@@ -1590,8 +1590,6 @@ app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
             }
         }        
     */
-
-
   try{
     if(!req.body){
       throw new ApiError(400, "Missing 'ingredient'",null,req.path);
@@ -1613,6 +1611,26 @@ app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
     const updatedIngredient = result.rows[0];
     res.json(updatedIngredient);
 
+  }catch(err){
+    next(err);
+  }
+});
+
+app.get('/api/test', (req, res, next) => {
+  try{
+      const { isError } = req.query;
+      if(isError === "true"){
+        throw new ApiError(400, "test error", {
+          extraMessage: {
+            "field": "type",
+            "message" : "an error was thrown"
+          }
+        });
+      }else{
+        res.json({
+          message: "all good, backend API working"
+        });
+      }
   }catch(err){
     next(err);
   }
