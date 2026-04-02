@@ -1082,9 +1082,9 @@ app.post('/api/orders/create', async (req,res,next)=>{
           throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].id must be an integer.`, null, req.path);
         }
 
-        if (!Number.isFinite(toppingQty) || toppingQty <= 0) {
-          throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].qty must be a number > 0.`, null, req.path);
-        }
+        // if (!Number.isFinite(toppingQty) || toppingQty <= 0) {
+        //   throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].qty must be a number > 0.`, null, req.path);
+        // }
 
         return {
           id: toppingId,
@@ -1239,7 +1239,60 @@ app.post('/api/orders/create', async (req,res,next)=>{
   }
 });
 
+/*
+Report API Endpoints: restricted to managers
+X report requires: nothing, just returns the last 24 hours of sales data broken down by hour
+Z report requires: date query parameter in YYYY-MM-DD format
+Sales report requires: startDate, endDate query parameters in YYYY-MM-DD format
+ */
+/* TODO */
+app.get('/api/reports/x', requireAuth(true), async (req, res, next) =>{
+  /* Helper: This is the query we used from project 2:
+  SELECT
+                EXTRACT(HOUR FROM t.timestamp)::int AS hour,
+                COUNT(DISTINCT t.order_id)          AS total_transactions,
+                COUNT(*)                             AS total_items_sold,
+                ROUND(COALESCE(SUM(m.cost), 0)::numeric, 2) AS total_sales_amount,
+                SUM(CASE WHEN m.category = 'drink' THEN 1 ELSE 0 END) AS drinks_sold,
+                SUM(CASE WHEN m.category = 'food'  THEN 1 ELSE 0 END) AS food_sold
+            FROM order_history oh
+            JOIN transactions t ON oh.order_id = t.order_id
+            JOIN menu m ON oh.item_id = m.menu_id
+            WHERE t.timestamp::date = CURRENT_DATE
+            GROUP BY EXTRACT(HOUR FROM t.timestamp)::int
+            ORDER BY hour */
 
+  const query = `
+    SELECT
+        EXTRACT(HOUR FROM t.timestamp)::int AS hour,
+        COUNT(DISTINCT t.order_id)          AS total_transactions,
+        COUNT(*)                            AS total_items_sold,
+        ROUND(COALESCE(SUM(m.cost), 0)::numeric, 2) AS total_sales_amount,
+        SUM(CASE WHEN m.category = 'drink' THEN 1 ELSE 0 END) AS drinks_sold,
+        SUM(CASE WHEN m.category = 'food'  THEN 1 ELSE 0 END) AS food_sold
+    FROM order_history oh
+    JOIN transactions t ON oh.order_id = t.order_id
+    JOIN menu m ON oh.item_id = m.menu_id
+    WHERE t.timestamp::date = CURRENT_DATE
+    GROUP BY EXTRACT(HOUR FROM t.timestamp)::int
+    ORDER BY hour
+  `;
+
+  // Notice there is no array of parameters passed as the second argument
+  const result = await pool.query(query);
+  res.json(result.rows);
+
+});
+
+/*TODO */
+app.get('/api/reports/z', requireAuth(true), async (req, res, next) =>{
+  
+});
+
+/*TODO */
+app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
+  
+});
 
 app.get('/api/ingredients/all', requireAuth(true), async (req, res, next) => {
     /* #swagger.tags = ['Ingredients']
