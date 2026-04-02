@@ -22,13 +22,12 @@ import {
   Navbar,
   Spinner
 } from 'react-bootstrap';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -47,8 +46,7 @@ import './Manager.css';
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -350,6 +348,23 @@ const NavBar = () => {
           
           console.log('Sales Report data:', salesReportData);
           setReportData(salesReportData);
+          
+          // Transform backend data into Chart.js bar chart format
+          // Expected backend response: { labels: [item names], quantities: [amounts sold] }
+          if (salesReportData && salesReportData.labels) {
+            setSalesData({
+              labels: salesReportData.labels,
+              datasets: [
+                {
+                  label: 'Quantity Sold',
+                  data: salesReportData.quantities || [],
+                  backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                  borderColor: 'rgb(75, 192, 192)',
+                  borderWidth: 1,
+                },
+              ],
+            });
+          }
           break;
       }
     } catch (err) {
@@ -430,15 +445,25 @@ const NavBar = () => {
       },
       title: {
         display: true,
-        text: `Sales Report - ${timeframe}`,
+        text: `Sales by Item - ${startDate}${startDate !== endDate ? ` to ${endDate}` : ''}`,
       },
     },
     scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Menu Item',
+        },
+      },
       y: {
         beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Quantity Sold',
+        },
       },
     },
-  }), [timeframe]);
+  }), [startDate, endDate]);
 
   // Dashboard Content - memoized to prevent unnecessary re-renders and scroll resets
   const dashboardContent = useMemo(() => (
@@ -451,7 +476,7 @@ const NavBar = () => {
               <h5 className="mb-0">Sales Analytics</h5>
             </Card.Header>
             <Card.Body className="dashboard-card-body">
-              <Line data={salesData} options={chartOptions} />
+              <Bar data={salesData} options={chartOptions} />
             </Card.Body>
           </Card>
         </Col>

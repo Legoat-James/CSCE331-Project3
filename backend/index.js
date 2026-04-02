@@ -1303,7 +1303,60 @@ app.get('/api/reports/z', requireAuth(true), async (req, res, next) =>{
 
 /*TODO */
 app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
-  
+  try {
+    const { startDate, endDate, startHour, endHour } = req.query;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'startDate and endDate are required' });
+    }
+    
+    const isSingleDay = startDate === endDate;
+    
+    let query;
+    let params;
+    
+    if (isSingleDay && startHour !== undefined && endHour !== undefined) {
+      // Single day with hour filtering - group by menu item
+      query = `
+        SELECT 
+          m.name as item_name,
+          SUM(oi.quantity) as quantity_sold
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.order_id
+        JOIN menu_items m ON oi.menu_item_id = m.menu_item_id
+        WHERE DATE(o.order_time) = $1
+          AND EXTRACT(HOUR FROM o.order_time) >= $2
+          AND EXTRACT(HOUR FROM o.order_time) <= $3
+        GROUP BY m.menu_item_id, m.name
+        ORDER BY quantity_sold DESC
+      `;
+      params = [startDate, parseInt(startHour), parseInt(endHour)];
+    } else {
+      // Multi-day - group by menu item
+      query = `
+        SELECT 
+          m.name as item_name,
+          SUM(oi.quantity) as quantity_sold
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.order_id
+        JOIN menu_items m ON oi.menu_item_id = m.menu_item_id
+        WHERE DATE(o.order_time) >= $1 AND DATE(o.order_time) <= $2
+        GROUP BY m.menu_item_id, m.name
+        ORDER BY quantity_sold DESC
+      `;
+      params = [startDate, endDate];
+    }
+    
+    const result = await pool.query(query, params);
+    
+    // Format response for Chart.js bar chart
+    const labels = result.rows.map(row => row.item_name);
+    const quantities = result.rows.map(row => parseInt(row.quantity_sold) || 0);
+    
+    res.json({ labels, quantities });
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.get('/api/ingredients/all', requireAuth(true), async (req, res, next) => {
