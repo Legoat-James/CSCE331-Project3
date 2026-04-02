@@ -1322,10 +1322,18 @@ app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
         SELECT 
           m.name as item_name,
           SUM(oh.quantity) as quantity_sold,
-          SUM(oh.quantity * m.cost) as revenue
+          SUM(oh.quantity * m.cost) as revenue,
+          SUM(oh.quantity * COALESCE(recipe_cost.ingredient_cost, 0)) as total_ingredient_cost
         FROM order_history oh
         JOIN transactions t ON oh.order_id = t.order_id
         JOIN menu m ON oh.item_id = m.menu_id
+        LEFT JOIN (
+          SELECT r.menu_id, SUM(r.quantity * i.cost) as ingredient_cost
+          FROM recipes r
+          JOIN ingredients i ON r.ingredient_id = i.ingredient_id
+          WHERE r.is_active = true
+          GROUP BY r.menu_id
+        ) recipe_cost ON m.menu_id = recipe_cost.menu_id
         WHERE DATE(t.timestamp AT TIME ZONE $4) = $1
           AND EXTRACT(HOUR FROM t.timestamp AT TIME ZONE $4) >= $2
           AND EXTRACT(HOUR FROM t.timestamp AT TIME ZONE $4) <= $3
@@ -1339,10 +1347,18 @@ app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
         SELECT 
           m.name as item_name,
           SUM(oh.quantity) as quantity_sold,
-          SUM(oh.quantity * m.cost) as revenue
+          SUM(oh.quantity * m.cost) as revenue,
+          SUM(oh.quantity * COALESCE(recipe_cost.ingredient_cost, 0)) as total_ingredient_cost
         FROM order_history oh
         JOIN transactions t ON oh.order_id = t.order_id
         JOIN menu m ON oh.item_id = m.menu_id
+        LEFT JOIN (
+          SELECT r.menu_id, SUM(r.quantity * i.cost) as ingredient_cost
+          FROM recipes r
+          JOIN ingredients i ON r.ingredient_id = i.ingredient_id
+          WHERE r.is_active = true
+          GROUP BY r.menu_id
+        ) recipe_cost ON m.menu_id = recipe_cost.menu_id
         WHERE DATE(t.timestamp AT TIME ZONE $3) >= $1 
           AND DATE(t.timestamp AT TIME ZONE $3) <= $2
         GROUP BY m.menu_id, m.name
@@ -1357,8 +1373,13 @@ app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
     const labels = result.rows.map(row => row.item_name);
     const quantities = result.rows.map(row => parseInt(row.quantity_sold) || 0);
     const revenue = result.rows.map(row => parseFloat(row.revenue) || 0);
+    const netRevenue = result.rows.map(row => {
+      const gross = parseFloat(row.revenue) || 0;
+      const ingredientCost = parseFloat(row.total_ingredient_cost) || 0;
+      return gross - ingredientCost;
+    });
     
-    res.json({ labels, quantities, revenue });
+    res.json({ labels, quantities, revenue, netRevenue });
   } catch (err) {
     next(err);
   }

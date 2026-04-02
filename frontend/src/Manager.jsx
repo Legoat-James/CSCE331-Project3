@@ -93,7 +93,7 @@ export default function Manager() {
   const [timeframe, setTimeframe] = useState('Hour');
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportData, setReportData] = useState(null);
-  const [salesReportMode, setSalesReportMode] = useState('quantity'); // 'quantity' or 'revenue'
+  const [salesReportMode, setSalesReportMode] = useState('quantity'); // 'quantity', 'revenue', or 'netRevenue'
   const [reportLoading, setReportLoading] = useState(false);
   const [zReportGenerated, setZReportGenerated] = useState(false); // Track if Z report has been generated for the day
   // Sample data for tables
@@ -253,15 +253,27 @@ const NavBar = () => {
           }
           
         case 'Sales':
-          const isRevenueMode = salesReportMode === 'revenue';
-          const dataArray = isRevenueMode ? reportData.revenue : reportData.quantities;
+          const isMoneyMode = salesReportMode === 'revenue' || salesReportMode === 'netRevenue';
+          let columnHeader, dataArray;
+          
+          if (salesReportMode === 'revenue') {
+            columnHeader = 'Gross Revenue';
+            dataArray = reportData.revenue;
+          } else if (salesReportMode === 'netRevenue') {
+            columnHeader = 'Net Revenue';
+            dataArray = reportData.netRevenue;
+          } else {
+            columnHeader = 'Quantity Sold';
+            dataArray = reportData.quantities;
+          }
+          
           const total = dataArray?.reduce((sum, val) => sum + val, 0) || 0;
           return (
             <Table striped bordered hover size="sm" className="report-table">
               <thead>
                 <tr>
                   <th>Item Name</th>
-                  <th className="text-end">{isRevenueMode ? 'Revenue' : 'Quantity Sold'}</th>
+                  <th className="text-end">{columnHeader}</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,7 +281,7 @@ const NavBar = () => {
                   <tr key={index}>
                     <td>{label}</td>
                     <td className="text-end">
-                      {isRevenueMode ? `$${dataArray[index]?.toFixed(2)}` : dataArray[index]}
+                      {isMoneyMode ? `$${dataArray[index]?.toFixed(2)}` : dataArray[index]}
                     </td>
                   </tr>
                 ))}
@@ -278,7 +290,7 @@ const NavBar = () => {
                 <tr className="table-dark">
                   <td><strong>Total</strong></td>
                   <td className="text-end">
-                    <strong>{isRevenueMode ? `$${total.toFixed(2)}` : total}</strong>
+                    <strong>{isMoneyMode ? `$${total.toFixed(2)}` : total}</strong>
                   </td>
                 </tr>
               </tfoot>
@@ -393,15 +405,33 @@ const NavBar = () => {
   // Update chart data when salesReportMode or reportData changes
   useEffect(() => {
     if (reportData && reportData.labels && reportData.revenue) {
-      const isRevenue = salesReportMode === 'revenue';
+      let label, data, backgroundColor, borderColor;
+      
+      if (salesReportMode === 'revenue') {
+        label = 'Gross Revenue ($)';
+        data = reportData.revenue;
+        backgroundColor = 'rgba(255, 159, 64, 0.6)';
+        borderColor = 'rgb(255, 159, 64)';
+      } else if (salesReportMode === 'netRevenue') {
+        label = 'Net Revenue ($)';
+        data = reportData.netRevenue;
+        backgroundColor = 'rgba(75, 192, 75, 0.6)';
+        borderColor = 'rgb(75, 192, 75)';
+      } else {
+        label = 'Quantity Sold';
+        data = reportData.quantities;
+        backgroundColor = 'rgba(75, 192, 192, 0.6)';
+        borderColor = 'rgb(75, 192, 192)';
+      }
+      
       setSalesData({
         labels: reportData.labels,
         datasets: [
           {
-            label: isRevenue ? 'Revenue ($)' : 'Quantity Sold',
-            data: isRevenue ? reportData.revenue : reportData.quantities,
-            backgroundColor: isRevenue ? 'rgba(255, 159, 64, 0.6)' : 'rgba(75, 192, 192, 0.6)',
-            borderColor: isRevenue ? 'rgb(255, 159, 64)' : 'rgb(75, 192, 192)',
+            label,
+            data,
+            backgroundColor,
+            borderColor,
             borderWidth: 1,
           },
         ],
@@ -492,7 +522,7 @@ const NavBar = () => {
         beginAtZero: true,
         title: {
           display: true,
-          text: salesReportMode === 'revenue' ? 'Revenue ($)' : 'Quantity Sold',
+          text: salesReportMode === 'revenue' ? 'Gross Revenue ($)' : salesReportMode === 'netRevenue' ? 'Net Revenue ($)' : 'Quantity Sold',
         },
       },
     },
@@ -581,7 +611,7 @@ const NavBar = () => {
               )}
               <Form.Group className="mb-2">
                 <Form.Label className="small mb-1">Display Mode</Form.Label>
-                <div className="d-flex gap-2">
+                <div className="d-flex gap-1 flex-wrap">
                   <Button
                     size="sm"
                     variant={salesReportMode === 'quantity' ? 'primary' : 'outline-primary'}
@@ -596,7 +626,15 @@ const NavBar = () => {
                     onClick={() => setSalesReportMode('revenue')}
                     className="flex-fill"
                   >
-                    Revenue
+                    Gross
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={salesReportMode === 'netRevenue' ? 'primary' : 'outline-primary'}
+                    onClick={() => setSalesReportMode('netRevenue')}
+                    className="flex-fill"
+                  >
+                    Net
                   </Button>
                 </div>
               </Form.Group>
