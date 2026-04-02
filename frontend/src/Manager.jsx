@@ -138,7 +138,77 @@ const NavBar = () => {
     );
   };
 
-  
+  //Render report data
+  const renderReportData = () => {
+    if(reportLoading) {
+      return <div className="text-center">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>;
+    }
+    else if(reportData) {
+      //check the cases to determine what type of report data to show:
+      switch(selectedReport) {
+        case 'X':
+          console.log('Rendering X Report data:', reportData);
+          // Calculate totals for the day
+          const totals = reportData.reduce((acc, hourData) => ({
+            drinks_sold: acc.drinks_sold + (hourData.drinks_sold || 0),
+            food_sold: acc.food_sold + (hourData.food_sold || 0),
+            total_items_sold: acc.total_items_sold + (hourData.total_items_sold || 0),
+            total_sales_amount: acc.total_sales_amount + (parseFloat(hourData.total_sales_amount) || 0),
+            total_transactions: acc.total_transactions + (hourData.total_transactions || 0),
+          }), { drinks_sold: 0, food_sold: 0, total_items_sold: 0, total_sales_amount: 0, total_transactions: 0 });
+
+          return (
+            <Table striped hover responsive size="sm" className="dashboard-table">
+              <thead>
+                <tr>
+                  <th className="text-start">Hour</th>
+                  <th className="text-end">Drinks Sold</th>
+                  <th className="text-end">Food Sold</th>
+                  <th className="text-end">Total Items</th>
+                  <th className="text-end">Sales ($)</th>
+                  <th className="text-end">Transactions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.map((hourData, index) => (
+                  <tr key={index}>
+                    <td className="text-start">{hourData.hour}</td>
+                    <td className="text-end">{hourData.drinks_sold}</td>
+                    <td className="text-end">{hourData.food_sold}</td>
+                    <td className="text-end">{hourData.total_items_sold}</td>
+                    <td className="text-end">${parseFloat(hourData.total_sales_amount).toFixed(2)}</td>
+                    <td className="text-end">{hourData.total_transactions}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="fw-bold table-secondary">
+                  <td className="text-start">Total</td>
+                  <td className="text-end">{totals.drinks_sold}</td>
+                  <td className="text-end">{totals.food_sold}</td>
+                  <td className="text-end">{totals.total_items_sold}</td>
+                  <td className="text-end">${totals.total_sales_amount.toFixed(2)}</td>
+                  <td className="text-end">{totals.total_transactions}</td>
+                </tr>
+              </tfoot>
+            </Table>
+          );
+        case 'Z':
+          return <pre className="report-data">{JSON.stringify(reportData, null, 2)}</pre>;
+        case 'Sales':
+          return <pre className="report-data">{JSON.stringify(reportData, null, 2)}</pre>;
+        default:
+          return <div>Unknown report type.</div>;
+      }
+    }
+    else {
+      return <div>No report data to display.</div>;
+    }
+  }
 
   // TODO: Implement the X Report, Z Report, and Sales Report generation logic
   const generateReport = useCallback(async (type) => {
@@ -162,11 +232,12 @@ const NavBar = () => {
           const xReportData = await queryClient.fetchQuery({
             queryKey: ['x-report'],
             queryFn: () => apiClient('/api/reports/x'),
-            staleTime: 30000,
+            staleTime: 0, // Always fetch fresh
           });
           
           console.log('X Report data:', xReportData);
           setReportData(xReportData);
+          
           break;
           
         case 'Z':
@@ -395,26 +466,13 @@ const NavBar = () => {
               <h6 className="mb-0">Report Data</h6>
             </Card.Header>
             <Card.Body className="dashboard-card-body">
-              <Table size="sm" responsive className="dashboard-table mb-0">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Qty</th>
-                    <th>$</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td>Milk Tea</td><td>15</td><td>74.85</td></tr>
-                  <tr><td>Taro Tea</td><td>8</td><td>43.92</td></tr>
-                  <tr><td>Matcha</td><td>5</td><td>29.95</td></tr>
-                </tbody>
-              </Table>
+              {renderReportData()}
             </Card.Body>
           </Card>
         </Col>
       </Row>
     </div>
-  ), [salesData, chartOptions, timeframe, recentOrders, isPending, error, isSuccess, generateReport]);
+  ), [salesData, chartOptions, timeframe, recentOrders, isPending, error, isSuccess, generateReport, selectedReport, reportData, reportLoading]);
 
   // Render active view based on state
   const renderActiveView = () => {
