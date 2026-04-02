@@ -1311,40 +1311,44 @@ app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
     }
     
     const isSingleDay = startDate === endDate;
+    const timezone = 'UTC';
     
     let query;
     let params;
     
     if (isSingleDay && startHour !== undefined && endHour !== undefined) {
-      // Single day with hour filtering - group by menu item
+      // Single day with hour filtering
       query = `
         SELECT 
           m.name as item_name,
-          SUM(oi.quantity) as quantity_sold
-        FROM order_items oi
-        JOIN orders o ON oi.order_id = o.order_id
-        JOIN menu_items m ON oi.menu_item_id = m.menu_item_id
-        WHERE DATE(o.order_time) = $1
-          AND EXTRACT(HOUR FROM o.order_time) >= $2
-          AND EXTRACT(HOUR FROM o.order_time) <= $3
-        GROUP BY m.menu_item_id, m.name
+          SUM(oh.quantity) as quantity_sold,
+          SUM(oh.quantity * m.cost) as revenue
+        FROM order_history oh
+        JOIN transactions t ON oh.order_id = t.order_id
+        JOIN menu m ON oh.item_id = m.menu_id
+        WHERE DATE(t.timestamp AT TIME ZONE $4) = $1
+          AND EXTRACT(HOUR FROM t.timestamp AT TIME ZONE $4) >= $2
+          AND EXTRACT(HOUR FROM t.timestamp AT TIME ZONE $4) <= $3
+        GROUP BY m.menu_id, m.name
         ORDER BY quantity_sold DESC
       `;
-      params = [startDate, parseInt(startHour), parseInt(endHour)];
+      params = [startDate, parseInt(startHour), parseInt(endHour), timezone];
     } else {
-      // Multi-day - group by menu item
+      // Multi-day range
       query = `
         SELECT 
           m.name as item_name,
-          SUM(oi.quantity) as quantity_sold
-        FROM order_items oi
-        JOIN orders o ON oi.order_id = o.order_id
-        JOIN menu_items m ON oi.menu_item_id = m.menu_item_id
-        WHERE DATE(o.order_time) >= $1 AND DATE(o.order_time) <= $2
-        GROUP BY m.menu_item_id, m.name
+          SUM(oh.quantity) as quantity_sold,
+          SUM(oh.quantity * m.cost) as revenue
+        FROM order_history oh
+        JOIN transactions t ON oh.order_id = t.order_id
+        JOIN menu m ON oh.item_id = m.menu_id
+        WHERE DATE(t.timestamp AT TIME ZONE $3) >= $1 
+          AND DATE(t.timestamp AT TIME ZONE $3) <= $2
+        GROUP BY m.menu_id, m.name
         ORDER BY quantity_sold DESC
       `;
-      params = [startDate, endDate];
+      params = [startDate, endDate, timezone];
     }
     
     const result = await pool.query(query, params);
@@ -1352,8 +1356,9 @@ app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
     // Format response for Chart.js bar chart
     const labels = result.rows.map(row => row.item_name);
     const quantities = result.rows.map(row => parseInt(row.quantity_sold) || 0);
+    const revenue = result.rows.map(row => parseFloat(row.revenue) || 0);
     
-    res.json({ labels, quantities });
+    res.json({ labels, quantities, revenue });
   } catch (err) {
     next(err);
   }

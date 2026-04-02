@@ -93,6 +93,7 @@ export default function Manager() {
   const [timeframe, setTimeframe] = useState('Hour');
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportData, setReportData] = useState(null);
+  const [salesReportMode, setSalesReportMode] = useState('quantity'); // 'quantity' or 'revenue'
   const [reportLoading, setReportLoading] = useState(false);
   const [zReportGenerated, setZReportGenerated] = useState(false); // Track if Z report has been generated for the day
   // Sample data for tables
@@ -252,7 +253,37 @@ const NavBar = () => {
           }
           
         case 'Sales':
-          return <pre className="report-data">{JSON.stringify(reportData, null, 2)}</pre>;
+          const isRevenueMode = salesReportMode === 'revenue';
+          const dataArray = isRevenueMode ? reportData.revenue : reportData.quantities;
+          const total = dataArray?.reduce((sum, val) => sum + val, 0) || 0;
+          return (
+            <Table striped bordered hover size="sm" className="report-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th className="text-end">{isRevenueMode ? 'Revenue' : 'Quantity Sold'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.labels && reportData.labels.map((label, index) => (
+                  <tr key={index}>
+                    <td>{label}</td>
+                    <td className="text-end">
+                      {isRevenueMode ? `$${dataArray[index]?.toFixed(2)}` : dataArray[index]}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="table-dark">
+                  <td><strong>Total</strong></td>
+                  <td className="text-end">
+                    <strong>{isRevenueMode ? `$${total.toFixed(2)}` : total}</strong>
+                  </td>
+                </tr>
+              </tfoot>
+            </Table>
+          );
         default:
           return <div>Unknown report type.</div>;
       }
@@ -348,23 +379,6 @@ const NavBar = () => {
           
           console.log('Sales Report data:', salesReportData);
           setReportData(salesReportData);
-          
-          // Transform backend data into Chart.js bar chart format
-          // Expected backend response: { labels: [item names], quantities: [amounts sold] }
-          if (salesReportData && salesReportData.labels) {
-            setSalesData({
-              labels: salesReportData.labels,
-              datasets: [
-                {
-                  label: 'Quantity Sold',
-                  data: salesReportData.quantities || [],
-                  backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                  borderColor: 'rgb(75, 192, 192)',
-                  borderWidth: 1,
-                },
-              ],
-            });
-          }
           break;
       }
     } catch (err) {
@@ -375,6 +389,25 @@ const NavBar = () => {
     }
 
   }, [queryClient]);
+
+  // Update chart data when salesReportMode or reportData changes
+  useEffect(() => {
+    if (reportData && reportData.labels && reportData.revenue) {
+      const isRevenue = salesReportMode === 'revenue';
+      setSalesData({
+        labels: reportData.labels,
+        datasets: [
+          {
+            label: isRevenue ? 'Revenue ($)' : 'Quantity Sold',
+            data: isRevenue ? reportData.revenue : reportData.quantities,
+            backgroundColor: isRevenue ? 'rgba(255, 159, 64, 0.6)' : 'rgba(75, 192, 192, 0.6)',
+            borderColor: isRevenue ? 'rgb(255, 159, 64)' : 'rgb(75, 192, 192)',
+            borderWidth: 1,
+          },
+        ],
+      });
+    }
+  }, [salesReportMode, reportData]);
 
   const renderRecentOrders = (orders) => {
     const renderColumn = (columnItems) => (
@@ -459,11 +492,11 @@ const NavBar = () => {
         beginAtZero: true,
         title: {
           display: true,
-          text: 'Quantity Sold',
+          text: salesReportMode === 'revenue' ? 'Revenue ($)' : 'Quantity Sold',
         },
       },
     },
-  }), [startDate, endDate]);
+  }), [startDate, endDate, salesReportMode]);
 
   // Dashboard Content - memoized to prevent unnecessary re-renders and scroll resets
   const dashboardContent = useMemo(() => (
@@ -546,6 +579,27 @@ const NavBar = () => {
                   </Row>
                 </>
               )}
+              <Form.Group className="mb-2">
+                <Form.Label className="small mb-1">Display Mode</Form.Label>
+                <div className="d-flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={salesReportMode === 'quantity' ? 'primary' : 'outline-primary'}
+                    onClick={() => setSalesReportMode('quantity')}
+                    className="flex-fill"
+                  >
+                    Quantity
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={salesReportMode === 'revenue' ? 'primary' : 'outline-primary'}
+                    onClick={() => setSalesReportMode('revenue')}
+                    className="flex-fill"
+                  >
+                    Revenue
+                  </Button>
+                </div>
+              </Form.Group>
               <Button
                 variant="primary"
                 className="w-100 dashboard-btn mt-2"
@@ -612,7 +666,7 @@ const NavBar = () => {
         </Col>
       </Row>
     </div>
-  ), [salesData, chartOptions, timeframe, recentOrders, isPending, error, isSuccess, generateReport, selectedReport, reportData, reportLoading, startDate, endDate, startHour, endHour, isSingleDay]);
+  ), [salesData, chartOptions, timeframe, recentOrders, isPending, error, isSuccess, generateReport, selectedReport, reportData, reportLoading, startDate, endDate, startHour, endHour, isSingleDay, salesReportMode]);
 
   // Render active view based on state
   const renderActiveView = () => {
