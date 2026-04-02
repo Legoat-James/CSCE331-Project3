@@ -1081,9 +1081,9 @@ app.post('/api/orders/create', async (req,res,next)=>{
           throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].id must be an integer.`, null, req.path);
         }
 
-        if (!Number.isFinite(toppingQty) || toppingQty <= 0) {
-          throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].qty must be a number > 0.`, null, req.path);
-        }
+        // if (!Number.isFinite(toppingQty) || toppingQty <= 0) {
+        //   throw new ApiError(400, `items[${itemIndex}].toppings[${toppingIndex}].qty must be a number > 0.`, null, req.path);
+        // }
 
         return {
           id: toppingId,
