@@ -296,12 +296,12 @@ const NavBar = () => {
       <Col xs={6} className="d-flex flex-column gap-2">
         {/*Need to do a for loop through each item in the orders list */}
         {columnItems.map((order) => (
-          <Card key={order.order_id} className="mb-2">
+          <Card key={order.orderId} className="mb-2">
             <Card.Body>
-              <Card.Title>Order #{order.order_id}</Card.Title>
+              <Card.Title>Order #{order.orderId}</Card.Title>
               <Card.Subtitle className="mb-2 text-muted">{new Date(order.timestamp).toLocaleString()}</Card.Subtitle>
               <Card.Text>
-                Total: ${parseFloat(order.order_total)}
+                Total: ${parseFloat(order.orderTotal)}
               </Card.Text>
             </Card.Body>
           </Card>

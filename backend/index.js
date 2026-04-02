@@ -913,7 +913,12 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
                 order_total: 67.00, 
                 timestamp: '2025-02-13 14:06:52+00',
                 employee_id: 3,
-                customer_name: 'Burt'
+                customer_name: 'Burt',
+                items: [{
+                  name: "Black Tea",
+                  quantity: 1,
+                  menuId: 0
+                }]
             }]
     } 
     #swagger.parameters['numRecent'] = {
@@ -933,7 +938,7 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
 
     const query = `
       WITH recent_order_ids AS (
-            SELECT order_id, timestamp 
+            SELECT order_id, timestamp, order_total, customer_name, employee_id 
             FROM transactions 
             ORDER BY timestamp DESC 
             LIMIT $1
@@ -941,6 +946,9 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
       SELECT 
             roi.order_id,
             roi.timestamp,
+            roi.order_total,
+            roi.customer_name,
+            roi.employee_id,
             oh.item_id,
             oh.quantity,
             m.name
@@ -957,8 +965,11 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
       if(!order){
         //if the order is not already in the accumulated list, create it
         order = {
-          order_id: row.order_id,
+          orderId: row.order_id,
           timestamp: row.timestamp,
+          orderTotal: row.order_total,
+          customerName: row.customer_name,
+          employeeId: row.employee_id,
           items: []
         };
         acc.push(order);
@@ -1602,26 +1613,6 @@ app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
     const updatedIngredient = result.rows[0];
     res.json(updatedIngredient);
 
-  }catch(err){
-    next(err);
-  }
-});
-
-app.get('/api/test', (req, res, next) => {
-  try{
-      const { isError } = req.query;
-      if(isError === "true"){
-        throw new ApiError(400, "test error", {
-          extraMessage: {
-            "field": "type",
-            "message" : "an error was thrown"
-          }
-        });
-      }else{
-        res.json({
-          message: "all good, backend API working"
-        });
-      }
   }catch(err){
     next(err);
   }
