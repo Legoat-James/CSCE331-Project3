@@ -572,7 +572,7 @@ app.put('/api/employee/update', requireAuth(true), async (req,res,next)=>{
     }
     
 
-    const query = "UPDATE employees SET name = $1, password = $2, is_manager = $3, username = $4 WHERE menu_id = $5 RETURNING *;"
+    const query = "UPDATE employees SET name = $1, password = $2, is_manager = $3, username = $4 WHERE employee_id = $5 RETURNING *;"
     const insertValues = [name, password, is_manager, username, employeeID];
 
     const result = await pool.query(query, insertValues);
