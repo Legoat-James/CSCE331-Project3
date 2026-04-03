@@ -499,7 +499,7 @@ app.get('/api/employee/all', requireAuth(false), async (req, res, next) => {
             }]
     } */
   try{
-    const result = await pool.query('SELECT username FROM employees WHERE is_active = true ORDER BY employee_id');
+    const result = await pool.query('SELECT * FROM employees WHERE is_active = true ORDER BY employee_id');
     const employeeList = result.rows;
     res.json(employeeList);
   }catch(err){
