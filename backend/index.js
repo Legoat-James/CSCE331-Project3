@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import errorHandler from "./helpers/errorHandler.js";
 import ApiError from "./helpers/ApiError.js";
 import pg from "pg";
@@ -12,6 +13,10 @@ import OAuth2 from "google-auth-library";
 import swaggerJSDoc from "swagger-jsdoc";
 import cookieParser from "cookie-parser";
 import swaggerUi from 'swagger-ui-express';
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Support running backend from either repo root or backend/ folder.
 // This loads the first matching .env values without overriding already-set vars.
@@ -1128,11 +1133,11 @@ app.post('/api/orders/create', async (req,res,next)=>{
       for (const topping of item.toppings) {
         await client.query(
           'INSERT INTO toppings (item_menu_id, transaction_id, topping_menu_id, quantity) VALUES ($1, $2, $3, $4)',
-          [item.menuId, newOrderId, topping.id, topping.qty],
+          [item.menuId, newOrderId, topping.id, topping.quantity],
         );
         toppingRowsInserted += 1;
 
-        addMenuUsage(topping.id, topping.qty);
+        addMenuUsage(topping.id, topping.quantity);
       }
     }
 
@@ -1233,7 +1238,152 @@ app.post('/api/orders/create', async (req,res,next)=>{
   }
 });
 
+/*
+Report API Endpoints: restricted to managers
+X report requires: nothing, just returns the last 24 hours of sales data broken down by hour
+Z report requires: date query parameter in YYYY-MM-DD format
+Sales report requires: startDate, endDate query parameters in YYYY-MM-DD format
+ */
+app.get('/api/reports/x', requireAuth(true), async (req, res, next) =>{
+  /* Helper: This is the query we used from project 2:
+  SELECT
+                EXTRACT(HOUR FROM t.timestamp)::int AS hour,
+                COUNT(DISTINCT t.order_id)          AS total_transactions,
+                COUNT(*)                             AS total_items_sold,
+                ROUND(COALESCE(SUM(m.cost), 0)::numeric, 2) AS total_sales_amount,
+                SUM(CASE WHEN m.category = 'drink' THEN 1 ELSE 0 END) AS drinks_sold,
+                SUM(CASE WHEN m.category = 'food'  THEN 1 ELSE 0 END) AS food_sold
+            FROM order_history oh
+            JOIN transactions t ON oh.order_id = t.order_id
+            JOIN menu m ON oh.item_id = m.menu_id
+            WHERE t.timestamp::date = CURRENT_DATE
+            GROUP BY EXTRACT(HOUR FROM t.timestamp)::int
+            ORDER BY hour */
 
+  const query = `
+    SELECT
+        EXTRACT(HOUR FROM t.timestamp)::int AS hour,
+        COUNT(DISTINCT t.order_id)          AS total_transactions,
+        COUNT(*)                            AS total_items_sold,
+        ROUND(COALESCE(SUM(m.cost), 0)::numeric, 2) AS total_sales_amount,
+        SUM(CASE WHEN m.category = 'drink' THEN 1 ELSE 0 END) AS drinks_sold,
+        SUM(CASE WHEN m.category = 'food'  THEN 1 ELSE 0 END) AS food_sold
+    FROM order_history oh
+    JOIN transactions t ON oh.order_id = t.order_id
+    JOIN menu m ON oh.item_id = m.menu_id
+    WHERE t.timestamp::date = CURRENT_DATE
+    GROUP BY EXTRACT(HOUR FROM t.timestamp)::int
+    ORDER BY hour
+  `;
+
+  // Notice there is no array of parameters passed as the second argument
+  const result = await pool.query(query);
+  res.json(result.rows);
+
+});
+
+/*TODO */
+app.get('/api/reports/z', requireAuth(true), async (req, res, next) =>{
+  //Can probably just use the x report query and here just send a query to say we have generated the report
+  //for the day and have frontend call this endpoint once the report is done.
+  //before query, check if the entry already existed in the z_report_log table for the current date, if it does, throw an error saying you can only generate one report per day. If not, insert a new entry with the current date and return success.
+  const checkQuery = 'SELECT * FROM z_report_log WHERE report_date = CURRENT_DATE';
+  const checkResult = await pool.query(checkQuery);
+
+  if (checkResult.rows.length > 0) {
+    return res.status(400).json({ message: 'Z report for today has already been generated.' });
+  }
+  else{
+    const query = 'INSERT INTO z_report_log (report_date) VALUES (CURRENT_DATE)';
+    await pool.query(query);
+    res.json({ message: 'Z report generated successfully.' });
+  }
+  
+});
+
+/*TODO */
+app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
+  try {
+    const { startDate, endDate, startHour, endHour } = req.query;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'startDate and endDate are required' });
+    }
+    
+    const isSingleDay = startDate === endDate;
+    const timezone = 'UTC';
+    
+    let query;
+    let params;
+    
+    if (isSingleDay && startHour !== undefined && endHour !== undefined) {
+      // Single day with hour filtering
+      query = `
+        SELECT 
+          m.name as item_name,
+          SUM(oh.quantity) as quantity_sold,
+          SUM(oh.quantity * m.cost) as revenue,
+          SUM(oh.quantity * COALESCE(recipe_cost.ingredient_cost, 0)) as total_ingredient_cost
+        FROM order_history oh
+        JOIN transactions t ON oh.order_id = t.order_id
+        JOIN menu m ON oh.item_id = m.menu_id
+        LEFT JOIN (
+          SELECT r.menu_id, SUM(r.quantity * i.cost) as ingredient_cost
+          FROM recipes r
+          JOIN ingredients i ON r.ingredient_id = i.ingredient_id
+          WHERE r.is_active = true
+          GROUP BY r.menu_id
+        ) recipe_cost ON m.menu_id = recipe_cost.menu_id
+        WHERE DATE(t.timestamp AT TIME ZONE $4) = $1
+          AND EXTRACT(HOUR FROM t.timestamp AT TIME ZONE $4) >= $2
+          AND EXTRACT(HOUR FROM t.timestamp AT TIME ZONE $4) <= $3
+        GROUP BY m.menu_id, m.name
+        ORDER BY quantity_sold DESC
+      `;
+      params = [startDate, parseInt(startHour), parseInt(endHour), timezone];
+    } else {
+      // Multi-day range
+      query = `
+        SELECT 
+          m.name as item_name,
+          SUM(oh.quantity) as quantity_sold,
+          SUM(oh.quantity * m.cost) as revenue,
+          SUM(oh.quantity * COALESCE(recipe_cost.ingredient_cost, 0)) as total_ingredient_cost
+        FROM order_history oh
+        JOIN transactions t ON oh.order_id = t.order_id
+        JOIN menu m ON oh.item_id = m.menu_id
+        LEFT JOIN (
+          SELECT r.menu_id, SUM(r.quantity * i.cost) as ingredient_cost
+          FROM recipes r
+          JOIN ingredients i ON r.ingredient_id = i.ingredient_id
+          WHERE r.is_active = true
+          GROUP BY r.menu_id
+        ) recipe_cost ON m.menu_id = recipe_cost.menu_id
+        WHERE DATE(t.timestamp AT TIME ZONE $3) >= $1 
+          AND DATE(t.timestamp AT TIME ZONE $3) <= $2
+        GROUP BY m.menu_id, m.name
+        ORDER BY quantity_sold DESC
+      `;
+      params = [startDate, endDate, timezone];
+    }
+    
+    const result = await pool.query(query, params);
+    
+    // Format response for Chart.js bar chart
+    const labels = result.rows.map(row => row.item_name);
+    const quantities = result.rows.map(row => parseInt(row.quantity_sold) || 0);
+    const revenue = result.rows.map(row => parseFloat(row.revenue) || 0);
+    const netRevenue = result.rows.map(row => {
+      const gross = parseFloat(row.revenue) || 0;
+      const ingredientCost = parseFloat(row.total_ingredient_cost) || 0;
+      return gross - ingredientCost;
+    });
+    
+    res.json({ labels, quantities, revenue, netRevenue });
+  } catch (err) {
+    next(err);
+  }
+});
 
 app.get('/api/ingredients/all', requireAuth(true), async (req, res, next) => {
     /* #swagger.tags = ['Ingredients']

@@ -138,6 +138,26 @@ NODE_ENV=development
 - Use the root `npm run dev` script (now uses `concurrently` for reliable parallel startup).
 - Confirm frontend URL is `http://localhost:3000` (not `5173`).
 
+## Chatbot Setup
+
+### 1. Get your API Keys
+- Go to chat.tamu.ai
+- Click on your profile in the bottom left > Settings > Account > API Keys > Generate API Key
+
+### 2. .env Setup
+- Add the following to the .env <br>
+   TAMUS_AI_CHAT_API_ENDPOINT=https://chat-api.tamu.ai<br>
+   TAMUS_AI_CHAT_API_KEY=YOUR_API_KEY_HERE<br>
+
+### 3. Authorize
+- Use your API key with the Swagger docs <br>
+- Open up the <a href="https://docs.tamus.ai/prod/api_docs.html"> TAMUS AI Framework documentation Swagger page</a> <br>
+- Choose your member institution's API URL (https://chat-api.tamu.ai) from the Servers menu in the top left corner. <br>
+- Click the green Authorize button in the top right corner. <br>
+- Paste your API key into the Value field and click the Authorize button <br> 
+
+
+
 ## Learn More
 
 - [React Documentation](https://react.dev/)

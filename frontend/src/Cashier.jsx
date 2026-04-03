@@ -99,14 +99,9 @@ export default function Cashier() {
                     menuId: item.menu_id,
                     quantity: 1,
                     toppings: item.modifications_array ? item.modifications_array.map(mod => {
-                        let quantity = 1;
-                        if (mod.menu_id === 65 || mod.menu_id === 64) { // Ice or Sugar
-                            const parts = mod.name.split(' ');
-                            if (parts.length === 2 && parts[1].endsWith('x')) {
-                                quantity = parseFloat(parts[1].slice(0, -1));
-                            }
-                        }
-                        return { id: mod.menu_id, quantity: quantity };
+                        // Quantity should always be an integer for database
+                        // Ice/Sugar levels are stored in the modification name, not quantity
+                        return { id: mod.menu_id, quantity: 1 };
                     }) : []
                 }
             })
