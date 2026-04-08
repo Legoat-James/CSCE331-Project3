@@ -25,6 +25,7 @@ import avocadoToastImg from './assets/avocado-toast.jpg';
 import bagelSandwichImg from './assets/bagel-sandwich.jpg';
 import friesImg from './assets/fries.jpg';
 import grilledCheeseImg from './assets/grilled-cheese.jpg';
+import Weather from './components/customer/Weather';
 
 const fallbackCardImage = '/teashopLogo.png';
 const iceLevelOptions = ['No Ice', 'Light Ice', 'Regular Ice', 'Extra Ice'];
@@ -597,6 +598,11 @@ function Customer() {
                   >
                     Food
                   </button>
+                </Nav.Item>
+              </Nav>
+              <Nav className="ms-auto">
+                <Nav.Item>
+                  <Weather />
                 </Nav.Item>
               </Nav>
             </Navbar.Collapse>
