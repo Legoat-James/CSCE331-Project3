@@ -504,7 +504,7 @@ app.get('/api/employee/all', requireAuth(false), async (req, res, next) => {
             }]
     } */
   try{
-    const result = await pool.query('SELECT username FROM employees WHERE is_active = true ORDER BY employee_id');
+    const result = await pool.query('SELECT * FROM employees WHERE is_active = true ORDER BY employee_id');
     const employeeList = result.rows;
     res.json(employeeList);
   }catch(err){
@@ -564,15 +564,16 @@ app.put('/api/employee/update', requireAuth(true), async (req,res,next)=>{
       throw new ApiError(400, "Missing 'employee'",null,req.path);
     }
     const name = req.body.name;
-    const password = req.body.password;
+    const plainPassword = req.body.password;
     const is_manager = req.body.is_manager;
     const username = req.body.username;
-    if(!name || !password || !is_manager || !username){
+    if(!name || !plainPassword || !is_manager || !username){
       throw new ApiError(400, "Missing fields in 'employee'",null,req.path);
     }
+    const password = await bcrypt.hash(plainPassword, 10);
     
 
-    const query = "UPDATE employees SET name = $1, password = $2, is_manager = $3, username = $4 WHERE menu_id = $5 RETURNING *;"
+    const query = "UPDATE employees SET name = $1, password = $2, is_manager = $3, username = $4 WHERE employee_id = $5 RETURNING *;"
     const insertValues = [name, password, is_manager, username, employeeID];
 
     const result = await pool.query(query, insertValues);
@@ -621,12 +622,13 @@ app.post('/api/employee/create', requireAuth(true), async (req,res,next)=>{
       throw new ApiError(400, "Missing 'employee'",null,req.path);
     }
     const name = req.body.name;
-    const password = req.body.password;
+    const plainPassword = req.body.password;
     const is_manager = req.body.is_manager;
     const username = req.body.username;
-    if(!name || !password || !is_manager || !username){
+    if(!name || !plainPassword || !is_manager || !username){
       throw new ApiError(400, "Missing fields in 'employee'",null,req.path);
     }
+    const password = await bcrypt.hash(plainPassword, 10);
     
 
     const query = "INSERT INTO employees (name, password, is_manager, username) VALUES ($1, $2, $3, $4) RETURNING *;"
