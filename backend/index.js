@@ -564,12 +564,13 @@ app.put('/api/employee/update', requireAuth(true), async (req,res,next)=>{
       throw new ApiError(400, "Missing 'employee'",null,req.path);
     }
     const name = req.body.name;
-    const password = req.body.password;
+    const plainPassword = req.body.password;
     const is_manager = req.body.is_manager;
     const username = req.body.username;
-    if(!name || !password || !is_manager || !username){
+    if(!name || !plainPassword || !is_manager || !username){
       throw new ApiError(400, "Missing fields in 'employee'",null,req.path);
     }
+    const password = await bcrypt.hash(plainPassword, 10);
     
 
     const query = "UPDATE employees SET name = $1, password = $2, is_manager = $3, username = $4 WHERE employee_id = $5 RETURNING *;"
@@ -621,12 +622,13 @@ app.post('/api/employee/create', requireAuth(true), async (req,res,next)=>{
       throw new ApiError(400, "Missing 'employee'",null,req.path);
     }
     const name = req.body.name;
-    const password = req.body.password;
+    const plainPassword = req.body.password;
     const is_manager = req.body.is_manager;
     const username = req.body.username;
-    if(!name || !password || !is_manager || !username){
+    if(!name || !plainPassword || !is_manager || !username){
       throw new ApiError(400, "Missing fields in 'employee'",null,req.path);
     }
+    const password = await bcrypt.hash(plainPassword, 10);
     
 
     const query = "INSERT INTO employees (name, password, is_manager, username) VALUES ($1, $2, $3, $4) RETURNING *;"
