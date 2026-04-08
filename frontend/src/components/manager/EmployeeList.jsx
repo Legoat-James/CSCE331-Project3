@@ -11,17 +11,17 @@ import {
 import { useGet, useMutate } from '../../hooks/useApi';
 
 export default function EmployeeList() {
-    const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
+  const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [showUpdateEmployeeModal, setShowUpdateEmployeeModal] = useState(false);
-    const [showEnableEmployeeModal, setShowEnableEmployeeModal] = useState(false);
-    const [showRemoveEmployeeModal, setShowRemoveEmployeeModal] = useState(false);
-    const [employeeToRemove, setEmployeeToRemove] = useState(null);
+  const [showEnableEmployeeModal, setShowEnableEmployeeModal] = useState(false);
+  const [showRemoveEmployeeModal, setShowRemoveEmployeeModal] = useState(false);
+  const [employeeToRemove, setEmployeeToRemove] = useState(null);
   const [employeeToUpdate, setEmployeeToUpdate] = useState(null);
-    const [employeeIdToEnable, setEmployeeIdToEnable] = useState('');
-    const [newEmployeeName, setNewEmployeeName] = useState('');
-    const [newEmployeeUsername, setNewEmployeeUsername] = useState('');
-    const [newEmployeePassword, setNewEmployeePassword] = useState('');
-    const [newEmployeeIsManager, setNewEmployeeIsManager] = useState(false);
+  const [employeeIdToEnable, setEmployeeIdToEnable] = useState('');
+  const [newEmployeeName, setNewEmployeeName] = useState('');
+  const [newEmployeeUsername, setNewEmployeeUsername] = useState('');
+  const [newEmployeePassword, setNewEmployeePassword] = useState('');
+  const [newEmployeeIsManager, setNewEmployeeIsManager] = useState(false);
   const [updateEmployeeId, setUpdateEmployeeId] = useState('');
   const [updateEmployeeName, setUpdateEmployeeName] = useState('');
   const [updateEmployeeUsername, setUpdateEmployeeUsername] = useState('');
