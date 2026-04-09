@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Alert, Container, Card} from 'react-bootstrap';
 import { loginUser } from './api/authAPI.js';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { useMutate } from './hooks/useApi.js';
 
 export default function Login() {
     const [username, setUsername] = useState('');
@@ -8,6 +10,28 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    const loginMutation = useMutate('/api/employee/login', 'POST', []);
+
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    async function googleLogin(credentialResponse){
+        const googleToken = credentialResponse.credential;
+        try{
+            loginMutation.mutate({
+                googleToken: googleToken
+            })
+        }catch(err){
+            console.error("Error during login:", err);
+        }
+    }
+    useEffect(()=>{
+        if(loginMutation.isSuccess){
+            alert("logged in with google");
+        }else if(loginMutation.isError){
+            setError(loginMutation.error.message);
+        }
+    },[loginMutation.data, loginMutation.isSuccess, loginMutation.isError])
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -51,6 +75,7 @@ export default function Login() {
     };
 
     return (
+        <GoogleOAuthProvider clientId={googleClientId}>
         <Container className="mt-5">
             <div className="row justify-content-center">
                 <div className="col-md-6">
@@ -100,8 +125,13 @@ export default function Login() {
                             </Form>
                         </Card.Body>
                     </Card>
+                    <GoogleLogin 
+                        onSuccess={googleLogin}
+                        onError={() => console.log('Google Login Failed')}
+                    />
                 </div>
             </div>
         </Container>
+        </GoogleOAuthProvider>
     );
 }

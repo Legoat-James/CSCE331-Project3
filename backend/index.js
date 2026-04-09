@@ -775,26 +775,36 @@ app.post('/api/employee/login', async (req,res,next)=>{
   try{
     const {username, password, googleToken } = req.body;
     let user = null;
-    // if(googleToken){
-    //   const ticket = await googleClient.verifyIdToken({
-    //     idToken: googleToken,
-    //     audience: process.env.GOOGLE_CLIENT_ID
-    //   });
-    //   const payload = ticket.getPayload();
-    //   const email = payload.email;
-    //   const name = payload.name;
-  
-    //   const googleResult = await pool.query(
-    //       'SELECT * FROM employees WHERE username = $1 OR google_id = $2 AND is_active = true',
-    //       [email, payload.sub]
-    //     );
-    //   if(googleResult.rows.length === 0){
-    //     throw new ApiError(401, "No active employee found for this Google account.")
-    //   }
-    //   user = googleResult.rows[0];
-    // }
+    if(googleToken){
+      const ticket = await googleClient.verifyIdToken({
+        idToken: googleToken,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+      const payload = ticket.getPayload();
+      const email = payload.email;
+      const name = payload.name;
+      const googleResult = await pool.query(
+          'SELECT * FROM employees WHERE username = $1 OR google_id = $2',
+          [email, payload.sub]
+        );
+      if(googleResult.rows.length === 0){ 
 
-    if(username && password){
+        //create a new account for this gmail if it doesnt exist
+        const queryG = "INSERT INTO employees (name, password, is_manager, username, google_id) VALUES ($1, $2, $3, $4, $5) RETURNING *;"
+        const insertValuesG = [name, "Google", false, email, googleToken];
+        const createResult = await pool.query(queryG, insertValuesG);
+        user = createResult.rows[0];
+      }else{
+        //if account exists, grab it and set user
+        console.log(`logging ${name} in with google...`)
+        user = googleResult.rows[0];
+      }
+      //if disabled, throw an error
+      if(user.is_active === false){
+        throw new ApiError(403, "The employee found for this Google account has been deactivated.")
+      }
+    }
+    else if(username && password){
       const query = "SELECT * FROM employees WHERE username = $1 AND is_active = true;"
       const insertValues = [username];
       const result = await pool.query(query, insertValues);
@@ -1840,10 +1850,10 @@ app.use('/api', (req, res) => {
   });
 });
 
-// Catch-all handler: send back React's index.html file for non-API routes
-app.get(/^(?!\/api).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
+// // Catch-all handler: send back React's index.html file for non-API routes
+// app.get(/^(?!\/api).*/, (req, res) => {
+//   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+// });
 
 // Start server
 app.listen(PORT, () => {
