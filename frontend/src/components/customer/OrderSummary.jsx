@@ -10,6 +10,8 @@ function OrderSummary({
   submitMessage = '',
   submitError = '',
   isPending = false,
+  sugarMenuId,
+  iceMenuId,
   onEditItem,
   onRemoveItem,
   onFinishOrder
@@ -31,13 +33,25 @@ function OrderSummary({
           <p className="order-empty">No items in order yet.</p>
         )}
 
-        {orderItems.map((item) => (
+        {orderItems.map((item) => {
+          const modifications = Array.isArray(item.modifications_array) ? item.modifications_array : [];
+          const sugarMod = modifications.find((mod) => mod.menu_id === sugarMenuId);
+          const iceMod = modifications.find((mod) => mod.menu_id === iceMenuId);
+          const toppings = modifications.filter((mod) => mod.category === 'topping');
+          const hasDrinkCoreMods = Boolean(sugarMod || iceMod);
+          const swapSugarSelected = modifications.some((mod) => String(mod.name || '').toLowerCase() === 'swap sugar');
+          const oatMilkSelected = modifications.some((mod) => {
+            const lower = String(mod.name || '').toLowerCase();
+            return lower === 'oat milk' || lower === 'oak milk';
+          });
+
+          return (
           <div key={item.id} className="order-line-item">
             <div className="order-line-header">
               <span className="order-line-name">{item.name}</span>
               <div className="order-line-actions">
                 <span className="order-line-price">${item.totalPrice.toFixed(2)}</span>
-                {item.type === 'drink' && (
+                {hasDrinkCoreMods && (
                   <button
                     type="button"
                     className="order-edit-btn"
@@ -61,23 +75,23 @@ function OrderSummary({
                 </button>
               </div>
             </div>
-
-            {item.type === 'drink' && (
+             
+            {hasDrinkCoreMods && (
               <div className="order-line-details">
-                <div>Size: {item.size}</div>
-                <div>Sugar: {item.sugarMultiplier.toFixed(2)}x</div>
-                <div>Ice: {item.iceLevel}</div>
-                {item.swapSugar && <div>Swap Sugar: selected</div>}
-                {item.useOatMilk && <div>Oat Milk: selected</div>}
-                {item.toppings && item.toppings.length > 0 && (
+                {sugarMod && <div>{sugarMod.name}</div>}
+                {iceMod && <div>{iceMod.name}</div>}
+                {swapSugarSelected && <div>Swap Sugar: selected</div>}
+                {oatMilkSelected && <div>Oat Milk: selected</div>}
+                {toppings.length > 0 && (
                   <div>
-                    Toppings: {item.toppings.map((topping) => `${topping.name} x${topping.quantity}`).join(', ')}
+                    Toppings: {toppings.map((topping) => topping.name).join(', ')}
                   </div>
                 )}
               </div>
             )}
           </div>
-        ))}
+        );
+        })}
       </div>
 
       <p className="order-subtotal">Subtotal: ${subtotal.toFixed(2)}</p>

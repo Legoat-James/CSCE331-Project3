@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import './Chatbot.css';
+import apiClient from '../../api/client_config.js';
 
 /**
  * Chatbot component - Testbench for TAMU AI API connection
  * Uses backend proxy at /api/chat to communicate with TAMU AI
  */
-export default function Chatbot() {
+export default function Chatbot({ onChatAction }) {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -15,62 +16,29 @@ export default function Chatbot() {
 
   // Fetch menu data on component mount
   useEffect(() => {
-    const fetchMenuData = async () => {
-      try {
-        const response = await fetch('/api/menu/all');
-        if (response.ok) {
-          const data = await response.json();
-          
-          // Group items by category
-          const drinks = [];
-          const foods = [];
-          const toppings = [];
-          const drinkGroups = {};
-          
-          data.forEach(item => {
-            if (!item.is_active) return;
-            
-            const category = (item.category || '').toLowerCase();
-            const name = item.name || '';
-            const price = Number(item.cost) || 0;
-            
-            if (category.startsWith('drink')) {
-              // Group drinks by base name (removing Small/Large suffix)
-              let baseName = name;
-              let size = 'Medium';
-              if (name.toLowerCase().endsWith(' small')) {
-                baseName = name.slice(0, -6).trim();
-                size = 'Small';
-              } else if (name.toLowerCase().endsWith(' large')) {
-                baseName = name.slice(0, -6).trim();
-                size = 'Large';
-              }
-              
-              if (!drinkGroups[baseName.toLowerCase()]) {
-                drinkGroups[baseName.toLowerCase()] = { name: baseName, sizes: {} };
-              }
-              drinkGroups[baseName.toLowerCase()].sizes[size] = price;
-            } else if (category.startsWith('food')) {
-              foods.push({ name, price });
-            } else if (category.startsWith('topping')) {
-              toppings.push({ name, price });
+    const fetchMenuItems = async () => {
+        try {
+            const data = await apiClient('/api/menu/all');
+            console.log('Menu items data:', data); // Debug log
+            if (Array.isArray(data)) {
+              setMenuData({
+                foods: data.filter(item => item.category === 'food'),
+                drinks: data.filter(item => item.category === 'drink'),
+                toppings: data.filter(item => item.category === 'modifications' || item.category === 'topping')
+                
+              })
+            } else {
+                console.error('Expected array but got:', typeof data, data);
+                setMenuData({ drinks: [], foods: [], toppings: [] }); // Fallback to empty object arrays
             }
-          });
-          
-          // Convert drink groups to array
-          Object.values(drinkGroups).forEach(drink => {
-            drinks.push(drink);
-          });
-          
-          setMenuData({ drinks, foods, toppings });
+        } catch (error) {
+            console.error('Error fetching menu items:', error);
+            setMenuData({ drinks: [], foods: [], toppings: [] }); // Ensure it's always an array
         }
-      } catch (error) {
-        console.error('Failed to fetch menu data for chatbot:', error);
-      }
     };
     
-    fetchMenuData();
-  }, []);
+    fetchMenuItems();
+    }, []);
 
   // Build system prompt with menu information
   const buildSystemPrompt = () => {
@@ -79,27 +47,27 @@ export default function Chatbot() {
     // Add drinks
     if (menuData.drinks.length > 0) {
       menuSection += '\n\n## DRINKS MENU\n';
-      menuData.drinks.forEach(drink => {
-        const sizes = Object.entries(drink.sizes)
-          .map(([size, price]) => `${size}: $${price.toFixed(2)}`)
-          .join(', ');
-        menuSection += `- ${drink.name} (${sizes})\n`;
+      menuData.drinks.forEach(item => {
+        item.cost = parseFloat(item.cost); // this casts the cost to a float
+        menuSection += `Id: ${item.menu_id}, price:${item.cost.toFixed(2)}, name: ${item.name} \n`;
       });
     }
     
     // Add foods
     if (menuData.foods.length > 0) {
       menuSection += '\n## FOOD MENU\n';
-      menuData.foods.forEach(food => {
-        menuSection += `- ${food.name}: $${food.price.toFixed(2)}\n`;
+      menuData.foods.forEach(item => {
+        item.cost = parseFloat(item.cost); // this casts the cost to a float
+       menuSection += `Id: ${item.menu_id}, price:${item.cost.toFixed(2)}, name: ${item.name} \n`;
       });
     }
     
     // Add toppings
     if (menuData.toppings.length > 0) {
-      menuSection += '\n## TOPPINGS & ADD-ONS\n';
-      menuData.toppings.forEach(topping => {
-        menuSection += `- ${topping.name}: +$${topping.price.toFixed(2)}\n`;
+      menuSection += '\n## TOPPINGS & MODIFICATIONS\n';
+      menuData.toppings.forEach(item => {
+        item.cost = parseFloat(item.cost); // this casts the cost to a float
+        menuSection += `Id: ${item.menu_id}, price:${item.cost.toFixed(2)}, name: ${item.name}, category: ${item.category} \n`;
       });
     }
 
@@ -113,9 +81,9 @@ You help customers with:
 - Providing helpful tips for using the app
 
 ## CUSTOMIZATION OPTIONS
-- Drink sizes: Small, Medium, Large
-- Sugar levels: 0%, 25%, 50%, 75%, 100%, 125%
-- Ice levels: No Ice, Light Ice, Regular Ice, Extra Ice
+- Drink sizes: Small, Medium, Large ()
+- Sugar levels: 50%, 75%, 100%, 125%, 150% (this is represented as)
+- Ice levels: 50%, 75%, 100%, 125%, 150%
 - Milk alternatives: Oat milk available (+$0.75)
 - Sugar alternatives: Sugar substitute available
 ${menuSection}
@@ -135,11 +103,42 @@ Be friendly, concise, and helpful. When recommending drinks, consider:
 - Honey drinks are great for those who prefer natural sweetness
 - Matcha drinks have a nice earthy flavor
 - Mango drinks are refreshing and fruity
-- Coffee options are available for those who need caffeine`;
+- Coffee options are available for those who need caffeine
+
+## IMPORTANT NOTES
+- medium menu items are considered the default option, and do not have the words "large" or "small" in their name
+- large and small menu items are seperate entries on the menu with their own menu IDs and costs
+- only food items do not have any customizations
+- all drink items are assumed to have the 1.0x ice and 1.0x sugar level by default unless the customer states they want a different ice or sugar level
+- modifications with "sugar" in the name should be considered sugar level modifications, and modifications with "ice" in the name should be considered ice level modifications
+- if the customer asks for an item that is not on the menu, ask if they made a mistake and offer the option that you think is the closest to what they meant
+
+
+## RETURN FORMAT
+return ONLY valid JSON with this exact schema:
+  {
+message: string, //the assistants response to the user including any recommendations or explanations
+action: string, //the action to take, default means you only need to respond with a message, add_to_order means you should add an item to the order
+orderItems: an array of objects with this schema, only required if action is add_to_order
+[{
+menuId: integer, //the id of the menu item to add to the order
+cost: float, //the cost of the item not including any modifications
+name: string, //the name of the menu item
+modifications_array: an array of objects with this schema (all drinks must have ice and sugar level modifications, even if they are just the default 1.0x level, and any selected toppings or add-ons should also be included in this array)
+[{
+category: string, //the category of the modifications (e.g. "topping", or "modifications")
+cost: float, //the cost of the modification or topping (modifications such as changing ice or sugar level have a cost of 0)
+menu_id: integer, //the menu id of the modification or topping
+name: string //the name of the modification or topping (for ice or sugar level modifications, the name should include the level, e.g. 50% sugar would be "Sugar 0.5x", 150% ice would be "Ice 1.5x")
+}]
+}]
+}
+`;
   };
 
   // Test the API connection via backend proxy
   const testConnection = async () => {
+    console.log("menu data that chatbot has is: ", menuData || 'didnt fetch menu data');
     setConnectionStatus('testing');
     setErrorDetails(null);
     
@@ -212,10 +211,23 @@ Be friendly, concise, and helpful. When recommending drinks, consider:
 
       if (response.ok) {
         const data = await response.json();
-        const assistantMessage = data.choices?.[0]?.message?.content || 
+        const chatAction = data?.chatAction;
+        const assistantMessage = chatAction?.message ||
+                                 data.choices?.[0]?.message?.content ||
                                  data.choices?.[0]?.text ||
                                  'No response received';
-        setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage.trim() }]);
+
+        setMessages(prev => [...prev, { role: 'assistant', content: String(assistantMessage).trim() }]);
+
+        if (
+          chatAction?.action === 'add_to_order' &&
+          Array.isArray(chatAction?.orderItems) &&
+          chatAction.orderItems.length > 0 &&
+          typeof onChatAction === 'function'
+        ) {
+          onChatAction(chatAction);
+        }
+
         setConnectionStatus('connected');
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
