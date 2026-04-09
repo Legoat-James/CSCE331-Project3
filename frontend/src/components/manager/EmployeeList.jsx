@@ -1,72 +1,547 @@
 import React, { useState } from 'react';
 import {
-  Row,
-  Col,
   Card,
   Button,
   Table,
-  Badge,
+  Modal,
+  Form,
+  Spinner,
+  Alert,
 } from 'react-bootstrap';
-
+import { useGet, useMutate } from '../../hooks/useApi';
 
 export default function EmployeeList() {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
+  const [showUpdateEmployeeModal, setShowUpdateEmployeeModal] = useState(false);
+  const [showEnableEmployeeModal, setShowEnableEmployeeModal] = useState(false);
+  const [showRemoveEmployeeModal, setShowRemoveEmployeeModal] = useState(false);
+  const [employeeToRemove, setEmployeeToRemove] = useState(null);
+  const [employeeToUpdate, setEmployeeToUpdate] = useState(null);
+  const [employeeIdToEnable, setEmployeeIdToEnable] = useState('');
+  const [newEmployeeName, setNewEmployeeName] = useState('');
+  const [newEmployeeUsername, setNewEmployeeUsername] = useState('');
+  const [newEmployeePassword, setNewEmployeePassword] = useState('');
+  const [newEmployeeIsManager, setNewEmployeeIsManager] = useState(false);
+  const [updateEmployeeId, setUpdateEmployeeId] = useState('');
+  const [updateEmployeeName, setUpdateEmployeeName] = useState('');
+  const [updateEmployeeUsername, setUpdateEmployeeUsername] = useState('');
+  const [updateEmployeePassword, setUpdateEmployeePassword] = useState('');
+  const [updateEmployeeIsManager, setUpdateEmployeeIsManager] = useState(false);
 
-    //Dummy values:
-    const [employees] = useState([
-        { id: 1, name: 'John Doe', username: 'john.doe', isManager: true },
-        { id: 2, name: 'Jane Smith', username: 'jane.smith', isManager: false },
-        { id: 3, name: 'Mike Johnson', username: 'mike.j', isManager: false }
-      ]);
+    const { data: allEmployees = [], isLoading, error, refetch } = useGet(
+      ['employees'],
+      '/api/employee/all'
+    );
 
+    // Filter out google_id and session_token
+    const employees = allEmployees.map((emp, index) => {
+      const { google_id, session_token, ...filteredEmp } = emp;
+      const employeeId = emp.id ?? emp.employee_id ?? emp.employeeId ?? null;
+      const snakeCaseName = [emp.first_name, emp.last_name].filter(Boolean).join(' ');
+      const camelCaseName = [emp.firstName, emp.lastName].filter(Boolean).join(' ');
+      const employeeName =
+        emp.name ||
+        snakeCaseName ||
+        camelCaseName;
+      const isManager =
+        typeof emp.is_manager === 'boolean'
+          ? emp.is_manager
+          : typeof emp.isManager === 'boolean'
+            ? emp.isManager
+            : String(emp.role || '').toLowerCase() === 'manager';
+
+      return {
+        ...filteredEmp,
+        employeeId,
+        employeeName,
+        isManager,
+        rowKey: employeeId ?? emp.username ?? index,
+      };
+    });
+
+
+    /* 
+    
+    ALL API CALLS
+
+    removeEmployeeMutation is for the remove button in the table
+        it calls the disable api
+
+    createEmployeeMutation for the add Employee button at the top
+        it calls the create api
+
+    enableEmployeeMutation for the Re enable button 
+        enable api
+    */
+    const removeEmployeeMutation = useMutate(
+      employeeToRemove?.employeeId != null
+        ? `/api/employee/disable?employeeID=${employeeToRemove.employeeId}`
+        : '/api/employee/disable',
+      'DELETE',
+      ['employees']
+    );
+
+    const createEmployeeMutation = useMutate(
+      '/api/employee/create',
+      'POST',
+      ['employees']
+    );
+
+    const enableEmployeeMutation = useMutate(
+      employeeIdToEnable
+        ? `/api/employee/enable?employeeID=${employeeIdToEnable}`
+        : '/api/employee/enable',
+      'PATCH',
+      ['employees']
+    );
+
+    const updateEmployeeMutation = useMutate(
+      employeeToUpdate?.employeeId != null
+        ? `/api/employee/update?employeeID=${employeeToUpdate.employeeId}`
+        : '/api/employee/update',
+      'PUT',
+      ['employees']
+    );
+    
+    /*
+    
+      Handlers
+      They each have modals that confirms you want to make changes
+    
+    */
+    const handleRemoveEmployee = (employeeId) => {
+      const employee = employees.find((emp) => emp.employeeId === employeeId) || { employeeId };
+      setEmployeeToRemove(employee);
+      setShowRemoveEmployeeModal(true);
+    };
+
+    const confirmRemoveEmployee = () => {
+      if (employeeToRemove?.employeeId == null) {
+        return;
+      }
+
+      removeEmployeeMutation.mutate(
+        undefined,
+        {
+          onSuccess: () => {
+            setShowRemoveEmployeeModal(false);
+            setEmployeeToRemove(null);
+          },
+        }
+      );
+    };
+
+    const closeRemoveEmployeeModal = () => {
+      setShowRemoveEmployeeModal(false);
+      setEmployeeToRemove(null);
+    };
+
+    const handleOpenEnableEmployeeModal = () => {
+      setEmployeeIdToEnable('');
+      setShowEnableEmployeeModal(true);
+    };
+
+    const closeEnableEmployeeModal = () => {
+      setShowEnableEmployeeModal(false);
+      setEmployeeIdToEnable('');
+    };
+
+    const handleEnableEmployee = (event) => {
+      event.preventDefault();
+
+      const normalizedEmployeeId = String(employeeIdToEnable).trim();
+
+      if (!normalizedEmployeeId) {
+        return;
+      }
+
+      const selectedEmployee = employees.find(
+        (employee) => String(employee.employeeId) === normalizedEmployeeId
+      );
+
+      if (selectedEmployee) {
+        closeEnableEmployeeModal();
+        return;
+      }
+
+      enableEmployeeMutation.mutate(undefined, {
+        onSuccess: () => {
+          closeEnableEmployeeModal();
+        },
+      });
+    };
+
+    const createEmployee = (employeeData) => {
+      createEmployeeMutation.mutate(employeeData, {
+        onSuccess: () => {
+          setShowAddEmployeeModal(false);
+          setNewEmployeeName('');
+          setNewEmployeeUsername('');
+          setNewEmployeePassword('');
+          setNewEmployeeIsManager(false);
+        },
+      });
+    };
+
+    const updateEmployee = (employeeData) => {
+      updateEmployeeMutation.mutate(employeeData, {
+        onSuccess: () => {
+          setShowUpdateEmployeeModal(false);
+          setEmployeeToUpdate(null);
+          setUpdateEmployeeId('');
+          setUpdateEmployeeName('');
+          setUpdateEmployeeUsername('');
+          setUpdateEmployeePassword('');
+          setUpdateEmployeeIsManager(false);
+        },
+      });
+    };
+
+    const handleCreateEmployee = (event) => {
+      event.preventDefault();
+
+      createEmployee({
+        name: newEmployeeName,
+        username: newEmployeeUsername,
+        password: newEmployeePassword,
+        is_manager: newEmployeeIsManager ? 'true' : 'false',
+      });
+    };
+
+    const handleOpenUpdateEmployeeModal = (employeeId) => {
+      const selectedEmployee = employees.find((employee) => employee.employeeId === employeeId);
+      if (!selectedEmployee) {
+        return;
+      }
+
+      setEmployeeToUpdate(selectedEmployee);
+      setUpdateEmployeeId(String(selectedEmployee.employeeId ?? ''));
+      setUpdateEmployeeName(selectedEmployee.employeeName || '');
+      setUpdateEmployeeUsername(selectedEmployee.username || '');
+      setUpdateEmployeePassword(selectedEmployee.password || '');
+      setUpdateEmployeeIsManager(Boolean(selectedEmployee.isManager));
+      setShowUpdateEmployeeModal(true);
+    };
+
+    const closeUpdateEmployeeModal = () => {
+      setShowUpdateEmployeeModal(false);
+      setEmployeeToUpdate(null);
+    };
+
+    const handleUpdateEmployee = (event) => {
+      event.preventDefault();
+
+      if (employeeToUpdate?.employeeId == null) {
+        return;
+      }
+
+      updateEmployee({
+        name: updateEmployeeName,
+        username: updateEmployeeUsername,
+        password: updateEmployeePassword,
+        is_manager: updateEmployeeIsManager ? 'true' : 'false',
+      });
+    };
+    
+
+    /*
+      Formatting
+    */
 
     return (
-        <Row className="mb-4">
-          <Col md={12}>
-            <Card className="h-100">
-              <Card.Header>
-                <h5>Employee Management</h5>
-              </Card.Header>
-              <Card.Body>
-                <Table striped hover>
-                  <thead>
+        <Card className="mb-4">
+          <Card.Header className="d-flex justify-content-between align-items-center py-2">
+            <h6 className="mb-0">Employee Management</h6>
+            <div className="d-flex gap-2">
+              <Button
+                variant="outline-warning"
+                size="sm"
+                onClick={handleOpenEnableEmployeeModal}
+              >
+                Re-enable Employee
+              </Button>
+              <Button
+                variant="outline-success"
+                size="sm"
+                onClick={() => setShowAddEmployeeModal(true)}
+              >
+                Add Employee
+              </Button>
+              <Button 
+                variant="outline-primary" 
+                size="sm"
+                onClick={() => refetch()}
+                disabled={
+                  isLoading ||
+                  removeEmployeeMutation.isPending ||
+                  createEmployeeMutation.isPending ||
+                  enableEmployeeMutation.isPending ||
+                  updateEmployeeMutation.isPending
+                }
+              >
+                {removeEmployeeMutation.isPending && <Spinner animation="border" size="sm" className="me-1" />}
+                Refresh
+              </Button>
+            </div>
+          </Card.Header>
+          <Card.Body className="p-3">
+            {error && <Alert variant="danger" className="mb-2">{error.message || 'Failed to load employees'}</Alert>}
+            {removeEmployeeMutation.error && <Alert variant="danger" className="mb-2">{removeEmployeeMutation.error.message || 'Failed to remove employee'}</Alert>}
+            {createEmployeeMutation.error && <Alert variant="danger" className="mb-2">{createEmployeeMutation.error.message || 'Failed to create employee'}</Alert>}
+            {enableEmployeeMutation.error && <Alert variant="danger" className="mb-2">{enableEmployeeMutation.error.message || 'Failed to re-enable employee'}</Alert>}
+            {updateEmployeeMutation.error && <Alert variant="danger" className="mb-2">{updateEmployeeMutation.error.message || 'Failed to update employee'}</Alert>}
+            
+            {isLoading ? (
+              <div className="text-center py-3">
+                <Spinner animation="border" size="sm" />
+              </div>
+            ) : (
+              <Table hover size="sm" className="mb-0">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>ID</th>
+                    <th>Manager</th>
+                    <th>Username</th>
+                    <th>Action</th>
+                    <th>Update</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.length === 0 ? (
                     <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th>Username</th>
-                      <th>Role</th>
-                      <th>Action</th>
+                      <td colSpan="6" className="text-center text-muted py-2">
+                        No employees found
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {employees.map((emp) => (
-                      <tr key={emp.id}>
-                        <td>{emp.id}</td>
-                        <td>{emp.name}</td>
-                        <td>{emp.username}</td>
-                        <td>
-                          <Badge bg={emp.isManager ? 'warning' : 'secondary'}>
-                            {emp.isManager ? 'Manager' : 'Employee'}
-                          </Badge>
-                        </td>
-                        <td>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => {/* TODO: Remove employee */}}
-                          >
-                            Remove
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+                  ) : employees.map((emp) => (
+                    <tr key={emp.rowKey}>
+                      <td>{emp.employeeName || 'N/A'}</td>
+                      <td>{emp.employeeId ?? 'N/A'}</td>
+                      <td>{emp.isManager ? 'Yes' : 'No'}</td>
+                      <td>{emp.username}</td>
+                      <td>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleRemoveEmployee(emp.employeeId)}
+                          disabled={removeEmployeeMutation.isPending}
+                        >
+                          Remove
+                        </Button>
+                      </td>
+                      <td>
+                        <Button
+                          size="sm"
+                          onClick={() => handleOpenUpdateEmployeeModal(emp.employeeId)}
+                          disabled={updateEmployeeMutation.isPending}
+                        >
+                          Update
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+          </Card.Body>
+
+          <Modal show={showAddEmployeeModal} onHide={() => setShowAddEmployeeModal(false)} centered>
+            <Form onSubmit={handleCreateEmployee}>
+              <Modal.Header closeButton>
+                <Modal.Title>Add Employee</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <Form.Group className="mb-3" controlId="newEmployeeName">
+                  <Form.Label>Name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={newEmployeeName}
+                    onChange={(event) => setNewEmployeeName(event.target.value)}
+                    placeholder="Jane Doe"
+                    required
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3" controlId="newEmployeeUsername">
+                  <Form.Label>Username</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={newEmployeeUsername}
+                    onChange={(event) => setNewEmployeeUsername(event.target.value)}
+                    placeholder="jane.doe@example.com"
+                    required
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3" controlId="newEmployeePassword">
+                  <Form.Label>Password</Form.Label>
+                  <Form.Control
+                    type="password"
+                    value={newEmployeePassword}
+                    onChange={(event) => setNewEmployeePassword(event.target.value)}
+                    placeholder="Password123"
+                    required
+                  />
+                </Form.Group>
+
+                <Form.Check
+                  type="checkbox"
+                  id="newEmployeeIsManager"
+                  label="Manager"
+                  checked={newEmployeeIsManager}
+                  onChange={(event) => setNewEmployeeIsManager(event.target.checked)}
+                />
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={() => setShowAddEmployeeModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  disabled={createEmployeeMutation.isPending}
+                >
+                  {createEmployeeMutation.isPending ? 'Creating...' : 'Create'}
+                </Button>
+              </Modal.Footer>
+            </Form>
+          </Modal>
+
+          <Modal show={showRemoveEmployeeModal} onHide={closeRemoveEmployeeModal} centered>
+            <Modal.Header closeButton>
+              <Modal.Title>Confirm Remove Employee</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <p className="mb-2">
+                Are you sure you want to remove{' '}
+                <strong>{employeeToRemove?.employeeName || employeeToRemove?.username || 'this employee'}</strong>?
+              </p>
+              <p className="mb-0 text-muted">
+                Employee ID: {employeeToRemove?.employeeId ?? 'N/A'}
+              </p>
+              <p className="mb-0 text-muted">
+                Username: {employeeToRemove?.username || 'N/A'}
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={closeRemoveEmployeeModal}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={confirmRemoveEmployee}
+                disabled={removeEmployeeMutation.isPending}
+              >
+                {removeEmployeeMutation.isPending ? 'Removing...' : 'Remove'}
+              </Button>
+            </Modal.Footer>
+          </Modal>
+
+          <Modal show={showUpdateEmployeeModal} onHide={closeUpdateEmployeeModal} centered>
+            <Form onSubmit={handleUpdateEmployee}>
+              <Modal.Header closeButton>
+                <Modal.Title>Update Employee</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <Form.Group className="mb-3" controlId="updateEmployeeId">
+                  <Form.Label>Employee ID</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={updateEmployeeId}
+                    disabled
+                    readOnly
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3" controlId="updateEmployeeName">
+                  <Form.Label>Name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={updateEmployeeName}
+                    onChange={(event) => setUpdateEmployeeName(event.target.value)}
+                    required
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3" controlId="updateEmployeeUsername">
+                  <Form.Label>Username</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={updateEmployeeUsername}
+                    onChange={(event) => setUpdateEmployeeUsername(event.target.value)}
+                    required
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3" controlId="updateEmployeePassword">
+                  <Form.Label>Password</Form.Label>
+                  <Form.Control
+                    type="password"
+                    value={updateEmployeePassword}
+                    onChange={(event) => setUpdateEmployeePassword(event.target.value)}
+                    required
+                  />
+                </Form.Group>
+
+                <Form.Check
+                  type="checkbox"
+                  id="updateEmployeeIsManager"
+                  label="Manager"
+                  checked={updateEmployeeIsManager}
+                  onChange={(event) => setUpdateEmployeeIsManager(event.target.checked)}
+                />
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={closeUpdateEmployeeModal}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  disabled={updateEmployeeMutation.isPending}
+                >
+                  {updateEmployeeMutation.isPending ? 'Updating...' : 'Update'}
+                </Button>
+              </Modal.Footer>
+            </Form>
+          </Modal>
+
+          <Modal show={showEnableEmployeeModal} onHide={closeEnableEmployeeModal} centered>
+            <Form onSubmit={handleEnableEmployee}>
+              <Modal.Header closeButton>
+                <Modal.Title>Re-enable Employee</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <Form.Group className="mb-3" controlId="enableEmployeeId">
+                  <Form.Label>Employee ID</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={employeeIdToEnable}
+                    onChange={(event) => setEmployeeIdToEnable(event.target.value)}
+                    placeholder="Enter employee ID"
+                    required
+                  />
+                </Form.Group>
+                <p className="mb-0 text-muted">
+                  If the employee is already active, this will do nothing.
+                </p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={closeEnableEmployeeModal}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="success"
+                  type="submit"
+                  disabled={enableEmployeeMutation.isPending}
+                >
+                  {enableEmployeeMutation.isPending ? 'Re-enabling...' : 'Re-enable'}
+                </Button>
+              </Modal.Footer>
+            </Form>
+          </Modal>
+        </Card>
     );
 
 } 
