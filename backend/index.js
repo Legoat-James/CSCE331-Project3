@@ -920,8 +920,8 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
     #swagger.responses[200] = { 
             description: 'Successfully retrieved recent orders',
             schema: [{ 
-                order_id: 0, 
-                order_total: 67.00, 
+                orderId: 0, 
+                orderTotal: 67.00, 
                 timestamp: '2025-02-13 14:06:52+00',
                 employee_id: 3,
                 customer_name: 'Burt'
@@ -944,7 +944,7 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
 
     const query = `
       WITH recent_order_ids AS (
-            SELECT order_id, timestamp 
+            SELECT order_id, timestamp, order_total
             FROM transactions 
             ORDER BY timestamp DESC 
             LIMIT $1
@@ -952,9 +952,11 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
       SELECT 
             roi.order_id,
             roi.timestamp,
+            roi.order_total,
             oh.item_id,
             oh.quantity,
-            m.name
+            m.name,
+            m.cost
         FROM recent_order_ids roi
         JOIN order_history oh ON roi.order_id = oh.order_id
         JOIN menu m ON oh.item_id = m.menu_id
@@ -964,12 +966,13 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
     const recentOrders = result.rows;
     //format them so orders have items nested inside
     const formattedOrders = recentOrders.reduce((acc, row)=>{
-      let order = acc.find(order => order.order_id === row.order_id);
+      let order = acc.find(order => order.orderId === row.order_id);
       if(!order){
         //if the order is not already in the accumulated list, create it
         order = {
-          order_id: row.order_id,
+          orderId: row.order_id,
           timestamp: row.timestamp,
+          orderTotal: row.order_total,
           items: []
         };
         acc.push(order);
@@ -979,7 +982,8 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
       order.items.push({
         name: row.name,
         quantity: row.quantity,
-        menuId: row.item_id
+        menuId: row.item_id,
+        cost: row.cost
       });
       return acc;
     },[])
