@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, Form } from 'react-bootstrap';
 
-const iceLevelOptions = ['No Ice', 'Light Ice', 'Regular Ice', 'Extra Ice'];
+const iceLevelOptions = ['50%', '75%', '100%', '125%', '150%'];
 
 function DrinkCustomizer({
   show = false,
@@ -134,7 +134,7 @@ function DrinkCustomizer({
               <Form.Range
                 id="ice-slider"
                 min={0}
-                max={3}
+                max={4}
                 step={1}
                 value={iceLevelIndex}
                 onChange={(e) => onIceChange(Number(e.target.value))}

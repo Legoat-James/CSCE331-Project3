@@ -2,7 +2,7 @@ import './Customer.css';
 import { useGet, useMutate } from './hooks/useApi';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Navbar, Nav, Container, Spinner } from 'react-bootstrap';
-import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal } from './components/customer';
+import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal, Chatbot } from './components/customer';
 
 // Import images from assets
 import blackTeaImg from './assets/Black-tea.jpg';
@@ -27,7 +27,21 @@ import friesImg from './assets/fries.jpg';
 import grilledCheeseImg from './assets/grilled-cheese.jpg';
 
 const fallbackCardImage = '/teashopLogo.png';
-const iceLevelOptions = ['No Ice', 'Light Ice', 'Regular Ice', 'Extra Ice'];
+const iceLevelOptions = ['50%', '75%', '100%', '125%', '150%'];
+const iceLevelMultipliers = [0.5, 0.75, 1, 1.25, 1.5];
+
+const formatMultiplier = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '1';
+  return Number.isInteger(numeric) ? String(numeric) : String(numeric);
+};
+
+const parseModifierMultiplier = (name, prefix) => {
+  const pattern = new RegExp(`^${prefix}\\s+([0-9.]+)x$`, 'i');
+  const match = String(name || '').trim().match(pattern);
+  const value = match ? Number(match[1]) : NaN;
+  return Number.isFinite(value) ? value : null;
+};
 
 const itemVisualsByName = {
   'black tea': {
@@ -175,6 +189,10 @@ function Customer() {
     return fallbackCardImage;
   }, []);
 
+  useEffect(() => {
+    console.log(`Current order items:`, orderItems);
+  },[orderItems])
+
   const getMenuDescription = useCallback((name, category) => {
     const normalizedName = normalizeItemName(name);
     const match = itemVisualsByName[normalizedName];
@@ -279,6 +297,44 @@ function Customer() {
     }, {});
   }, [modificationItems]);
 
+  const iceMenuId = modificationByName.ice?.id;
+  const sugarMenuId = modificationByName.sugar?.id;
+  const swapSugarMenuId = modificationByName['swap sugar']?.id;
+  const oatMilkMenuId = (modificationByName['oat milk'] || modificationByName['oak milk'])?.id;
+
+  const buildOrderEntry = useCallback(
+    ({
+      entryId,
+      menuId,
+      name,
+      baseCost,
+      modificationsArray = [],
+      quantity = 1,
+    }) => {
+      const normalizedMods = modificationsArray
+        .map((modification) => ({
+          category: String(modification?.category || '').trim().toLowerCase(),
+          cost: Number(modification?.cost || 0),
+          menu_id: Number(modification?.menu_id),
+          name: String(modification?.name || '').trim(),
+        }))
+        .filter((modification) => Number.isInteger(modification.menu_id));
+
+      const modificationsTotal = normalizedMods.reduce((sum, mod) => sum + mod.cost, 0);
+
+      return {
+        id: entryId || `order-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        menuId,
+        cost: Number(baseCost) || 0,
+        name,
+        quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
+        modifications_array: normalizedMods,
+        totalPrice: (Number(baseCost) || 0) + modificationsTotal,
+      };
+    },
+    []
+  );
+
   // Computed values for current selection
   const visibleItems = activeCategory === 'drink' ? drinkItems : foodItems;
   const selectedDrinkPrice = selectedDrink?.sizeOptions?.[selectedDrinkSize] ?? selectedDrink?.price;
@@ -360,21 +416,19 @@ function Customer() {
       return;
     }
 
-    const orderEntry = {
-      id: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      type: 'food',
+    const orderEntry = buildOrderEntry({
+      entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       menuId: selectedFood.id,
-      quantity: 1,
       name: selectedFood.name,
-      price: selectedFood.price,
-      totalPrice: selectedFood.price,
-    };
+      baseCost: selectedFood.price,
+      modificationsArray: [],
+    });
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
     setOrderItems((prev) => [...prev, orderEntry]);
     closeFoodConfirm();
-  }, [selectedFood, closeFoodConfirm]);
+  }, [selectedFood, closeFoodConfirm, buildOrderEntry]);
 
   const updateToppingQuantity = useCallback((toppingId, delta) => {
     setSelectedToppings((prev) => {
@@ -396,27 +450,67 @@ function Customer() {
       closeToppingsScreen();
       return;
     }
+    const modificationsArray = [];
 
-    const orderEntry = {
-      id: editingOrderItemId || `drink-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      type: 'drink',
+    if (Number.isInteger(sugarMenuId)) {
+      modificationsArray.push({
+        category: 'modifications',
+        cost: 0,
+        menu_id: sugarMenuId,
+        name: `Sugar ${formatMultiplier(sugarMultiplier)}x`,
+      });
+    }
+
+    if (Number.isInteger(iceMenuId)) {
+      const iceMultiplier = iceLevelMultipliers[iceLevelIndex] ?? 1;
+      modificationsArray.push({
+        category: 'modifications',
+        cost: 0,
+        menu_id: iceMenuId,
+        name: `Ice ${formatMultiplier(iceMultiplier)}x`,
+      });
+    }
+
+    if (swapSugar && Number.isInteger(swapSugarMenuId)) {
+      const swapSugarMod = modificationItems.find((mod) => mod.id === swapSugarMenuId);
+      modificationsArray.push({
+        category: swapSugarMod?.category || 'modifications',
+        cost: swapSugarMod?.price || 0,
+        menu_id: swapSugarMenuId,
+        name: swapSugarMod?.name || 'Swap Sugar',
+      });
+    }
+
+    if (useOatMilk && Number.isInteger(oatMilkMenuId)) {
+      const oatMilkMod = modificationItems.find((mod) => mod.id === oatMilkMenuId);
+      modificationsArray.push({
+        category: oatMilkMod?.category || 'modifications',
+        cost: oatMilkMod?.price || 0,
+        menu_id: oatMilkMenuId,
+        name: oatMilkMod?.name || 'Oat Milk',
+      });
+    }
+
+    selectedToppingEntries.forEach((topping) => {
+      const qty = Number.isInteger(topping.quantity) && topping.quantity > 0 ? topping.quantity : 0;
+      for (let i = 0; i < qty; i += 1) {
+        modificationsArray.push({
+          category: 'topping',
+          cost: topping.price,
+          menu_id: topping.id,
+          name: topping.name,
+        });
+      }
+    });
+
+    const selectedDrinkMenuItem = allMenuItems.find((menuItem) => menuItem.id === selectedDrinkMenuId);
+    const orderEntry = buildOrderEntry({
+      entryId: editingOrderItemId || `drink-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       menuId: selectedDrinkMenuId,
-      quantity: 1,
-      name: selectedDrink.name,
-      size: selectedDrinkSize,
-      price: selectedDrinkPrice,
-      sugarMultiplier,
-      iceLevel: iceLevelOptions[iceLevelIndex],
-      swapSugar,
-      useOatMilk,
-      toppings: selectedToppingEntries.map((topping) => ({
-        id: topping.id,
-        name: topping.name,
-        quantity: topping.quantity,
-        price: topping.price,
-      })),
-      totalPrice: selectedDrinkTotal,
-    };
+      name: selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`,
+      baseCost: selectedDrinkPrice,
+      modificationsArray,
+    });
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
@@ -441,73 +535,92 @@ function Customer() {
     selectedToppingEntries,
     editingOrderItemId,
     closeToppingsScreen,
+    sugarMenuId,
+    iceMenuId,
+    swapSugarMenuId,
+    oatMilkMenuId,
+    modificationItems,
+    buildOrderEntry,
+    allMenuItems,
   ]);
 
   const editOrderItem = useCallback((item) => {
-    if (item.type !== 'drink') return;
+    const menuItem = allMenuItems.find((candidate) => candidate.id === item.menuId);
+    if (!menuItem || menuItem.category !== 'drink') return;
+
+    const parsedDrink = parseDrinkVariant(menuItem.name);
+    const baseName = parsedDrink.baseName;
+    const parsedSize = parsedDrink.size;
 
     const matchedDrink = drinkItems.find(
-      (drink) => drink.name.toLowerCase() === String(item.name || '').toLowerCase()
+      (drink) => drink.name.toLowerCase() === baseName.toLowerCase()
     );
 
-    const fallbackSize = item.size || 'medium';
     const fallbackDrink = {
-      id: item.menuId ?? item.id,
-      name: item.name,
+      id: menuItem.id,
+      name: baseName,
       category: 'drink',
-      image: getMenuImage(item.name, 'drink'),
-      description: getMenuDescription(item.name, 'drink'),
-      sizeOptions: { [fallbackSize]: item.price },
-      sizeMenuIds: { [fallbackSize]: item.menuId ?? item.id },
+      image: getMenuImage(baseName, 'drink'),
+      description: getMenuDescription(baseName, 'drink'),
+      sizeOptions: { [parsedSize]: menuItem.price },
+      sizeMenuIds: { [parsedSize]: menuItem.id },
     };
 
     const sourceDrink = matchedDrink || fallbackDrink;
-    const selectedSize = Number.isFinite(sourceDrink?.sizeOptions?.[item.size])
-      ? item.size
-      : ['medium', 'small', 'large'].find((size) => Number.isFinite(sourceDrink?.sizeOptions?.[size])) || fallbackSize;
+    const selectedSize = Number.isFinite(sourceDrink?.sizeOptions?.[parsedSize])
+      ? parsedSize
+      : ['medium', 'small', 'large'].find((size) => Number.isFinite(sourceDrink?.sizeOptions?.[size])) || 'medium';
 
-    const toppingsMap = (item.toppings || []).reduce((acc, topping) => {
-      acc[topping.id] = topping.quantity;
+    const toppingsMap = (item.modifications_array || []).reduce((acc, modification) => {
+      if (modification.category === 'topping' && Number.isInteger(modification.menu_id)) {
+        acc[modification.menu_id] = (acc[modification.menu_id] || 0) + 1;
+      }
       return acc;
     }, {});
 
-    const iceIndex = iceLevelOptions.indexOf(item.iceLevel);
+    const sugarMod = (item.modifications_array || []).find(
+      (modification) => modification.menu_id === sugarMenuId
+    );
+    const iceMod = (item.modifications_array || []).find(
+      (modification) => modification.menu_id === iceMenuId
+    );
+
+    const parsedSugarMultiplier = parseModifierMultiplier(sugarMod?.name, 'Sugar');
+    const parsedIceMultiplier = parseModifierMultiplier(iceMod?.name, 'Ice');
+    const resolvedSugar = parsedSugarMultiplier ?? 1;
+    const resolvedIce = parsedIceMultiplier ?? 1;
+    const iceIndex = iceLevelMultipliers.findIndex((value) => value === resolvedIce);
+
+    const hasSwapSugarMod = Number.isInteger(swapSugarMenuId)
+      && (item.modifications_array || []).some((modification) => modification.menu_id === swapSugarMenuId);
+    const hasOatMilkMod = Number.isInteger(oatMilkMenuId)
+      && (item.modifications_array || []).some((modification) => modification.menu_id === oatMilkMenuId);
 
     setEditingOrderItemId(item.id);
     setSelectedDrink(sourceDrink);
     setSelectedDrinkSize(selectedSize);
     setSelectedToppings(toppingsMap);
-    setSugarMultiplier(item.sugarMultiplier ?? 1);
+    setSugarMultiplier(resolvedSugar);
     setIceLevelIndex(iceIndex >= 0 ? iceIndex : 2);
-    setSwapSugar(Boolean(item.swapSugar));
-    setUseOatMilk(Boolean(item.useOatMilk));
+    setSwapSugar(hasSwapSugarMod);
+    setUseOatMilk(hasOatMilkMod);
     setIsToppingsOpen(true);
-  }, [drinkItems, getMenuImage, getMenuDescription]);
+  }, [
+    allMenuItems,
+    drinkItems,
+    getMenuImage,
+    getMenuDescription,
+    sugarMenuId,
+    iceMenuId,
+    swapSugarMenuId,
+    oatMilkMenuId,
+  ]);
 
   const removeOrderItem = useCallback((itemId) => {
     setOrderSubmitMessage('');
     setOrderSubmitError('');
     setOrderItems((prev) => prev.filter((item) => item.id !== itemId));
   }, []);
-
-  const resolveItemMenuId = useCallback((item) => {
-    if (Number.isInteger(item?.menuId)) return item.menuId;
-
-    if (item?.type === 'drink') {
-      const matchedDrink = drinkItems.find(
-        (drink) => drink.name.toLowerCase() === String(item.name || '').toLowerCase()
-      );
-      if (matchedDrink) {
-        const sizeKey = item.size || 'medium';
-        return matchedDrink.sizeMenuIds?.[sizeKey] ?? matchedDrink.id;
-      }
-    }
-
-    const matchedMenu = allMenuItems.find(
-      (menuItem) => menuItem.category === item?.type && menuItem.name.toLowerCase() === String(item?.name || '').toLowerCase()
-    );
-    return matchedMenu?.id;
-  }, [drinkItems, allMenuItems]);
 
   const handleFinishOrder = useCallback(() => {
     if (orderItems.length === 0) return;
@@ -516,33 +629,29 @@ function Customer() {
     setOrderSubmitError('');
 
     try {
-      const swapSugarMenuId = modificationByName['swap sugar']?.id;
-      const oatMilkMenuId = (modificationByName['oat milk'] || modificationByName['oak milk'])?.id;
-
       const payloadItems = orderItems.map((item, itemIndex) => {
-        const menuId = resolveItemMenuId(item);
-        if (!Number.isInteger(menuId)) {
+        if (!Number.isInteger(item?.menuId)) {
           throw new Error(`Could not resolve menu ID for order item ${itemIndex + 1} (${item.name}).`);
         }
 
-        const toppings = Array.isArray(item.toppings)
-          ? item.toppings.map((topping) => ({
-              id: topping.id,
-              quantity: topping.quantity,
-            }))
-          : [];
+        const toppingCounts = Array.isArray(item.modifications_array)
+          ? item.modifications_array.reduce((acc, modification) => {
+              if (Number.isInteger(modification?.menu_id)) {
+                acc[modification.menu_id] = (acc[modification.menu_id] || 0) + 1;
+              }
+              return acc;
+            }, {})
+          : {};
 
-        if (item.type === 'drink') {
-          if (item.swapSugar && Number.isInteger(swapSugarMenuId)) {
-            toppings.push({ id: swapSugarMenuId, quantity: 1 });
-          }
-          if (item.useOatMilk && Number.isInteger(oatMilkMenuId)) {
-            toppings.push({ id: oatMilkMenuId, quantity: 1 });
-          }
-        }
+        const toppings = Object.entries(toppingCounts)
+          .map(([id, quantity]) => ({
+            id: Number(id),
+            quantity,
+          }))
+          .filter((entry) => Number.isInteger(entry.id) && Number.isFinite(entry.quantity) && entry.quantity > 0);
 
         return {
-          menuId,
+          menuId: item.menuId,
           quantity: Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1,
           toppings,
         };
@@ -556,7 +665,94 @@ function Customer() {
     } catch (submitError) {
       setOrderSubmitError(submitError.message || 'Unable to submit order. Please try again.');
     }
-  }, [orderItems, orderSubtotal, modificationByName, resolveItemMenuId, orderMutation]);
+  }, [orderItems, orderSubtotal, orderMutation]);
+
+  const handleChatAction = useCallback((chatAction) => {
+    if (chatAction?.action !== 'add_to_order') return;
+
+    const incomingItems = Array.isArray(chatAction?.orderItems) ? chatAction.orderItems : [];
+    if (incomingItems.length === 0) return;
+
+    const normalizedOrderItems = incomingItems
+      .map((item, index) => {
+        const menuId = Number(item?.menuId);
+        if (!Number.isInteger(menuId)) {
+          return null;
+        }
+
+        const matchedMenuItem = allMenuItems.find((menuItem) => menuItem.id === menuId);
+        if (!matchedMenuItem) {
+          return null;
+        }
+
+        const rawMods = Array.isArray(item?.modifications_array) ? item.modifications_array : [];
+        const menuModifications = rawMods
+          .map((modification) => {
+            const modificationMenuId = Number(modification?.menu_id);
+            if (!Number.isInteger(modificationMenuId)) return null;
+            const matchedModification = allMenuItems.find((menuItem) => menuItem.id === modificationMenuId);
+            if (!matchedModification) return null;
+            return {
+              category: String(modification?.category || matchedModification.category || '').toLowerCase(),
+              cost: Number.isFinite(Number(modification?.cost)) ? Number(modification.cost) : matchedModification.price,
+              menu_id: matchedModification.id,
+              name: String(modification?.name || matchedModification.name || '').trim(),
+            };
+          })
+          .filter(Boolean);
+
+        if (matchedMenuItem.category === 'food') {
+          return buildOrderEntry({
+            entryId: `chat-food-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
+            menuId: matchedMenuItem.id,
+            name: matchedMenuItem.name,
+            baseCost: matchedMenuItem.price,
+            modificationsArray: [],
+          });
+        }
+
+        if (matchedMenuItem.category !== 'drink') {
+          return null;
+        }
+
+        const hasSugar = Number.isInteger(sugarMenuId)
+          && menuModifications.some((modification) => modification.menu_id === sugarMenuId);
+        const hasIce = Number.isInteger(iceMenuId)
+          && menuModifications.some((modification) => modification.menu_id === iceMenuId);
+
+        if (!hasSugar && Number.isInteger(sugarMenuId)) {
+          menuModifications.push({
+            category: 'modifications',
+            cost: 0,
+            menu_id: sugarMenuId,
+            name: 'Sugar 1x',
+          });
+        }
+        if (!hasIce && Number.isInteger(iceMenuId)) {
+          menuModifications.push({
+            category: 'modifications',
+            cost: 0,
+            menu_id: iceMenuId,
+            name: 'Ice 1x',
+          });
+        }
+
+        return buildOrderEntry({
+          entryId: `chat-drink-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
+          menuId: matchedMenuItem.id,
+          name: matchedMenuItem.name,
+          baseCost: matchedMenuItem.price,
+          modificationsArray: menuModifications,
+        });
+      })
+      .filter(Boolean);
+
+    if (normalizedOrderItems.length === 0) return;
+
+    setOrderSubmitMessage('');
+    setOrderSubmitError('');
+    setOrderItems((prev) => [...prev, ...normalizedOrderItems]);
+  }, [allMenuItems, buildOrderEntry, sugarMenuId, iceMenuId]);
 
   if (isLoading) {
     return (
@@ -623,10 +819,17 @@ function Customer() {
             submitMessage={orderSubmitMessage}
             submitError={orderSubmitError}
             isPending={orderMutation.isPending}
+            sugarMenuId={sugarMenuId}
+            iceMenuId={iceMenuId}
             onEditItem={editOrderItem}
             onRemoveItem={removeOrderItem}
             onFinishOrder={handleFinishOrder}
           />
+          
+        </div>
+
+        <div className="mt-3">
+          <Chatbot onChatAction={handleChatAction} />
         </div>
 
         {/* Drink Customization Modal */}

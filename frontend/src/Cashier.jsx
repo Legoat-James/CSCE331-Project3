@@ -101,7 +101,7 @@ export default function Cashier() {
                     toppings: item.modifications_array ? item.modifications_array.map(mod => {
                         // Quantity should always be an integer for database
                         // Ice/Sugar levels are stored in the modification name, not quantity
-                        return { id: mod.menu_id, quantity: 1 };
+                        return { id: mod.menu_id, quantity: 1};
                     }) : []
                 }
             })

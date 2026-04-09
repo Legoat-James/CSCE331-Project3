@@ -1063,8 +1063,8 @@ app.post('/api/orders/create', async (req,res,next)=>{
       const menuId = Number(item?.menuId);
       const quantity = Number(item?.quantity ?? 1);
 
-      if (!Number.isInteger(menuId)) {
-        throw new ApiError(400, `items[${itemIndex}].menuId must be an integer.`, null, req.path);
+      if (quantity == null || quantity == undefined) {
+        throw new ApiError(400, `items[${itemIndex}].menuId must be defined.`, null, req.path);
       }
 
       if (!Number.isFinite(quantity) || quantity <= 0) {
@@ -1813,17 +1813,94 @@ app.post('/api/chat', async (req, res, next) => {
       }
     }
 
-    console.log('TAMU AI Full Response:', fullContent.substring(0, 200));
+    const rawAssistantContent = fullContent.trim();
+    console.log('TAMU AI Full Response:', rawAssistantContent.substring(0, 200));
 
-    // Return in OpenAI format
+    const extractJsonPayload = (content) => {
+      if (!content) return null;
+      const trimmed = content.trim();
+
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        return trimmed;
+      }
+
+      const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      if (fencedMatch?.[1]) {
+        const fencedBody = fencedMatch[1].trim();
+        if (fencedBody.startsWith('{') && fencedBody.endsWith('}')) {
+          return fencedBody;
+        }
+      }
+
+      return null;
+    };
+
+    let structuredChatResponse = null;
+    const jsonPayload = extractJsonPayload(rawAssistantContent);
+    if (jsonPayload) {
+      try {
+        const parsed = JSON.parse(jsonPayload);
+        const parsedMessage = String(parsed?.message || '').trim();
+        const parsedAction = String(parsed?.action || 'none').trim().toLowerCase();
+        const normalizedAction = parsedAction === 'add_to_order' ? 'add_to_order' : 'none';
+
+        const normalizedOrderItems = normalizedAction === 'add_to_order' && Array.isArray(parsed?.orderItems)
+          ? parsed.orderItems
+              .map((item) => {
+                const menuId = Number(item?.menuId);
+                if (!Number.isInteger(menuId)) return null;
+
+                const modificationsArray = Array.isArray(item?.modifications_array)
+                  ? item.modifications_array
+                      .map((modification) => {
+                        const modificationMenuId = Number(modification?.menu_id);
+                        if (!Number.isInteger(modificationMenuId)) return null;
+                        return {
+                          category: String(modification?.category || '').trim().toLowerCase(),
+                          cost: Number(modification?.cost || 0),
+                          menu_id: modificationMenuId,
+                          name: String(modification?.name || '').trim(),
+                        };
+                      })
+                      .filter(Boolean)
+                  : [];
+
+                return {
+                  menuId,
+                  cost: Number(item?.cost || 0),
+                  name: String(item?.name || '').trim(),
+                  modifications_array: modificationsArray,
+                };
+              })
+              .filter(Boolean)
+          : [];
+
+        structuredChatResponse = {
+          message: parsedMessage || rawAssistantContent,
+          action: normalizedAction,
+          orderItems: normalizedOrderItems,
+        };
+      } catch (parseError) {
+        console.warn('Chat response JSON parse failed; falling back to text response.');
+      }
+    }
+
+    const chatAction = structuredChatResponse || {
+      message: rawAssistantContent,
+      action: 'none',
+      orderItems: [],
+    };
+
+    // Return in OpenAI-compatible format plus normalized chatAction payload
     res.json({
       choices: [{
         message: {
           role: 'assistant',
-          content: fullContent.trim()
+          content: chatAction.message
         },
         finish_reason: 'stop'
-      }]
+      }],
+      chatAction,
     });
   } catch (err) {
     console.error('Chat endpoint error:', err);
