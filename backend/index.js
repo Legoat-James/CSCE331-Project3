@@ -1250,6 +1250,78 @@ app.post('/api/orders/create', async (req,res,next)=>{
   }
 });
 
+
+
+app.get('/api/recipes/all', requireAuth(true), async (req, res, next) => {
+    /* #swagger.tags = ['Recipes']
+    #swagger.summary = "Get's the recipes for every (active) item on the menu"
+    #swagger.security = [{"cookieAuth": []}]
+    #swagger.responses[200] = { 
+            description: 'Successfully retrieved recipes',
+            schema: [{ 
+                menu_id: 0, 
+                category: 'Drink',
+                ingredients: [{
+                  ingredient_id: 0,
+                  name: 'Matcha',
+                  quantity: 1,
+                  unit: 'Cup',
+                  is_active: true
+                }], 
+            }]
+    }      
+    */
+  try{
+    //default to 10 if not present
+
+    const query = `
+      SELECT 
+          m.name AS menu_name,
+          m.menu_id,
+          m.category,
+          i.name AS ingredient_name,
+          i.ingredient_id,
+          i.unit,
+          r.quantity,
+          r.is_active
+      FROM recipes r
+      JOIN menu m ON r.menu_id = m.menu_id
+      JOIN ingredients i ON r.ingredient_id = i.ingredient_id
+    `;
+    const result = await pool.query(query);
+    const recipes = result.rows;
+    //format them so recipes have ingredients nested inside
+    const formattedRecipes = recipes.reduce((acc, row)=>{
+      let recipe = acc.find(recipe => recipe.menu_id === row.menu_id);
+      if(!recipe){
+        //if the recipe is not already in the accumulated list, create it
+        recipe = {
+          menu_id: row.menu_id,
+          name: row.menu_name,
+          category: row.category,
+          ingredients: []
+        };
+        acc.push(recipe);
+      }
+
+      //add ingredients to the order
+      recipe.ingredients.push({
+        ingredient_id: row.ingredient_id,
+        name: row.ingredient_name,
+        quantity: parseFloat(row.quantity),
+        unit: row.unit,
+        is_active: row.is_active
+      });
+      return acc;
+    },[])
+
+    res.json(formattedRecipes);
+  }catch(err){
+    next(err);
+  }
+});
+
+
 /*
 Report API Endpoints: restricted to managers
 X report requires: nothing, just returns the last 24 hours of sales data broken down by hour
@@ -1702,26 +1774,6 @@ app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
     const updatedIngredient = result.rows[0];
     res.json(updatedIngredient);
 
-  }catch(err){
-    next(err);
-  }
-});
-
-app.get('/api/test', (req, res, next) => {
-  try{
-      const { isError } = req.query;
-      if(isError === "true"){
-        throw new ApiError(400, "test error", {
-          extraMessage: {
-            "field": "type",
-            "message" : "an error was thrown"
-          }
-        });
-      }else{
-        res.json({
-          message: "all good, backend API working"
-        });
-      }
   }catch(err){
     next(err);
   }

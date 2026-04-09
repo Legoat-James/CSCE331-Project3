@@ -25,6 +25,9 @@ const docInfo = {
         },
         {
             name: "Ingredients", description: "Endpoints for handling Item Ingredients"
+        },
+        {
+            name: "Recipes", description: "Endpoints for handling Item Recipes"
         }
 
     ],
