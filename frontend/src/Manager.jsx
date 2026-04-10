@@ -59,6 +59,9 @@ ChartJS.register(
 */
 
 export default function Manager() {
+  const isLoggedIn = !!localStorage.getItem('authToken');
+  const user = JSON.parse(localStorage.getItem('user'));
+    
   // State management for different sections
   const [activeView, setActiveView] = useState('dashboard');
   const queryClient = useQueryClient();
@@ -138,7 +141,11 @@ const NavBar = () => {
             <Button
               variant="outline-danger"
               size="sm"
-              onClick={() => {/* TODO: Implement sign out functionality */}}
+              onClick={() => {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+              }}
             >
               Sign Out
             </Button>
@@ -147,6 +154,21 @@ const NavBar = () => {
       </Navbar>
     );
   };
+
+  if (!isLoggedIn || !user || !user.is_manager) {
+      return (
+          <Container className="mt-5 d-flex justify-content-center align-items-center" style={{minHeight: '80vh'}}>
+              <Alert variant="danger">
+                  <Alert.Heading>Access Denied</Alert.Heading>
+                  <p>You must have Manager privileges and be logged in to access this view.</p>
+                  <hr />
+                  <div className="d-flex justify-content-end">
+                      <Button onClick={() => window.location.href = '/'}>Back to Portal</Button>
+                  </div>
+              </Alert>
+          </Container>
+      );
+  }
 
   //Render report data
   const renderReportData = () => {
