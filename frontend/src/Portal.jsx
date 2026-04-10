@@ -1,7 +1,12 @@
-import { Container, Row, Col, Card } from 'react-bootstrap';
+import { useState } from 'react';
+import { Container, Row, Col, Card, Alert } from 'react-bootstrap';
 import './Portal.css';
 
 export default function Portal() {
+  const [errorMsg, setErrorMsg] = useState('');
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isLoggedIn = !!localStorage.getItem('authToken');
+
   const sections = [
     {
       id: 'customer',
@@ -9,6 +14,7 @@ export default function Portal() {
       description: 'Order food and drinks',
       icon: '🛒',
       path: '/customer',
+      protected: false,
     },
     {
       id: 'cashier',
@@ -16,6 +22,8 @@ export default function Portal() {
       description: 'Process transactions',
       icon: '💳',
       path: '/cashier',
+      protected: true,
+      requiresManager: false,
     },
     {
       id: 'manager',
@@ -23,6 +31,8 @@ export default function Portal() {
       description: 'Manage menu and staff',
       icon: '📊',
       path: '/manager',
+      protected: true,
+      requiresManager: true,
     },
     {
       id: 'menuboard',
@@ -30,15 +40,29 @@ export default function Portal() {
       description: 'Display menu items',
       icon: '📺',
       path: '/menuboard',
+      protected: false,
     },
     {
       id: 'login',
       title: 'Login',
-      description: 'Login to the system',
-      icon: '###',
+      description: isLoggedIn ? 'Logout of the system' : 'Login to the system',
+      icon: '🔑',
       path: '/login',
+      protected: false,
     },
   ];
+
+  const handleNavigation = (section) => {
+    if (section.protected && !isLoggedIn) {
+      setErrorMsg(`You must be logged in to access the ${section.title} portal.`);
+      return;
+    }
+    if (section.requiresManager && (!user || !user.is_manager)) {
+      setErrorMsg('Access Denied: You must have Manager privileges to access the Manager portal.');
+      return;
+    }
+    window.location.href = section.path;
+  };
 
   return (
     <Container
@@ -49,6 +73,7 @@ export default function Portal() {
         <header className="text-center mb-5">
           <h1 className="display-4 fw-bold portal-title mb-2">Restaurant POS System</h1>
           <p className="lead portal-subtitle">Select a module to get started</p>
+          {errorMsg && <Alert variant="danger" className="mt-3">{errorMsg}</Alert>}
         </header>
 
         <Row className="g-4 justify-content-center">
@@ -57,7 +82,7 @@ export default function Portal() {
               <Card
                 as="button"
                 className="portal-card w-100 h-100 border-2 rounded-4 shadow-sm"
-                onClick={() => (window.location.href = section.path)}
+                onClick={() => handleNavigation(section)}
               >
                 <Card.Body className="d-flex flex-column align-items-center text-center py-5 px-4">
                   <span className="portal-icon display-3 mb-3">{section.icon}</span>
