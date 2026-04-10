@@ -128,6 +128,38 @@ const itemVisualsByName = {
 
 // Utility functions
 const normalizeItemName = (name) => String(name || '').trim().toLowerCase();
+const normalizeChatText = (value) => String(value || '').trim().toLowerCase();
+
+const getRequestedToppings = (item) => {
+  const explicitToppings = Array.isArray(item?.toppings) ? item.toppings : [];
+  const fromExplicit = explicitToppings
+    .map((topping) => {
+      if (typeof topping === 'string') {
+        return { name: normalizeChatText(topping), menuId: null };
+      }
+      const menuId = Number(topping?.menu_id ?? topping?.menuId);
+      const name = normalizeChatText(topping?.name);
+      return {
+        name,
+        menuId: Number.isInteger(menuId) ? menuId : null,
+      };
+    })
+    .filter((topping) => topping.name || Number.isInteger(topping.menuId));
+
+  if (fromExplicit.length > 0) return fromExplicit;
+
+  const modifications = Array.isArray(item?.modifications_array) ? item.modifications_array : [];
+  return modifications
+    .filter((modification) => normalizeChatText(modification?.category) === 'topping')
+    .map((topping) => {
+      const menuId = Number(topping?.menu_id ?? topping?.menuId);
+      return {
+        name: normalizeChatText(topping?.name),
+        menuId: Number.isInteger(menuId) ? menuId : null,
+      };
+    })
+    .filter((topping) => topping.name || Number.isInteger(topping.menuId));
+};
 
 const normalizeCategory = (categoryValue) => {
   const normalized = String(categoryValue || '').trim().toLowerCase();
@@ -668,90 +700,144 @@ function Customer() {
   }, [orderItems, orderSubtotal, orderMutation]);
 
   const handleChatAction = useCallback((chatAction) => {
-    if (chatAction?.action !== 'add_to_order') return;
-
+    const action = normalizeChatText(chatAction?.action);
     const incomingItems = Array.isArray(chatAction?.orderItems) ? chatAction.orderItems : [];
+    console.log(`Received chat action: ${action} with items:`, incomingItems);
     if (incomingItems.length === 0) return;
+    
 
-    const normalizedOrderItems = incomingItems
-      .map((item, index) => {
-        const menuId = Number(item?.menuId);
-        if (!Number.isInteger(menuId)) {
-          return null;
-        }
+    if (action === 'add_to_order') {
+      const normalizedOrderItems = incomingItems
+        .map((item, index) => {
+          const menuId = Number(item?.menuId);
+          if (!Number.isInteger(menuId)) {
+            return null;
+          }
 
-        const matchedMenuItem = allMenuItems.find((menuItem) => menuItem.id === menuId);
-        if (!matchedMenuItem) {
-          return null;
-        }
+          const matchedMenuItem = allMenuItems.find((menuItem) => menuItem.id === menuId);
+          if (!matchedMenuItem) {
+            return null;
+          }
 
-        const rawMods = Array.isArray(item?.modifications_array) ? item.modifications_array : [];
-        const menuModifications = rawMods
-          .map((modification) => {
-            const modificationMenuId = Number(modification?.menu_id);
-            if (!Number.isInteger(modificationMenuId)) return null;
-            const matchedModification = allMenuItems.find((menuItem) => menuItem.id === modificationMenuId);
-            if (!matchedModification) return null;
-            return {
-              category: String(modification?.category || matchedModification.category || '').toLowerCase(),
-              cost: Number.isFinite(Number(modification?.cost)) ? Number(modification.cost) : matchedModification.price,
-              menu_id: matchedModification.id,
-              name: String(modification?.name || matchedModification.name || '').trim(),
-            };
-          })
-          .filter(Boolean);
+          const rawMods = Array.isArray(item?.modifications_array) ? item.modifications_array : [];
+          const menuModifications = rawMods
+            .map((modification) => {
+              const modificationMenuId = Number(modification?.menu_id);
+              if (!Number.isInteger(modificationMenuId)) return null;
+              const matchedModification = allMenuItems.find((menuItem) => menuItem.id === modificationMenuId);
+              if (!matchedModification) return null;
+              return {
+                category: String(modification?.category || matchedModification.category || '').toLowerCase(),
+                cost: Number.isFinite(Number(modification?.cost)) ? Number(modification.cost) : matchedModification.price,
+                menu_id: matchedModification.id,
+                name: String(modification?.name || matchedModification.name || '').trim(),
+              };
+            })
+            .filter(Boolean);
 
-        if (matchedMenuItem.category === 'food') {
+          if (matchedMenuItem.category === 'food') {
+            return buildOrderEntry({
+              entryId: `chat-food-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
+              menuId: matchedMenuItem.id,
+              name: matchedMenuItem.name,
+              baseCost: matchedMenuItem.price,
+              modificationsArray: [],
+            });
+          }
+
+          if (matchedMenuItem.category !== 'drink') {
+            return null;
+          }
+
+          const hasSugar = Number.isInteger(sugarMenuId)
+            && menuModifications.some((modification) => modification.menu_id === sugarMenuId);
+          const hasIce = Number.isInteger(iceMenuId)
+            && menuModifications.some((modification) => modification.menu_id === iceMenuId);
+
+          if (!hasSugar && Number.isInteger(sugarMenuId)) {
+            menuModifications.push({
+              category: 'modifications',
+              cost: 0,
+              menu_id: sugarMenuId,
+              name: 'Sugar 1x',
+            });
+          }
+          if (!hasIce && Number.isInteger(iceMenuId)) {
+            menuModifications.push({
+              category: 'modifications',
+              cost: 0,
+              menu_id: iceMenuId,
+              name: 'Ice 1x',
+            });
+          }
+
           return buildOrderEntry({
-            entryId: `chat-food-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
+            entryId: `chat-drink-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
             menuId: matchedMenuItem.id,
             name: matchedMenuItem.name,
             baseCost: matchedMenuItem.price,
-            modificationsArray: [],
+            modificationsArray: menuModifications,
           });
-        }
+        })
+        .filter(Boolean);
 
-        if (matchedMenuItem.category !== 'drink') {
-          return null;
-        }
+      if (normalizedOrderItems.length === 0) return;
 
-        const hasSugar = Number.isInteger(sugarMenuId)
-          && menuModifications.some((modification) => modification.menu_id === sugarMenuId);
-        const hasIce = Number.isInteger(iceMenuId)
-          && menuModifications.some((modification) => modification.menu_id === iceMenuId);
+      setOrderSubmitMessage('');
+      setOrderSubmitError('');
+      setOrderItems((prev) => [...prev, ...normalizedOrderItems]);
+      return;
+    }
 
-        if (!hasSugar && Number.isInteger(sugarMenuId)) {
-          menuModifications.push({
-            category: 'modifications',
-            cost: 0,
-            menu_id: sugarMenuId,
-            name: 'Sugar 1x',
-          });
-        }
-        if (!hasIce && Number.isInteger(iceMenuId)) {
-          menuModifications.push({
-            category: 'modifications',
-            cost: 0,
-            menu_id: iceMenuId,
-            name: 'Ice 1x',
-          });
-        }
-
-        return buildOrderEntry({
-          entryId: `chat-drink-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
-          menuId: matchedMenuItem.id,
-          name: matchedMenuItem.name,
-          baseCost: matchedMenuItem.price,
-          modificationsArray: menuModifications,
-        });
-      })
-      .filter(Boolean);
-
-    if (normalizedOrderItems.length === 0) return;
+    if (action !== 'remove_from_order' ) return;
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
-    setOrderItems((prev) => [...prev, ...normalizedOrderItems]);
+    setOrderItems((prev) => {
+      const remainingItems = [...prev];
+
+      incomingItems.forEach((itemToRemove) => {
+        const requestedMenuId = Number(itemToRemove?.menuId);
+        const requestedName = normalizeChatText(itemToRemove?.name || itemToRemove?.description);
+        const requestedToppings = getRequestedToppings(itemToRemove);
+
+        const indexToRemove = remainingItems.findIndex((orderItem) => {
+          if (Number.isInteger(requestedMenuId) && orderItem.menuId !== requestedMenuId) {
+            return false;
+          }
+
+          const orderItemName = normalizeChatText(orderItem?.name);
+          if (requestedName && !(orderItemName === requestedName || orderItemName.includes(requestedName) || requestedName.includes(orderItemName))) {
+            return false;
+          }
+
+          if (requestedToppings.length === 0) {
+            return true;
+          }
+
+          const orderToppings = getRequestedToppings(orderItem);
+          const orderToppingCounts = orderToppings.reduce((acc, topping) => {
+            const key = Number.isInteger(topping.menuId) ? `id:${topping.menuId}` : `name:${topping.name}`;
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+          }, {});
+
+          return requestedToppings.every((topping) => {
+            const key = Number.isInteger(topping.menuId) ? `id:${topping.menuId}` : `name:${topping.name}`;
+            const available = orderToppingCounts[key] || 0;
+            if (available <= 0) return false;
+            orderToppingCounts[key] = available - 1;
+            return true;
+          });
+        });
+
+        if (indexToRemove >= 0) {
+          remainingItems.splice(indexToRemove, 1);
+        }
+      });
+
+      return remainingItems;
+    });
   }, [allMenuItems, buildOrderEntry, sugarMenuId, iceMenuId]);
 
   if (isLoading) {

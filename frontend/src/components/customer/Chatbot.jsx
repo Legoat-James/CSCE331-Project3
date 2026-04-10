@@ -19,7 +19,7 @@ export default function Chatbot({ onChatAction }) {
     const fetchMenuItems = async () => {
         try {
             const data = await apiClient('/api/menu/all');
-            console.log('Menu items data:', data); // Debug log
+            // console.log('Menu items data:', data); // Debug log
             if (Array.isArray(data)) {
               setMenuData({
                 foods: data.filter(item => item.category === 'food'),
@@ -111,15 +111,16 @@ Be friendly, concise, and helpful. When recommending drinks, consider:
 - only food items do not have any customizations
 - all drink items are assumed to have the 1.0x ice and 1.0x sugar level by default unless the customer states they want a different ice or sugar level
 - modifications with "sugar" in the name should be considered sugar level modifications, and modifications with "ice" in the name should be considered ice level modifications
-- if the customer asks for an item that is not on the menu, ask if they made a mistake and offer the option that you think is the closest to what they meant
+- if the customer asks for an item that is not on the menu, ask if they made a mistake and offer the option that you think is the closest to what they meant. DO NOT add an item to the order if it isnt not an exact case insensitive match.
+- you are not allowed to "checkout" or "submit" an order for the customer, they must manually do it themselves by clicking the "Finish Order" button. if they ask to checkout or submit their order, just remind them to click the "Finish Order" button when they are ready.
 
 
 ## RETURN FORMAT
 return ONLY valid JSON with this exact schema:
   {
 message: string, //the assistants response to the user including any recommendations or explanations
-action: string, //the action to take, default means you only need to respond with a message, add_to_order means you should add an item to the order
-orderItems: an array of objects with this schema, only required if action is add_to_order
+action: string, //the action to take, default means you only need to respond with a message, add_to_order means you should add an item to the order, remove_from_order means you should remove the described item from the order. if there are multiple items that match the description given to you, you should remove the first instance that matches the description.
+orderItems: an array of objects with this schema, only required if action is add_to_order or remove_from_order.
 [{
 menuId: integer, //the id of the menu item to add to the order
 cost: float, //the cost of the item not including any modifications
@@ -138,7 +139,7 @@ name: string //the name of the modification or topping (for ice or sugar level m
 
   // Test the API connection via backend proxy
   const testConnection = async () => {
-    console.log("menu data that chatbot has is: ", menuData || 'didnt fetch menu data');
+    // console.log("menu data that chatbot has is: ", menuData || 'didnt fetch menu data');
     setConnectionStatus('testing');
     setErrorDetails(null);
     
@@ -219,12 +220,18 @@ name: string //the name of the modification or topping (for ice or sugar level m
 
         setMessages(prev => [...prev, { role: 'assistant', content: String(assistantMessage).trim() }]);
 
+        const normalizedAction = String(chatAction?.action || '')
+          .trim()
+          .toLowerCase()
+          .replace(/^['"]|['"]$/g, '');
+
         if (
-          chatAction?.action === 'add_to_order' &&
+          (normalizedAction === 'add_to_order' || normalizedAction === 'remove_from_order') &&
           Array.isArray(chatAction?.orderItems) &&
           chatAction.orderItems.length > 0 &&
           typeof onChatAction === 'function'
         ) {
+          console.log('chat action trigger logic successful in chatbos.jsx')
           onChatAction(chatAction);
         }
 
