@@ -1882,7 +1882,7 @@ app.post('/api/chat', async (req, res, next) => {
     }
 
     const rawAssistantContent = fullContent.trim();
-    console.log('TAMU AI Full Response:', rawAssistantContent.substring(0, 200));
+    console.log('TAMU AI Full Response:', rawAssistantContent.substring(0, 400));
 
     const extractJsonPayload = (content) => {
       if (!content) return null;
@@ -1909,14 +1909,19 @@ app.post('/api/chat', async (req, res, next) => {
       try {
         const parsed = JSON.parse(jsonPayload);
         const parsedMessage = String(parsed?.message || '').trim();
-        const parsedAction = String(parsed?.action || 'none').trim().toLowerCase();
-        const normalizedAction = parsedAction === 'add_to_order' ? 'add_to_order' : 'none';
+        const parsedAction = String(parsed?.action || 'none')
+          .trim()
+          .toLowerCase()
+          .replace(/^['"]|['"]$/g, '');
+        const normalizedAction = ['add_to_order', 'remove_from_order'].includes(parsedAction)
+          ? parsedAction
+          : 'none';
 
-        const normalizedOrderItems = normalizedAction === 'add_to_order' && Array.isArray(parsed?.orderItems)
+        const normalizedOrderItems = ['add_to_order', 'remove_from_order'].includes(normalizedAction) && Array.isArray(parsed?.orderItems)
           ? parsed.orderItems
               .map((item) => {
                 const menuId = Number(item?.menuId);
-                if (!Number.isInteger(menuId)) return null;
+                const normalizedMenuId = Number.isInteger(menuId) && menuId > 0 ? menuId : null;
 
                 const modificationsArray = Array.isArray(item?.modifications_array)
                   ? item.modifications_array
@@ -1934,13 +1939,18 @@ app.post('/api/chat', async (req, res, next) => {
                   : [];
 
                 return {
-                  menuId,
+                  menuId: normalizedMenuId,
                   cost: Number(item?.cost || 0),
                   name: String(item?.name || '').trim(),
                   modifications_array: modificationsArray,
                 };
               })
-              .filter(Boolean)
+              .filter((item) => {
+                if (normalizedAction === 'remove_from_order') {
+                  return Number.isInteger(item.menuId) || item.name.length > 0;
+                }
+                return Number.isInteger(item.menuId);
+              })
           : [];
 
         structuredChatResponse = {

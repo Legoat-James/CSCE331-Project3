@@ -101,7 +101,11 @@ export default function Cashier() {
                     toppings: item.modifications_array ? item.modifications_array.map(mod => {
                         // Quantity should always be an integer for database
                         // Ice/Sugar levels are stored in the modification name, not quantity
-                        return { id: mod.menu_id, quantity: 1};
+                        //but when its passed into the DB we need the quantity field, so we parse string name for quantity
+                        return { id: mod.menu_id, 
+                            quantity: (mod.name.toLowerCase().includes("ice") ||  mod.name.toLowerCase().includes("sugar"))
+                            ? parseFloat(mod.name.replace(/x/g, '').split(' ')[1]) : 1
+                        };
                     }) : []
                 }
             })
