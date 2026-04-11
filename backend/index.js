@@ -1274,10 +1274,17 @@ app.get('/api/recipes/all', requireAuth(true), async (req, res, next) => {
                 }], 
             }]
     }      
+    #swagger.parameters['showAll'] = {
+      in: 'query',                        
+            description: 'show all will also include inactive (deleted) items in the recipe',
+            required: false,                        
+            type: 'boolean',                   
+            example: false                 
+    }  
     */
   try{
     //default to 10 if not present
-
+    const showAll = (req.query.showAll && req.query.showAll == 'true') ? true : false;
     const query = `
       SELECT 
           m.name AS menu_name,
@@ -1290,7 +1297,7 @@ app.get('/api/recipes/all', requireAuth(true), async (req, res, next) => {
           r.is_active
       FROM recipes r
       JOIN menu m ON r.menu_id = m.menu_id
-      JOIN ingredients i ON r.ingredient_id = i.ingredient_id
+      JOIN ingredients i ON r.ingredient_id = i.ingredient_id ${showAll ? "" : "AND r.is_active = true"}
     `;
     const result = await pool.query(query);
     const recipes = result.rows;
@@ -1325,6 +1332,236 @@ app.get('/api/recipes/all', requireAuth(true), async (req, res, next) => {
   }
 });
 
+app.get('/api/recipes/details', requireAuth(true), async (req, res, next) => {
+    /* #swagger.tags = ['Recipes']
+    #swagger.summary = "Get a specific recipe based on the passed in menu ID"
+    #swagger.security = [{"cookieAuth": []}]
+    #swagger.responses[200] = { 
+            description: 'Successfully retrieved recipe',
+            schema: { 
+                menu_id: 0, 
+                category: 'Drink',
+                ingredients: [{
+                  ingredient_id: 0,
+                  name: 'Matcha',
+                  quantity: 1,
+                  unit: 'Cup',
+                  is_active: true
+              }], 
+            }
+    }      
+    #swagger.parameters['menuID'] = {
+      in: 'query',                        
+            description: 'menu ID to get the recipe for',
+            required: true,                        
+            type: 'integer',                   
+            example: 2                 
+    }  
+    #swagger.parameters['showAll'] = {
+      in: 'query',                        
+            description: 'show all will also include inactive (deleted) items in the recipe',
+            required: false,                        
+            type: 'boolean',                   
+            example: false                 
+    }  
+    */
+  try{
+    //default to 10 if not present
+    const showAll = (req.query.showAll && req.query.showAll == 'true') ? true : false;
+    const menuID = req.query.menuID;
+    if(!menuID){
+      throw new ApiError(401, "Missing menuID", null, req.path);
+    }
+    if(Number.isNaN(Number(menuID))) {
+       throw new ApiError(400, "menuID must be an integer",null,req.path);
+    }
+
+    const query = `
+      SELECT 
+          m.name AS menu_name,
+          m.menu_id,
+          m.category,
+          i.name AS ingredient_name,
+          i.ingredient_id,
+          i.unit,
+          r.quantity,
+          r.is_active
+      FROM recipes r
+      JOIN menu m ON r.menu_id = m.menu_id
+      JOIN ingredients i ON r.ingredient_id = i.ingredient_id AND r.menu_id = $1 ${showAll ? "" : "AND r.is_active = true"}
+    `;
+    const result = await pool.query(query, [menuID]);
+    if(result.rowCount === 0){
+      throw new ApiError(404, "A recipe could not be found with this menu ID.", null, req.path);
+    }
+    const recipeItems = result.rows;
+    //format them so recipes have ingredients nested inside
+    const formattedRecipe = recipeItems.reduce((acc, row)=>{
+      let recipe = acc.find(recipe => recipe.menu_id === row.menu_id);
+      if(!recipe){
+        //if the recipe is not already in the accumulated list, create it
+        recipe = {
+          menu_id: row.menu_id,
+          name: row.menu_name,
+          category: row.category,
+          ingredients: []
+        };
+        acc.push(recipe);
+      }
+
+      //add ingredients to the order
+      recipe.ingredients.push({
+        ingredient_id: row.ingredient_id,
+        name: row.ingredient_name,
+        quantity: parseFloat(row.quantity),
+        unit: row.unit,
+        is_active: row.is_active
+      });
+      return acc;
+    },[])
+    if(formattedRecipe.length === 0){
+      throw new ApiError(500, "Something went wrong retrieving this recipe", null, req.path);
+    }
+    res.json(formattedRecipe[0]);
+  }catch(err){
+    next(err);
+  }
+});
+
+app.post('/api/recipes/add-ingredient', requireAuth(true), async (req, res, next) => {
+    /* #swagger.tags = ['Recipes']
+    #swagger.summary = "Adds an ingredient to a recipe determined by a passed in menu item ID"
+    #swagger.security = [{"cookieAuth": []}]
+    #swagger.responses[200] = { 
+            description: 'Successfully updated recipe',
+            schema: [{ 
+                menu_id: 0, 
+                category: 'Drink',
+                ingredients: {
+                  ingredient_id: 0,
+                  name: 'Matcha',
+                  quantity: 1,
+                  unit: 'Cup',
+                  is_active: true
+                }, 
+            }]
+    }
+    #swagger.parameters['menuID'] = {
+      in: 'query',                        
+            description: 'The id of the menu item\'s recipe to be updated',
+            required: true,                        
+            type: 'integer',                   
+            example: 1                   
+    }     
+    #swagger.parameters['ingredient'] = {
+          in: 'body',
+          description: 'Ingredient ID and quantity to be added to the recipe',
+          required: true,
+          schema: {
+            ingredientID: 1,
+            quantity: 1
+          }
+      }                
+    */
+  try{
+    //default to 10 if not present
+    const menuID = req.query.menuID;
+    const ingredientID = req.body.ingredientID;
+    const quantity = req.body.quantity;
+    if(!menuID || !ingredientID || !quantity){
+      throw new ApiError(401, "Missing menuID and/or ingredient ID and/or quantity", null, req.path);
+    }
+    if(Number.isNaN(Number(menuID)) || Number.isNaN(Number(ingredientID)) || Number.isNaN(Number(quantity))) {
+       throw new ApiError(400, "menuID, ingredientID, and quantity must be an integer",null,req.path);
+    }
+
+   const query = `
+            INSERT INTO recipes (menu_id, ingredient_id, quantity, is_active)
+            VALUES ($1, $2, $3, true)
+            ON CONFLICT (menu_id, ingredient_id) 
+            DO UPDATE SET 
+                quantity = EXCLUDED.quantity,
+                is_active = true
+            WHERE recipes.is_active = false
+            RETURNING *;
+        `;
+    const result = await pool.query(query, [menuID,ingredientID,quantity]);
+    //uniqueness violation, which means a duplicate ingredient was attempted
+    if(result.rowCount === 0){
+      throw new ApiError(409, "This ingredient is already in the recipe.", null, req.path);
+    }
+    const recipe = result.rows[0];
+    res.json(recipe);
+  }catch(err){
+    //one of the IDs didnt exist
+    if(err.code === '23503'){
+      const missingError = new ApiError(409, "Missing ingredient or menu ID.", null, req.path);
+      next(missingError);
+      return;
+    }
+    next(err);
+  }
+});
+
+app.delete('/api/recipes/remove-ingredient', requireAuth(true), async (req, res, next) => {
+    /* #swagger.tags = ['Recipes']
+    #swagger.summary = "Removes an ingredient to a recipe determined by a passed in menu item ID"
+    #swagger.security = [{"cookieAuth": []}]
+    #swagger.responses[200] = { 
+            description: 'Successfully removed ingredient from recipe',
+            schema: [{ 
+                menu_id: 0, 
+                category: 'Drink',
+                ingredients: {
+                  ingredient_id: 0,
+                  name: 'Matcha',
+                  quantity: 1,
+                  unit: 'Cup',
+                  is_active: true
+                }, 
+            }]
+    }
+    #swagger.parameters['menuID'] = {
+      in: 'query',                        
+            description: 'The id of the menu item\'s recipe to be updated',
+            required: true,                        
+            type: 'integer',                   
+            example: 1                   
+    }     
+    #swagger.parameters['ingredient'] = {
+          in: 'body',
+          description: 'Ingredient ID to be removed from the recipe',
+          required: true,
+          schema: {
+            ingredientID: 1,
+          }
+      }                
+    */
+  try{
+    //default to 10 if not present
+    const menuID = req.query.menuID;
+    const ingredientID = req.body.ingredientID;
+    if(!menuID || !ingredientID){
+      throw new ApiError(401, "Missing menuID and/or ingredient ID", null, req.path);
+    }
+    if(Number.isNaN(Number(menuID)) || Number.isNaN(Number(ingredientID))) {
+       throw new ApiError(400, "menuID and ingredientID must be an integer",null,req.path);
+    }
+    const query = "UPDATE recipes SET is_active = false WHERE menu_id = $1 AND ingredient_id = $2 RETURNING *;"
+  
+    const result = await pool.query(query, [menuID,ingredientID]);
+    const recipe = result.rows[0];
+    res.json(recipe);
+  }catch(err){
+    //one of the IDs didnt exist
+    if(err.code === '23503'){
+      const missingError = new ApiError(409, "Missing ingredient or menu ID.", null, req.path);
+      next(missingError);
+      return;
+    }
+    next(err);
+  }
+});
 
 /*
 Report API Endpoints: restricted to managers
