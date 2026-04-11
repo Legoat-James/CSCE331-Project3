@@ -205,6 +205,9 @@ function Customer() {
   const [orderSubmitMessage, setOrderSubmitMessage] = useState('');
   const [orderSubmitError, setOrderSubmitError] = useState('');
 
+  //state for customer name
+  const [customerName, setCustomerName] = useState('');
+
   // API hooks
   const { data, isLoading, error, isError } = useGet(['full-menu'], '/api/menu/all', {
     retry: false,
@@ -691,13 +694,13 @@ function Customer() {
 
       orderMutation.mutate({
         orderTotal: Number(orderSubtotal.toFixed(2)),
-        customerName: 'Guest',
+        customerName: customerName.trim() || 'Guest',
         items: payloadItems,
       });
     } catch (submitError) {
       setOrderSubmitError(submitError.message || 'Unable to submit order. Please try again.');
     }
-  }, [orderItems, orderSubtotal, orderMutation]);
+  }, [orderItems, orderSubtotal, orderMutation, customerName]);
 
   const handleChatAction = useCallback((chatAction) => {
     const action = normalizeChatText(chatAction?.action);
@@ -910,13 +913,16 @@ function Customer() {
             onEditItem={editOrderItem}
             onRemoveItem={removeOrderItem}
             onFinishOrder={handleFinishOrder}
+            customerName={customerName}
+            setCustomerName={setCustomerName}
           />
+          <div className="mt-3">
+          <Chatbot onChatAction={handleChatAction} />
+          </div>
           
         </div>
-
-        <div className="mt-3">
-          <Chatbot onChatAction={handleChatAction} />
-        </div>
+        
+        
 
         {/* Drink Customization Modal */}
         <DrinkCustomizer

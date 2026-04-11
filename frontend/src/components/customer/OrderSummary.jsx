@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Spinner } from 'react-bootstrap';
+import { Button, Spinner, Form } from 'react-bootstrap';
 
 function OrderSummary({ 
   orderItems = [], 
@@ -14,7 +14,9 @@ function OrderSummary({
   iceMenuId,
   onEditItem,
   onRemoveItem,
-  onFinishOrder
+  onFinishOrder,
+  customerName,
+  setCustomerName
 }) {
   return (
     <aside className="order-panel" aria-label="Current order">
@@ -98,12 +100,24 @@ function OrderSummary({
 
       {submitMessage && <div className="order-submit-message success">{submitMessage}</div>}
       {submitError && <div className="order-submit-message error">{submitError}</div>}
+      <Form>
+        <Form.Group className="mb-3" controlId="customerName">
+            <Form.Control
+            type="text"
+            placeholder="enter name here..."
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            className="cashier-order-total"
+            />
+        </Form.Group>
+
+    </Form>
 
       <Button
         size="sm"
         className="tea-btn-finish w-100"
         onClick={onFinishOrder}
-        disabled={isPending || orderItems.length === 0}
+        disabled={isPending || orderItems.length === 0 || customerName===''}
       >
         {isPending ? (
           <>
