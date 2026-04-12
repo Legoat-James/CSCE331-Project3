@@ -21,6 +21,49 @@ const CATEGORY_ORDER = {
 };
 
 const normalizeCategory = (value) => String(value || '').trim().toLowerCase();
+const normalizeLookup = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+const stripDrinkSizeSuffix = (value) => String(value || '').trim().replace(/\s+/g, ' ').replace(/\s+(small|large)$/i, '').trim();
+const isDrinkSizeVariant = (item) =>
+  normalizeCategory(item?.category) === 'drink' && /\s+(small|large)$/i.test(String(item?.name || '').trim());
+const DRINK_SIZE_MULTIPLIERS = {
+  base: 1,
+  small: 0.5,
+  large: 1.5,
+};
+const SIZE_SPECIFIC_INGREDIENT_FAMILIES = ['cup', 'lid', 'straw'];
+
+const getIngredientFamily = (name) => {
+  const normalized = normalizeLookup(name);
+  return SIZE_SPECIFIC_INGREDIENT_FAMILIES.find((family) => normalized.includes(family)) || null;
+};
+
+const findIngredientVariant = (ingredients, family, size) => {
+  if (!family) {
+    return null;
+  }
+
+  const normalizedFamily = normalizeLookup(family);
+  const sizeToken = size === 'base' ? null : size;
+
+  const exactMatches = ingredients.filter((ingredient) => {
+    const normalized = normalizeLookup(ingredient.name);
+    if (!normalized.includes(normalizedFamily)) {
+      return false;
+    }
+
+    if (size === 'base') {
+      return !normalized.includes('small') && !normalized.includes('large');
+    }
+
+    return normalized.includes(sizeToken);
+  });
+
+  if (exactMatches.length > 0) {
+    return exactMatches.sort((a, b) => String(a.name || '').length - String(b.name || '').length)[0];
+  }
+
+  return null;
+};
 
 export default function RecipeBuilder() {
   const [selectedMenuId, setSelectedMenuId] = useState('');
@@ -88,6 +131,14 @@ export default function RecipeBuilder() {
     [ingredientsRaw]
   );
 
+  const ingredientsById = useMemo(() => {
+    const map = new Map();
+    ingredients.forEach((ingredient) => {
+      map.set(String(ingredient.ingredient_id), ingredient);
+    });
+    return map;
+  }, [ingredients]);
+
   const sortedMenuItems = useMemo(
     () =>
       [...menuItems].sort((a, b) => {
@@ -118,6 +169,90 @@ export default function RecipeBuilder() {
     });
     return map;
   }, [recipes]);
+
+  const selectedMenuItem = useMemo(
+    () => sortedMenuItems.find((item) => String(item.menu_id) === String(selectedMenuId)) || null,
+    [sortedMenuItems, selectedMenuId]
+  );
+
+  const selectedRecipe = useMemo(
+    () => (selectedMenuItem ? recipesByMenuId.get(String(selectedMenuItem.menu_id)) || null : null),
+    [recipesByMenuId, selectedMenuItem]
+  );
+
+  const selectedDrinkFamily = useMemo(() => {
+    if (!selectedMenuItem || normalizeCategory(selectedMenuItem.category) !== 'drink' || isDrinkSizeVariant(selectedMenuItem)) {
+      return null;
+    }
+
+    const baseName = stripDrinkSizeSuffix(selectedMenuItem.name);
+    const baseKey = normalizeLookup(baseName);
+    const smallKey = normalizeLookup(`${baseName} small`);
+    const largeKey = normalizeLookup(`${baseName} large`);
+    const drinks = menuItems.filter((item) => normalizeCategory(item.category) === 'drink');
+
+    const baseItem = drinks.find((item) => normalizeLookup(item.name) === baseKey) || selectedMenuItem;
+    const smallItem = drinks.find((item) => normalizeLookup(item.name) === smallKey) || null;
+    const largeItem = drinks.find((item) => normalizeLookup(item.name) === largeKey) || null;
+
+    return {
+      baseItem,
+      smallItem,
+      largeItem,
+    };
+  }, [menuItems, selectedMenuItem]);
+
+  const baseRecipeMenuId = selectedMenuItem?.menu_id ?? null;
+  const smallRecipeMenuId = selectedDrinkFamily?.smallItem?.menu_id ?? null;
+  const largeRecipeMenuId = selectedDrinkFamily?.largeItem?.menu_id ?? null;
+
+  const addBaseIngredientMutation = useMutate(
+    baseRecipeMenuId != null
+      ? `/api/recipes/add-ingredient?menuID=${baseRecipeMenuId}`
+      : '/api/recipes/add-ingredient',
+    'POST',
+    ['manager-recipes']
+  );
+
+  const addSmallIngredientMutation = useMutate(
+    smallRecipeMenuId != null
+      ? `/api/recipes/add-ingredient?menuID=${smallRecipeMenuId}`
+      : '/api/recipes/add-ingredient',
+    'POST',
+    ['manager-recipes']
+  );
+
+  const addLargeIngredientMutation = useMutate(
+    largeRecipeMenuId != null
+      ? `/api/recipes/add-ingredient?menuID=${largeRecipeMenuId}`
+      : '/api/recipes/add-ingredient',
+    'POST',
+    ['manager-recipes']
+  );
+
+  const removeBaseIngredientMutation = useMutate(
+    baseRecipeMenuId != null
+      ? `/api/recipes/remove-ingredient?menuID=${baseRecipeMenuId}`
+      : '/api/recipes/remove-ingredient',
+    'DELETE',
+    ['manager-recipes']
+  );
+
+  const removeSmallIngredientMutation = useMutate(
+    smallRecipeMenuId != null
+      ? `/api/recipes/remove-ingredient?menuID=${smallRecipeMenuId}`
+      : '/api/recipes/remove-ingredient',
+    'DELETE',
+    ['manager-recipes']
+  );
+
+  const removeLargeIngredientMutation = useMutate(
+    largeRecipeMenuId != null
+      ? `/api/recipes/remove-ingredient?menuID=${largeRecipeMenuId}`
+      : '/api/recipes/remove-ingredient',
+    'DELETE',
+    ['manager-recipes']
+  );
 
   const filteredMenuItems = useMemo(() => {
     const searchValue = recipeSearch.trim().toLowerCase();
@@ -165,36 +300,90 @@ export default function RecipeBuilder() {
     setIngredientQuantity('');
   }, [selectedMenuId]);
 
-  const selectedMenuItem = useMemo(
-    () => sortedMenuItems.find((item) => String(item.menu_id) === String(selectedMenuId)) || null,
-    [sortedMenuItems, selectedMenuId]
-  );
-
-  const selectedRecipe = useMemo(
-    () => (selectedMenuItem ? recipesByMenuId.get(String(selectedMenuItem.menu_id)) || null : null),
-    [recipesByMenuId, selectedMenuItem]
-  );
-
-  const addIngredientMutation = useMutate(
-    selectedMenuItem?.menu_id != null
-      ? `/api/recipes/add-ingredient?menuID=${selectedMenuItem.menu_id}`
-      : '/api/recipes/add-ingredient',
-    'POST',
-    ['manager-recipes']
-  );
-
-  const removeIngredientMutation = useMutate(
-    selectedMenuItem?.menu_id != null
-      ? `/api/recipes/remove-ingredient?menuID=${selectedMenuItem.menu_id}`
-      : '/api/recipes/remove-ingredient',
-    'DELETE',
-    ['manager-recipes']
-  );
-
   const isLoading = menuLoading || recipesLoading || ingredientsLoading;
-  const isBusy = addIngredientMutation.isPending || removeIngredientMutation.isPending;
+  const isBusy =
+    addBaseIngredientMutation.isPending ||
+    addSmallIngredientMutation.isPending ||
+    addLargeIngredientMutation.isPending ||
+    removeBaseIngredientMutation.isPending ||
+    removeSmallIngredientMutation.isPending ||
+    removeLargeIngredientMutation.isPending;
   const combinedError = menuError || recipesError || ingredientsError;
   const selectedIngredients = selectedRecipe?.ingredients || [];
+  const addIngredientError =
+    addBaseIngredientMutation.error ||
+    addSmallIngredientMutation.error ||
+    addLargeIngredientMutation.error;
+  const removeIngredientError =
+    removeBaseIngredientMutation.error ||
+    removeSmallIngredientMutation.error ||
+    removeLargeIngredientMutation.error;
+
+  const getScaledQuantity = (quantity, size) => Number((Number(quantity) * DRINK_SIZE_MULTIPLIERS[size]).toFixed(2));
+
+  const getIngredientForSize = (ingredient, size) => {
+    const family = getIngredientFamily(ingredient.name);
+
+    if (!family) {
+      return ingredient;
+    }
+
+    return findIngredientVariant(ingredients, family, size) || ingredient;
+  };
+
+  const getMatchingRecipeIngredient = (recipe, ingredient) => {
+    if (!recipe) {
+      return null;
+    }
+
+    const family = getIngredientFamily(ingredient.name);
+
+    if (family) {
+      return recipe.ingredients.find((recipeIngredient) => normalizeLookup(recipeIngredient.name).includes(family)) || null;
+    }
+
+    return recipe.ingredients.find(
+      (recipeIngredient) => String(recipeIngredient.ingredient_id) === String(ingredient.ingredient_id)
+    ) || null;
+  };
+
+  const syncRecipeIngredient = async ({ recipeMenuId, size, ingredient, mutationAdd, mutationRemove }) => {
+    if (recipeMenuId == null || !ingredient) {
+      return;
+    }
+
+    const targetIngredient = getIngredientForSize(ingredient, size);
+    const recipe = recipesByMenuId.get(String(recipeMenuId));
+    const existingIngredient = getMatchingRecipeIngredient(recipe, targetIngredient);
+
+    if (existingIngredient?.ingredient_id != null) {
+      await mutationRemove.mutateAsync({
+        ingredientID: Number(existingIngredient.ingredient_id),
+      });
+    }
+
+    await mutationAdd.mutateAsync({
+      ingredientID: Number(targetIngredient.ingredient_id),
+      quantity: getScaledQuantity(ingredientQuantity, size),
+    });
+  };
+
+  const removeRecipeIngredient = async ({ recipeMenuId, ingredient, mutationRemove }) => {
+    if (recipeMenuId == null || !ingredient) {
+      return;
+    }
+
+    const recipe = recipesByMenuId.get(String(recipeMenuId));
+    const existingIngredient = getMatchingRecipeIngredient(recipe, ingredient);
+
+    if (existingIngredient?.ingredient_id == null) {
+      return;
+    }
+
+    await mutationRemove.mutateAsync({
+      ingredientID: Number(existingIngredient.ingredient_id),
+    });
+  };
 
   const handleSelectRecipe = (menuId) => {
     setSelectedMenuId(String(menuId));
@@ -211,10 +400,54 @@ export default function RecipeBuilder() {
       return;
     }
 
-    await addIngredientMutation.mutateAsync({
-      ingredientID: Number(selectedIngredientId),
-      quantity: Number(ingredientQuantity),
-    });
+    const selectedIngredient = ingredientsById.get(String(selectedIngredientId));
+
+    if (!selectedIngredient) {
+      return;
+    }
+
+    const selectedQuantity = Number(ingredientQuantity);
+
+    if (!Number.isFinite(selectedQuantity)) {
+      return;
+    }
+
+    const isBaseDrink = Boolean(selectedDrinkFamily);
+
+    if (isBaseDrink) {
+      await syncRecipeIngredient({
+        recipeMenuId: selectedMenuItem.menu_id,
+        size: 'base',
+        ingredient: selectedIngredient,
+        mutationAdd: addBaseIngredientMutation,
+        mutationRemove: removeBaseIngredientMutation,
+      });
+
+      if (selectedDrinkFamily.smallItem?.menu_id != null) {
+        await syncRecipeIngredient({
+          recipeMenuId: selectedDrinkFamily.smallItem.menu_id,
+          size: 'small',
+          ingredient: selectedIngredient,
+          mutationAdd: addSmallIngredientMutation,
+          mutationRemove: removeSmallIngredientMutation,
+        });
+      }
+
+      if (selectedDrinkFamily.largeItem?.menu_id != null) {
+        await syncRecipeIngredient({
+          recipeMenuId: selectedDrinkFamily.largeItem.menu_id,
+          size: 'large',
+          ingredient: selectedIngredient,
+          mutationAdd: addLargeIngredientMutation,
+          mutationRemove: removeLargeIngredientMutation,
+        });
+      }
+    } else {
+      await addBaseIngredientMutation.mutateAsync({
+        ingredientID: Number(selectedIngredient.ingredient_id),
+        quantity: selectedQuantity,
+      });
+    }
 
     setSelectedIngredientId('');
     setIngredientQuantity('');
@@ -226,9 +459,43 @@ export default function RecipeBuilder() {
       return;
     }
 
-    await removeIngredientMutation.mutateAsync({
-      ingredientID: Number(ingredientId),
-    });
+    const selectedIngredient = selectedIngredients.find(
+      (ingredient) => String(ingredient.ingredient_id) === String(ingredientId)
+    );
+
+    if (!selectedIngredient) {
+      return;
+    }
+
+    const isBaseDrink = Boolean(selectedDrinkFamily);
+
+    if (isBaseDrink) {
+      await removeRecipeIngredient({
+        recipeMenuId: selectedMenuItem.menu_id,
+        ingredient: selectedIngredient,
+        mutationRemove: removeBaseIngredientMutation,
+      });
+
+      if (selectedDrinkFamily.smallItem?.menu_id != null) {
+        await removeRecipeIngredient({
+          recipeMenuId: selectedDrinkFamily.smallItem.menu_id,
+          ingredient: selectedIngredient,
+          mutationRemove: removeSmallIngredientMutation,
+        });
+      }
+
+      if (selectedDrinkFamily.largeItem?.menu_id != null) {
+        await removeRecipeIngredient({
+          recipeMenuId: selectedDrinkFamily.largeItem.menu_id,
+          ingredient: selectedIngredient,
+          mutationRemove: removeLargeIngredientMutation,
+        });
+      }
+    } else {
+      await removeBaseIngredientMutation.mutateAsync({
+        ingredientID: Number(ingredientId),
+      });
+    }
 
     await refetchRecipes();
   };
@@ -369,7 +636,7 @@ export default function RecipeBuilder() {
                               variant="outline-danger"
                               size="sm"
                               onClick={() => handleRemoveIngredient(ingredient.ingredient_id)}
-                              disabled={removeIngredientMutation.isPending}
+                              disabled={isBusy}
                             >
                               Remove
                             </Button>
@@ -384,14 +651,14 @@ export default function RecipeBuilder() {
                   </Alert>
                 )}
 
-                {removeIngredientMutation.error && (
+                {removeIngredientError && (
                   <Alert variant="danger" className="mb-3">
-                    {removeIngredientMutation.error.message || 'Failed to remove ingredient from recipe'}
+                    {removeIngredientError.message || 'Failed to remove ingredient from recipe'}
                   </Alert>
                 )}
-                {addIngredientMutation.error && (
+                {addIngredientError && (
                   <Alert variant="danger" className="mb-3">
-                    {addIngredientMutation.error.message || 'Failed to add ingredient to recipe'}
+                    {addIngredientError.message || 'Failed to add ingredient to recipe'}
                   </Alert>
                 )}
 
@@ -436,7 +703,9 @@ export default function RecipeBuilder() {
                         className="w-100"
                         disabled={isBusy || ingredientsLoading}
                       >
-                        {addIngredientMutation.isPending ? 'Adding...' : 'Add Ingredient'}
+                        {addBaseIngredientMutation.isPending || addSmallIngredientMutation.isPending || addLargeIngredientMutation.isPending
+                          ? 'Adding...'
+                          : 'Add Ingredient'}
                       </Button>
                     </Col>
                   </Row>
