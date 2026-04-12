@@ -7,11 +7,23 @@ import {
   Form,
   Spinner,
   Alert,
-  Badge,
 } from 'react-bootstrap';
 import { useGet, useMutate } from '../../hooks/useApi';
 
 const MENU_CATEGORIES = ['food', 'drink', 'modifications', 'topping'];
+
+const normalizeName = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+const stripDrinkSizeSuffix = (value) => String(value || '').trim().replace(/\s+/g, ' ').replace(/\s+(small|large)$/i, '').trim();
+const roundMoney = (amount) => Number(Number(amount).toFixed(2));
+const isDrinkSizeVariant = (item) =>
+  String(item?.category || '').toLowerCase() === 'drink' && /\s+(small|large)$/i.test(String(item?.name || '').trim());
+const DISPLAY_CATEGORY_ORDER = {
+  drink: 0,
+  food: 1,
+  topping: 2,
+  toppings: 2,
+  modifications: 3,
+};
 
 export default function MenuEditor() {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -22,6 +34,9 @@ export default function MenuEditor() {
   const [menuItemToDisable, setMenuItemToDisable] = useState(null);
   const [menuItemToUpdate, setMenuItemToUpdate] = useState(null);
   const [menuIdToEnable, setMenuIdToEnable] = useState('');
+  const [relatedUpdateItemIds, setRelatedUpdateItemIds] = useState({ smallId: null, largeId: null });
+  const [relatedDisableItemIds, setRelatedDisableItemIds] = useState({ smallId: null, largeId: null });
+  const [relatedEnableItemIds, setRelatedEnableItemIds] = useState({ baseId: null, smallId: null, largeId: null });
 
   const [newItemName, setNewItemName] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('food');
@@ -55,6 +70,58 @@ export default function MenuEditor() {
     [menuItems]
   );
 
+  const visibleMenuItems = useMemo(
+    () => menuItems.filter((item) => !isDrinkSizeVariant(item)),
+    [menuItems]
+  );
+
+  const visibleActiveMenuItems = useMemo(
+    () => visibleMenuItems.filter((item) => item.is_active),
+    [visibleMenuItems]
+  );
+
+  const sortedVisibleActiveMenuItems = useMemo(
+    () =>
+      [...visibleActiveMenuItems].sort((a, b) => {
+        const aCategory = String(a.category || '').toLowerCase();
+        const bCategory = String(b.category || '').toLowerCase();
+        const aRank = DISPLAY_CATEGORY_ORDER[aCategory] ?? Number.MAX_SAFE_INTEGER;
+        const bRank = DISPLAY_CATEGORY_ORDER[bCategory] ?? Number.MAX_SAFE_INTEGER;
+
+        if (aRank !== bRank) {
+          return aRank - bRank;
+        }
+
+        const aId = Number(a.menu_id);
+        const bId = Number(b.menu_id);
+        if (Number.isFinite(aId) && Number.isFinite(bId) && aId !== bId) {
+          return aId - bId;
+        }
+
+        return String(a.name || '').localeCompare(String(b.name || ''));
+      }),
+    [visibleActiveMenuItems]
+  );
+
+  const visibleDisabledItems = useMemo(
+    () => disabledItems.filter((item) => !isDrinkSizeVariant(item)),
+    [disabledItems]
+  );
+
+  const findDrinkFamily = (rawName) => {
+    const baseName = stripDrinkSizeSuffix(rawName);
+    const baseKey = normalizeName(baseName);
+    const smallKey = normalizeName(`${baseName} small`);
+    const largeKey = normalizeName(`${baseName} large`);
+
+    const drinks = menuItems.filter((item) => String(item.category || '').toLowerCase() === 'drink');
+    const baseItem = drinks.find((item) => normalizeName(item.name) === baseKey) || null;
+    const smallItem = drinks.find((item) => normalizeName(item.name) === smallKey) || null;
+    const largeItem = drinks.find((item) => normalizeName(item.name) === largeKey) || null;
+
+    return { baseName, baseItem, smallItem, largeItem };
+  };
+
   const createMenuItemMutation = useMutate(
     '/api/menu/create',
     'POST',
@@ -69,6 +136,22 @@ export default function MenuEditor() {
     ['menu-items-manager']
   );
 
+  const updateSmallDrinkMutation = useMutate(
+    relatedUpdateItemIds.smallId != null
+      ? `/api/menu/update?menuID=${relatedUpdateItemIds.smallId}`
+      : '/api/menu/update',
+    'PUT',
+    ['menu-items-manager']
+  );
+
+  const updateLargeDrinkMutation = useMutate(
+    relatedUpdateItemIds.largeId != null
+      ? `/api/menu/update?menuID=${relatedUpdateItemIds.largeId}`
+      : '/api/menu/update',
+    'PUT',
+    ['menu-items-manager']
+  );
+
   const disableMenuItemMutation = useMutate(
     menuItemToDisable?.menu_id != null
       ? `/api/menu/disable?menuID=${menuItemToDisable.menu_id}`
@@ -77,9 +160,41 @@ export default function MenuEditor() {
     ['menu-items-manager']
   );
 
+  const disableSmallDrinkMutation = useMutate(
+    relatedDisableItemIds.smallId != null
+      ? `/api/menu/disable?menuID=${relatedDisableItemIds.smallId}`
+      : '/api/menu/disable',
+    'DELETE',
+    ['menu-items-manager']
+  );
+
+  const disableLargeDrinkMutation = useMutate(
+    relatedDisableItemIds.largeId != null
+      ? `/api/menu/disable?menuID=${relatedDisableItemIds.largeId}`
+      : '/api/menu/disable',
+    'DELETE',
+    ['menu-items-manager']
+  );
+
   const enableMenuItemMutation = useMutate(
-    menuIdToEnable
-      ? `/api/menu/enable?menuID=${menuIdToEnable}`
+    relatedEnableItemIds.baseId != null
+      ? `/api/menu/enable?menuID=${relatedEnableItemIds.baseId}`
+      : '/api/menu/enable',
+    'PATCH',
+    ['menu-items-manager']
+  );
+
+  const enableSmallDrinkMutation = useMutate(
+    relatedEnableItemIds.smallId != null
+      ? `/api/menu/enable?menuID=${relatedEnableItemIds.smallId}`
+      : '/api/menu/enable',
+    'PATCH',
+    ['menu-items-manager']
+  );
+
+  const enableLargeDrinkMutation = useMutate(
+    relatedEnableItemIds.largeId != null
+      ? `/api/menu/enable?menuID=${relatedEnableItemIds.largeId}`
       : '/api/menu/enable',
     'PATCH',
     ['menu-items-manager']
@@ -92,21 +207,49 @@ export default function MenuEditor() {
     setNewItemCost('');
   };
 
-  const handleCreateMenuItem = (event) => {
+  const handleCreateMenuItem = async (event) => {
     event.preventDefault();
 
-    createMenuItemMutation.mutate(
-      {
-        name: newItemName.trim(),
-        category: newItemCategory,
-        cost: newItemCost,
-      },
-      {
-        onSuccess: () => {
-          closeAddModal();
-        },
+    const trimmedName = newItemName.trim();
+    const parsedCost = Number(newItemCost);
+    if (!trimmedName || !Number.isFinite(parsedCost)) {
+      return;
+    }
+
+    try {
+      if (newItemCategory === 'drink') {
+        const baseName = stripDrinkSizeSuffix(trimmedName);
+        const baseCost = roundMoney(parsedCost);
+
+        await createMenuItemMutation.mutateAsync({
+          name: baseName,
+          category: 'drink',
+          cost: baseCost,
+        });
+
+        await createMenuItemMutation.mutateAsync({
+          name: `${baseName} small`,
+          category: 'drink',
+          cost: roundMoney(baseCost * 0.7),
+        });
+
+        await createMenuItemMutation.mutateAsync({
+          name: `${baseName} large`,
+          category: 'drink',
+          cost: roundMoney(baseCost * 1.5),
+        });
+      } else {
+        await createMenuItemMutation.mutateAsync({
+          name: trimmedName,
+          category: newItemCategory,
+          cost: roundMoney(parsedCost),
+        });
       }
-    );
+
+      closeAddModal();
+    } catch {
+      // Error state is surfaced by react-query mutation objects.
+    }
   };
 
   const handleOpenUpdateModal = (menuId) => {
@@ -115,40 +258,104 @@ export default function MenuEditor() {
       return;
     }
 
-    setMenuItemToUpdate(selectedItem);
-    setUpdateItemName(selectedItem.name || '');
+    let updateTarget = selectedItem;
+    let updateName = selectedItem.name || '';
+    let updateCost = Number(selectedItem.cost ?? 0);
+    let relatedSmallId = null;
+    let relatedLargeId = null;
+
+    if (String(selectedItem.category || '').toLowerCase() === 'drink') {
+      const { baseName, baseItem, smallItem, largeItem } = findDrinkFamily(selectedItem.name);
+      const selectedNameKey = normalizeName(selectedItem.name);
+      const isSelectedSmall = selectedNameKey.endsWith(' small');
+      const isSelectedLarge = selectedNameKey.endsWith(' large');
+
+      updateTarget = baseItem || selectedItem;
+      updateName = baseName;
+
+      if (baseItem && Number.isFinite(Number(baseItem.cost))) {
+        updateCost = Number(baseItem.cost);
+      } else if (isSelectedSmall && Number.isFinite(Number(selectedItem.cost))) {
+        updateCost = Number(selectedItem.cost) / 0.7;
+      } else if (isSelectedLarge && Number.isFinite(Number(selectedItem.cost))) {
+        updateCost = Number(selectedItem.cost) / 1.5;
+      }
+
+      relatedSmallId = smallItem?.menu_id != null && smallItem.menu_id !== updateTarget.menu_id
+        ? smallItem.menu_id
+        : null;
+      relatedLargeId = largeItem?.menu_id != null && largeItem.menu_id !== updateTarget.menu_id
+        ? largeItem.menu_id
+        : null;
+    }
+
+    setMenuItemToUpdate(updateTarget);
+    setRelatedUpdateItemIds({ smallId: relatedSmallId, largeId: relatedLargeId });
+    setUpdateItemName(updateName);
     setUpdateItemCategory((selectedItem.category || 'food').toLowerCase());
-    setUpdateItemCost(String(selectedItem.cost ?? ''));
+    setUpdateItemCost(Number.isFinite(updateCost) ? String(roundMoney(updateCost)) : String(selectedItem.cost ?? ''));
     setShowUpdateModal(true);
   };
 
   const closeUpdateModal = () => {
     setShowUpdateModal(false);
     setMenuItemToUpdate(null);
+    setRelatedUpdateItemIds({ smallId: null, largeId: null });
     setUpdateItemName('');
     setUpdateItemCategory('food');
     setUpdateItemCost('');
   };
 
-  const handleUpdateMenuItem = (event) => {
+  const handleUpdateMenuItem = async (event) => {
     event.preventDefault();
 
     if (menuItemToUpdate?.menu_id == null) {
       return;
     }
 
-    updateMenuItemMutation.mutate(
-      {
-        name: updateItemName.trim(),
-        category: updateItemCategory,
-        cost: updateItemCost,
-      },
-      {
-        onSuccess: () => {
-          closeUpdateModal();
-        },
+    const parsedCost = Number(updateItemCost);
+    if (!Number.isFinite(parsedCost)) {
+      return;
+    }
+
+    try {
+      if (updateItemCategory === 'drink') {
+        const baseName = stripDrinkSizeSuffix(updateItemName.trim());
+        const baseCost = roundMoney(parsedCost);
+
+        await updateMenuItemMutation.mutateAsync({
+          name: baseName,
+          category: 'drink',
+          cost: baseCost,
+        });
+
+        if (relatedUpdateItemIds.smallId != null) {
+          await updateSmallDrinkMutation.mutateAsync({
+            name: `${baseName} small`,
+            category: 'drink',
+            cost: roundMoney(baseCost * 0.7),
+          });
+        }
+
+        if (relatedUpdateItemIds.largeId != null) {
+          await updateLargeDrinkMutation.mutateAsync({
+            name: `${baseName} large`,
+            category: 'drink',
+            cost: roundMoney(baseCost * 1.5),
+          });
+        }
+      } else {
+        await updateMenuItemMutation.mutateAsync({
+          name: updateItemName.trim(),
+          category: updateItemCategory,
+          cost: roundMoney(parsedCost),
+        });
       }
-    );
+
+      closeUpdateModal();
+    } catch {
+      // Error state is surfaced by react-query mutation objects.
+    }
   };
 
   const handleOpenDisableModal = (menuId) => {
@@ -157,25 +364,52 @@ export default function MenuEditor() {
       return;
     }
 
-    setMenuItemToDisable(selectedItem);
+    let disableTarget = selectedItem;
+    let relatedSmallId = null;
+    let relatedLargeId = null;
+
+    if (String(selectedItem.category || '').toLowerCase() === 'drink') {
+      const { baseItem, smallItem, largeItem } = findDrinkFamily(selectedItem.name);
+      disableTarget = baseItem || selectedItem;
+      relatedSmallId = smallItem?.menu_id != null && smallItem.menu_id !== disableTarget.menu_id
+        ? smallItem.menu_id
+        : null;
+      relatedLargeId = largeItem?.menu_id != null && largeItem.menu_id !== disableTarget.menu_id
+        ? largeItem.menu_id
+        : null;
+    }
+
+    setMenuItemToDisable(disableTarget);
+    setRelatedDisableItemIds({ smallId: relatedSmallId, largeId: relatedLargeId });
     setShowDisableModal(true);
   };
 
   const closeDisableModal = () => {
     setShowDisableModal(false);
     setMenuItemToDisable(null);
+    setRelatedDisableItemIds({ smallId: null, largeId: null });
   };
 
-  const handleDisableMenuItem = () => {
+  const handleDisableMenuItem = async () => {
     if (menuItemToDisable?.menu_id == null) {
       return;
     }
 
-    disableMenuItemMutation.mutate(undefined, {
-      onSuccess: () => {
-        closeDisableModal();
-      },
-    });
+    try {
+      await disableMenuItemMutation.mutateAsync();
+
+      if (relatedDisableItemIds.smallId != null) {
+        await disableSmallDrinkMutation.mutateAsync();
+      }
+
+      if (relatedDisableItemIds.largeId != null) {
+        await disableLargeDrinkMutation.mutateAsync();
+      }
+
+      closeDisableModal();
+    } catch {
+      // Error state is surfaced by react-query mutation objects.
+    }
   };
 
   const handleOpenEnableModal = () => {
@@ -186,9 +420,42 @@ export default function MenuEditor() {
   const closeEnableModal = () => {
     setShowEnableModal(false);
     setMenuIdToEnable('');
+    setRelatedEnableItemIds({ baseId: null, smallId: null, largeId: null });
   };
 
-  const handleEnableMenuItem = (event) => {
+  const handleEnableSelectionChange = (value) => {
+    setMenuIdToEnable(value);
+
+    const selectedItem = menuItems.find((item) => String(item.menu_id) === String(value));
+    if (!selectedItem) {
+      setRelatedEnableItemIds({ baseId: null, smallId: null, largeId: null });
+      return;
+    }
+
+    if (String(selectedItem.category || '').toLowerCase() !== 'drink') {
+      setRelatedEnableItemIds({
+        baseId: selectedItem.menu_id,
+        smallId: null,
+        largeId: null,
+      });
+      return;
+    }
+
+    const { baseItem, smallItem, largeItem } = findDrinkFamily(selectedItem.name);
+    const enableTarget = baseItem || selectedItem;
+
+    setRelatedEnableItemIds({
+      baseId: enableTarget?.menu_id ?? null,
+      smallId: smallItem?.menu_id != null && smallItem.menu_id !== enableTarget?.menu_id
+        ? smallItem.menu_id
+        : null,
+      largeId: largeItem?.menu_id != null && largeItem.menu_id !== enableTarget?.menu_id
+        ? largeItem.menu_id
+        : null,
+    });
+  };
+
+  const handleEnableMenuItem = async (event) => {
     event.preventDefault();
 
     const normalizedId = String(menuIdToEnable).trim();
@@ -196,12 +463,38 @@ export default function MenuEditor() {
       return;
     }
 
-    enableMenuItemMutation.mutate(undefined, {
-      onSuccess: () => {
-        closeEnableModal();
-      },
-    });
+    if (relatedEnableItemIds.baseId == null) {
+      return;
+    }
+
+    try {
+      await enableMenuItemMutation.mutateAsync();
+
+      if (relatedEnableItemIds.smallId != null) {
+        await enableSmallDrinkMutation.mutateAsync();
+      }
+
+      if (relatedEnableItemIds.largeId != null) {
+        await enableLargeDrinkMutation.mutateAsync();
+      }
+
+      closeEnableModal();
+    } catch {
+      // Error state is surfaced by react-query mutation objects.
+    }
   };
+
+  const isAnyMutationPending =
+    createMenuItemMutation.isPending ||
+    updateMenuItemMutation.isPending ||
+    updateSmallDrinkMutation.isPending ||
+    updateLargeDrinkMutation.isPending ||
+    disableMenuItemMutation.isPending ||
+    disableSmallDrinkMutation.isPending ||
+    disableLargeDrinkMutation.isPending ||
+    enableMenuItemMutation.isPending ||
+    enableSmallDrinkMutation.isPending ||
+    enableLargeDrinkMutation.isPending;
 
   return (
     <Card className="mb-4">
@@ -218,18 +511,9 @@ export default function MenuEditor() {
             variant="outline-primary"
             size="sm"
             onClick={() => refetch()}
-            disabled={
-              isLoading ||
-              createMenuItemMutation.isPending ||
-              updateMenuItemMutation.isPending ||
-              disableMenuItemMutation.isPending ||
-              enableMenuItemMutation.isPending
-            }
+            disabled={isLoading || isAnyMutationPending}
           >
-            {(createMenuItemMutation.isPending ||
-              updateMenuItemMutation.isPending ||
-              disableMenuItemMutation.isPending ||
-              enableMenuItemMutation.isPending) && (
+            {isAnyMutationPending && (
               <Spinner animation="border" size="sm" className="me-1" />
             )}
             Refresh
@@ -253,14 +537,44 @@ export default function MenuEditor() {
             {updateMenuItemMutation.error.message || 'Failed to update menu item'}
           </Alert>
         )}
+        {updateSmallDrinkMutation.error && (
+          <Alert variant="danger" className="mb-2">
+            {updateSmallDrinkMutation.error.message || 'Failed to update small drink variant'}
+          </Alert>
+        )}
+        {updateLargeDrinkMutation.error && (
+          <Alert variant="danger" className="mb-2">
+            {updateLargeDrinkMutation.error.message || 'Failed to update large drink variant'}
+          </Alert>
+        )}
         {disableMenuItemMutation.error && (
           <Alert variant="danger" className="mb-2">
             {disableMenuItemMutation.error.message || 'Failed to disable menu item'}
           </Alert>
         )}
+        {disableSmallDrinkMutation.error && (
+          <Alert variant="danger" className="mb-2">
+            {disableSmallDrinkMutation.error.message || 'Failed to disable small drink variant'}
+          </Alert>
+        )}
+        {disableLargeDrinkMutation.error && (
+          <Alert variant="danger" className="mb-2">
+            {disableLargeDrinkMutation.error.message || 'Failed to disable large drink variant'}
+          </Alert>
+        )}
         {enableMenuItemMutation.error && (
           <Alert variant="danger" className="mb-2">
             {enableMenuItemMutation.error.message || 'Failed to re-enable menu item'}
+          </Alert>
+        )}
+        {enableSmallDrinkMutation.error && (
+          <Alert variant="danger" className="mb-2">
+            {enableSmallDrinkMutation.error.message || 'Failed to re-enable small drink variant'}
+          </Alert>
+        )}
+        {enableLargeDrinkMutation.error && (
+          <Alert variant="danger" className="mb-2">
+            {enableLargeDrinkMutation.error.message || 'Failed to re-enable large drink variant'}
           </Alert>
         )}
 
@@ -281,14 +595,14 @@ export default function MenuEditor() {
               </tr>
             </thead>
             <tbody>
-              {menuItems.length === 0 ? (
+              {sortedVisibleActiveMenuItems.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="text-center text-muted py-2">
+                  <td colSpan="6" className="text-center text-muted py-2">
                     No menu items found
                   </td>
                 </tr>
               ) : (
-                menuItems.map((item) => (
+                sortedVisibleActiveMenuItems.map((item) => (
                   <tr key={item.rowKey}>
                     <td>{item.name || 'N/A'}</td>
                     <td>{item.menu_id ?? 'N/A'}</td>
@@ -299,7 +613,7 @@ export default function MenuEditor() {
                         variant="outline-danger"
                         size="sm"
                         onClick={() => handleOpenDisableModal(item.menu_id)}
-                        disabled={!item.is_active || disableMenuItemMutation.isPending}
+                        disabled={!item.is_active || isAnyMutationPending}
                       >
                         Disable
                       </Button>
@@ -308,7 +622,7 @@ export default function MenuEditor() {
                       <Button
                         size="sm"
                         onClick={() => handleOpenUpdateModal(item.menu_id)}
-                        disabled={updateMenuItemMutation.isPending}
+                        disabled={isAnyMutationPending}
                       >
                         Update
                       </Button>
@@ -395,17 +709,13 @@ export default function MenuEditor() {
 
             <Form.Group className="mb-3" controlId="updateMenuItemCategory">
               <Form.Label>Category</Form.Label>
-              <Form.Select
+              <Form.Control
+                type="text"
                 value={updateItemCategory}
-                onChange={(event) => setUpdateItemCategory(event.target.value)}
-                required
-              >
-                {MENU_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </Form.Select>
+                readOnly
+                className="text-capitalize text-muted"
+                style={{ backgroundColor: '#e9ecef', cursor: 'not-allowed' }}
+              />
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="updateMenuItemCost">
@@ -424,8 +734,20 @@ export default function MenuEditor() {
             <Button variant="secondary" onClick={closeUpdateModal}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={updateMenuItemMutation.isPending}>
-              {updateMenuItemMutation.isPending ? 'Saving...' : 'Save Changes'}
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={
+                updateMenuItemMutation.isPending ||
+                updateSmallDrinkMutation.isPending ||
+                updateLargeDrinkMutation.isPending
+              }
+            >
+              {(updateMenuItemMutation.isPending ||
+                updateSmallDrinkMutation.isPending ||
+                updateLargeDrinkMutation.isPending)
+                ? 'Saving...'
+                : 'Save Changes'}
             </Button>
           </Modal.Footer>
         </Form>
@@ -437,7 +759,7 @@ export default function MenuEditor() {
         </Modal.Header>
         <Modal.Body>
           {menuItemToDisable?.name
-            ? `Disable "${menuItemToDisable.name}" (ID: ${menuItemToDisable.menu_id})?`
+            ? `Disable "${menuItemToDisable.name}" and any matching size variants?`
             : 'Disable this menu item?'}
         </Modal.Body>
         <Modal.Footer>
@@ -447,9 +769,17 @@ export default function MenuEditor() {
           <Button
             variant="danger"
             onClick={handleDisableMenuItem}
-            disabled={disableMenuItemMutation.isPending}
+            disabled={
+              disableMenuItemMutation.isPending ||
+              disableSmallDrinkMutation.isPending ||
+              disableLargeDrinkMutation.isPending
+            }
           >
-            {disableMenuItemMutation.isPending ? 'Disabling...' : 'Disable'}
+            {(disableMenuItemMutation.isPending ||
+              disableSmallDrinkMutation.isPending ||
+              disableLargeDrinkMutation.isPending)
+              ? 'Disabling...'
+              : 'Disable'}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -464,11 +794,11 @@ export default function MenuEditor() {
               <Form.Label>Select disabled item</Form.Label>
               <Form.Select
                 value={menuIdToEnable}
-                onChange={(event) => setMenuIdToEnable(event.target.value)}
+                onChange={(event) => handleEnableSelectionChange(event.target.value)}
                 required
               >
                 <option value="">Choose an item...</option>
-                {disabledItems.map((item) => (
+                {visibleDisabledItems.map((item) => (
                   <option key={item.rowKey} value={item.menu_id}>
                     {item.menu_id} - {item.name}
                   </option>
@@ -480,8 +810,20 @@ export default function MenuEditor() {
             <Button variant="secondary" onClick={closeEnableModal}>
               Cancel
             </Button>
-            <Button variant="warning" type="submit" disabled={enableMenuItemMutation.isPending}>
-              {enableMenuItemMutation.isPending ? 'Re-enabling...' : 'Re-enable'}
+            <Button
+              variant="warning"
+              type="submit"
+              disabled={
+                enableMenuItemMutation.isPending ||
+                enableSmallDrinkMutation.isPending ||
+                enableLargeDrinkMutation.isPending
+              }
+            >
+              {(enableMenuItemMutation.isPending ||
+                enableSmallDrinkMutation.isPending ||
+                enableLargeDrinkMutation.isPending)
+                ? 'Re-enabling...'
+                : 'Re-enable'}
             </Button>
           </Modal.Footer>
         </Form>
