@@ -25,6 +25,7 @@ import avocadoToastImg from './assets/avocado-toast.jpg';
 import bagelSandwichImg from './assets/bagel-sandwich.jpg';
 import friesImg from './assets/fries.jpg';
 import grilledCheeseImg from './assets/grilled-cheese.jpg';
+import { Button, Card } from 'react-bootstrap';
 
 const fallbackCardImage = '/teashopLogo.png';
 const iceLevelOptions = ['50%', '75%', '100%', '125%', '150%'];
@@ -204,6 +205,9 @@ function Customer() {
   const [editingOrderItemId, setEditingOrderItemId] = useState(null);
   const [orderSubmitMessage, setOrderSubmitMessage] = useState('');
   const [orderSubmitError, setOrderSubmitError] = useState('');
+
+  //chatbot
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   //state for customer name
   const [customerName, setCustomerName] = useState('');
@@ -424,7 +428,9 @@ function Customer() {
 
     if (item.category === 'food') {
       setSelectedFood(item);
-      setIsFoodConfirmOpen(true);
+      //the food confirm modal is stupid, we dont need it
+      addFood(item);
+     
     }
   }, []);
 
@@ -445,8 +451,26 @@ function Customer() {
     setSelectedFood(null);
   }, []);
 
+  function addFood(item){
+    if(!item){
+      return;
+    }
+    const orderEntry = buildOrderEntry({
+      entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      menuId: item.id,
+      name: item.name,
+      baseCost: item.price,
+      modificationsArray: [],
+    });
+
+    setOrderSubmitMessage('');
+    setOrderSubmitError('');
+    setOrderItems((prev) => [...prev, orderEntry]);
+  }
+
   const confirmAddFood = useCallback(() => {
     if (!selectedFood) {
+      console.log("none");
       closeFoodConfirm();
       return;
     }
@@ -853,11 +877,11 @@ function Customer() {
 
   return (
     <div className="customer-page">
-      <div className="customer-shell">
+      <div className="customer-shell pt-2">
         {/* Category Navigation */}
-        <Navbar expand="lg" className="tea-nav" aria-label="Category navigation">
+        <Navbar expand="lg" className="tea-nav container mb-3" aria-label="Category navigation">
           <Container fluid className="p-0 align-items-center">
-            <Navbar.Brand href="#" className="tea-brand" aria-label="Tea shop home">
+            <Navbar.Brand href="#" className="tea-brand me-4" aria-label="Tea shop home">
               <img src="teashopLogo.png" alt="Tea Shop Logo" className="tea-logo" />
             </Navbar.Brand>
 
@@ -868,19 +892,19 @@ function Customer() {
                 <Nav.Item>
                   <button
                     type="button"
-                    className={`nav-link tea-link ${activeCategory === 'drink' ? 'is-active' : ''}`}
+                    className={`kiosk-category-btn ${activeCategory === 'drink' ? 'is-active' : ''}`}
                     onClick={() => setActiveCategory('drink')}
                   >
-                    Drinks
+                    <span className='me-2'>Drinks</span>
                   </button>
                 </Nav.Item>
                 <Nav.Item>
                   <button
                     type="button"
-                    className={`nav-link tea-link ${activeCategory === 'food' ? 'is-active' : ''}`}
+                    className={`kiosk-category-btn ${activeCategory === 'food' ? 'is-active' : ''}`}
                     onClick={() => setActiveCategory('food')}
                   >
-                    Food
+                    <span className='me-2'>Food</span>
                   </button>
                 </Nav.Item>
               </Nav>
@@ -888,38 +912,37 @@ function Customer() {
           </Container>
         </Navbar>
 
-        <div className="kiosk-layout">
-          {/* Menu Panel */}
-          <Menu
-            items={visibleItems}
-            activeCategory={activeCategory}
-            isLoading={false}
-            onSelectItem={handleSelectItem}
-            onCardImageError={handleCardImageError}
-          />
-
-          {/* Order Summary Panel */}
-          <OrderSummary
-            orderItems={orderItems}
-            subtotal={orderSubtotal}
-            isError={isError}
-            errorMessage={error?.message}
-            menuItemCount={allMenuItems.length}
-            submitMessage={orderSubmitMessage}
-            submitError={orderSubmitError}
-            isPending={orderMutation.isPending}
-            sugarMenuId={sugarMenuId}
-            iceMenuId={iceMenuId}
-            onEditItem={editOrderItem}
-            onRemoveItem={removeOrderItem}
-            onFinishOrder={handleFinishOrder}
-            customerName={customerName}
-            setCustomerName={setCustomerName}
-          />
-          <div className="mt-3">
-          <Chatbot onChatAction={handleChatAction} />
+        <div className="kiosk-layout container">
+          <div className='row h-100 w-100' style={{minHeight: 0}}>
+            <div className='col-8 h-100 d-flex flex-column'>
+              <Menu
+                items={visibleItems}
+                activeCategory={activeCategory}
+                isLoading={false}
+                onSelectItem={handleSelectItem}
+                onCardImageError={handleCardImageError}
+              />
+            </div>
+            <div className='col-4 h-100'>
+                <OrderSummary
+                orderItems={orderItems}
+                subtotal={orderSubtotal}
+                isError={isError}
+                errorMessage={error?.message}
+                menuItemCount={allMenuItems.length}
+                submitMessage={orderSubmitMessage}
+                submitError={orderSubmitError}
+                isPending={orderMutation.isPending}
+                sugarMenuId={sugarMenuId}
+                iceMenuId={iceMenuId}
+                onEditItem={editOrderItem}
+                onRemoveItem={removeOrderItem}
+                onFinishOrder={handleFinishOrder}
+                customerName={customerName}
+                setCustomerName={setCustomerName}
+              />
+            </div> 
           </div>
-          
         </div>
         
         
@@ -960,6 +983,54 @@ function Customer() {
           onClose={closeFoodConfirm}
           onConfirm={confirmAddFood}
         />
+        {/* --- NEW: Floating Chatbot Widget --- */}
+        <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1050 }}>
+          
+          {/* The Chat Window (Only renders if isChatOpen is true) */}
+          {isChatOpen && (
+            <Card 
+              className="mb-3 shadow-lg border-0" 
+              style={{ width: '350px', height: '500px', borderRadius: '16px', overflow: 'hidden' }}
+            >
+              <Card.Header 
+                className="d-flex justify-content-between align-items-center text-white"
+                style={{ backgroundColor: 'var(--tea-wood)' }}
+              >
+                <h6 className="mb-0 fw-bold">AI Assistant</h6>
+                <button 
+                  type="button" 
+                  className="btn-close btn-close-white" 
+                  aria-label="Close"
+                  onClick={() => setIsChatOpen(false)}
+                ></button>
+              </Card.Header>
+              <Card.Body className="p-0 overflow-auto bg-light">
+                <Chatbot onChatAction={handleChatAction} />
+              </Card.Body>
+            </Card>
+          )}
+          {/* The Chat Bubble Button */}
+          <div className="d-flex justify-content-end">
+            <Button
+              className="rounded-circle shadow-lg d-flex justify-content-center align-items-center border-0"
+              style={{ 
+                width: '65px', 
+                height: '65px', 
+                backgroundColor: 'var(--tea-wood)',
+                transition: 'transform 0.2s'
+              }}
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              aria-label="Toggle Chatbot"
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <span style={{ fontSize: '1.5rem' }}>
+                {isChatOpen ? '✖️' : '💬'}
+              </span>
+            </Button>
+          </div>
+        </div>
+        {/* --- END Floating Chatbot Widget --- */}
       </div>
     </div>
   );

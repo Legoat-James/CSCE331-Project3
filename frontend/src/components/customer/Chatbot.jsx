@@ -273,7 +273,7 @@ name: string //the name of the modification or topping (for ice or sugar level m
 
   return (
     <div className="chatbot-container">
-      <div className="chatbot-header">
+      {/* <div className="chatbot-header">
         <h3>🤖 AI Assistant (Testbench)</h3>
         <div className="connection-status">
           <span 
@@ -287,7 +287,7 @@ name: string //the name of the modification or topping (for ice or sugar level m
             {connectionStatus === 'error' && 'Error'}
           </span>
         </div>
-      </div>
+      </div> */}
 
       <div className="chatbot-controls">
         <button 
@@ -297,7 +297,11 @@ name: string //the name of the modification or topping (for ice or sugar level m
         >
           {connectionStatus === 'testing' ? 'Testing...' : 'Test Connection'}
         </button>
-        <button onClick={clearChat} className="btn-clear">
+        <span 
+            className="status-indicator" 
+            style={{ backgroundColor: getStatusColor() }}
+          />
+        <button onClick={clearChat} className="btn-clear ms-auto">
           Clear Chat
         </button>
       </div>
@@ -308,12 +312,12 @@ name: string //the name of the modification or topping (for ice or sugar level m
         </div>
       )}
 
-      <div className="api-info">
+      {/* <div className="api-info">
         <small>
           <strong>Endpoint:</strong> /api/chat (proxy)<br />
           <strong>Status:</strong> Backend proxies to TAMU AI
         </small>
-      </div>
+      </div> */}
 
       <div className="chatbot-messages">
         {messages.length === 0 && (
@@ -347,7 +351,7 @@ name: string //the name of the modification or topping (for ice or sugar level m
           type="text"
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
-          placeholder="Ask me anything about ordering..."
+          placeholder="Ask me about orders..."
           disabled={isLoading}
         />
         <button type="submit" disabled={isLoading || !inputMessage.trim()}>

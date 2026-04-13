@@ -34,7 +34,7 @@ function Menu({
         </h3>
       </div>
 
-      <div className="menu-grid">
+      <div className="menu-grid brown-scroll">
         {items.length === 0 && (
           <Card className="h-100 text-center tea-card">
             <Card.Body>
@@ -47,7 +47,9 @@ function Menu({
         )}
 
         {items.map((item) => (
-          <Card key={item.id} className="h-100 text-center tea-card">
+          <Card key={item.id} className="h-100 text-center tea-card clickable-card"
+          onClick={() => onSelectItem(item)}
+          >
             <Card.Img
               variant="top"
               src={item.image}
@@ -58,14 +60,14 @@ function Menu({
             <Card.Body className="d-flex flex-column">
               <Card.Title>{item.name}</Card.Title>
               <Card.Text className="tea-description">{item.description}</Card.Text>
-              <Card.Text className="tea-price">${item.price.toFixed(2)}</Card.Text>
-              <Button
+              <Card.Text className="tea-price mt-auto mb-0 fw-bold fs-5">${item.price.toFixed(2)}</Card.Text>
+              {/* <Button
                 size="sm"
                 className="tea-btn-select mt-auto"
                 onClick={() => onSelectItem(item)}
               >
                 Select
-              </Button>
+              </Button> */}
             </Card.Body>
           </Card>
         ))}

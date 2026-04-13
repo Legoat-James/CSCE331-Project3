@@ -1,6 +1,6 @@
 .chatbot-container {
   max-width: 500px;
-  margin: 20px auto;
+
   border: 1px solid #ddd;
   border-radius: 12px;
   overflow: hidden;
@@ -8,7 +8,7 @@
   background: #fff;
   display: flex;
   flex-direction: column;
-  height: 600px;
+  height: 100%;
 }
 
 .chatbot-header {
@@ -48,6 +48,8 @@
   display: flex;
   gap: 10px;
   border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
 }
 
 .btn-test {
@@ -104,6 +106,7 @@
   padding: 15px;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   gap: 10px;
 }
 

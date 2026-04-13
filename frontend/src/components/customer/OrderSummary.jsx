@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect, useRef } from 'react';
 import { Button, Spinner, Form } from 'react-bootstrap';
 
 function OrderSummary({ 
@@ -18,19 +18,25 @@ function OrderSummary({
   customerName,
   setCustomerName
 }) {
+  const bottomRef = useRef(null);
+
+  useEffect(()=>{
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  },[orderItems])
+
   return (
     <aside className="order-panel" aria-label="Current order">
       <h4 className="panel-title">Current Order</h4>
       <p className="order-subtitle">Your selected drinks and snacks will appear here.</p>
 
-      {!isError && (
+      {/* {!isError && (
         <div className="backend-status">
           Loaded {menuItemCount} active item{menuItemCount === 1 ? '' : 's'} from the menu database.
         </div>
-      )}
+      )} */}
       {isError && <div className="backend-status error">{errorMessage}</div>}
 
-      <div className="order-list">
+      <div className="order-list brown-scroll">
         {orderItems.length === 0 && (
           <p className="order-empty">No items in order yet.</p>
         )}
@@ -94,47 +100,52 @@ function OrderSummary({
           </div>
         );
         })}
+        {/* bottom scroll anchor */}
+        <div ref={bottomRef} />
       </div>
 
-      <p className="order-subtotal">Subtotal: ${subtotal.toFixed(2)}</p>
+      <div className='mt-auto'>
 
-      {submitMessage && <div className="order-submit-message success">{submitMessage}</div>}
-      {submitError && <div className="order-submit-message error">{submitError}</div>}
-      <Form>
-        <Form.Group className="mb-3" controlId="customerName">
-            <Form.Control
-            type="text"
-            placeholder="enter name here..."
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            className="cashier-order-total"
-            />
-        </Form.Group>
+        <p className="order-subtotal">Subtotal: ${subtotal.toFixed(2)}</p>
 
-    </Form>
+        {submitMessage && <div className="order-submit-message success">{submitMessage}</div>}
+        {submitError && <div className="order-submit-message error">{submitError}</div>}
+        <Form className='order-name'>
+          <Form.Group className="mb-3" controlId="customerName">
+              <Form.Control
+              type="text"
+              placeholder="enter name here..."
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="cashier-order-total"
+              />
+          </Form.Group>
 
-      <Button
-        size="sm"
-        className="tea-btn-finish w-100"
-        onClick={onFinishOrder}
-        disabled={isPending || orderItems.length === 0 || customerName===''}
-      >
-        {isPending ? (
-          <>
-            <Spinner
-              as="span"
-              animation="border"
-              size="sm"
-              role="status"
-              aria-hidden="true"
-              className="me-2"
-            />
-            Submitting...
-          </>
-        ) : (
-          'Finish Order'
-        )}
-      </Button>
+      </Form>
+
+        <Button
+          size="sm"
+          className="tea-btn-finish w-100 py-4 mt-2"
+          onClick={onFinishOrder}
+          disabled={isPending || orderItems.length === 0 || customerName===''}
+        >
+          {isPending ? (
+            <>
+              <Spinner
+                as="span"
+                animation="border"
+                size="sm"
+                role="status"
+                aria-hidden="true"
+                className="me-2"
+              />
+              Submitting...
+            </>
+          ) : (
+            'Checkout'
+          )}
+        </Button>
+      </div>
     </aside>
   );
 }
