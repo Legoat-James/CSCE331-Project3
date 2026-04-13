@@ -2055,7 +2055,7 @@ app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
  */
 app.post('/api/chat', async (req, res, next) => {
   try {
-    const { messages, model = 'protected.Claude Sonnet 4.5', max_tokens = 500 } = req.body;
+    const { messages, model = 'protected.Claude Sonnet 4.5', max_tokens = 2000 } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       throw new ApiError(400, 'messages array is required', null, req.path);
@@ -2123,18 +2123,28 @@ app.post('/api/chat', async (req, res, next) => {
 
     const extractJsonPayload = (content) => {
       if (!content) return null;
-      const trimmed = content.trim();
+      let stringToParse = content.trim();
 
-      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-        return trimmed;
+      // Remove <think> blocks and their contents completely
+      stringToParse = stringToParse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+      if (stringToParse.startsWith('{') && stringToParse.endsWith('}')) {
+        return stringToParse;
       }
 
-      const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      const fencedMatch = stringToParse.match(/```(?:json)?\s*([\s\S]*?)```/i);
       if (fencedMatch?.[1]) {
         const fencedBody = fencedMatch[1].trim();
         if (fencedBody.startsWith('{') && fencedBody.endsWith('}')) {
           return fencedBody;
         }
+      }
+
+      // Fallback: attempt to capture everything from the first '{' to the last '}'
+      const firstBrace = stringToParse.indexOf('{');
+      const lastBrace = stringToParse.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        return stringToParse.substring(firstBrace, lastBrace + 1);
       }
 
       return null;
