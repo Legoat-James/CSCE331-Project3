@@ -155,7 +155,7 @@ name: string //the name of the modification or topping (for ice or sugar level m
             { role: 'system', content: 'You are a helpful assistant. Respond with "Connection successful!" only.' },
             { role: 'user', content: 'Test connection' }
           ],
-          max_tokens: 50,
+          max_tokens: 400,
         }),
       });
 
@@ -206,7 +206,7 @@ name: string //the name of the modification or topping (for ice or sugar level m
         body: JSON.stringify({
           model: 'protected.Claude Sonnet 4.5',
           messages: conversationHistory,
-          max_tokens: 500,
+          max_tokens: 2000,
         }),
       });
 
