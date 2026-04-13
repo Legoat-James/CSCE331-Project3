@@ -7,6 +7,9 @@ import apiClient from './api/client_config.js';
 import ChatBot from './components/customer/Chatbot.jsx';
 
 export default function Cashier() {
+    const isLoggedIn = !!localStorage.getItem('authToken');
+    const user = JSON.parse(localStorage.getItem('user'));
+
     const [total, setTotal] = useState(0.00);
     const [orderItems, setOrderItems] = useState([]); // this will hold the items in the current order, we can use this to display the order summary and calculate the total
     const [menuView, setMenuView] = useState(() =>{
@@ -101,7 +104,11 @@ export default function Cashier() {
                     toppings: item.modifications_array ? item.modifications_array.map(mod => {
                         // Quantity should always be an integer for database
                         // Ice/Sugar levels are stored in the modification name, not quantity
-                        return { id: mod.menu_id, quantity: 1 };
+                        //but when its passed into the DB we need the quantity field, so we parse string name for quantity
+                        return { id: mod.menu_id, 
+                            quantity: (mod.name.toLowerCase().includes("ice") ||  mod.name.toLowerCase().includes("sugar"))
+                            ? parseFloat(mod.name.replace(/x/g, '').split(' ')[1]) : 1
+                        };
                     }) : []
                 }
             })
@@ -144,6 +151,21 @@ export default function Cashier() {
     const changeMenuView = (view) => {
         setMenuView(view);
         localStorage.setItem('menuView', view);
+    }
+
+    if (!isLoggedIn) {
+        return (
+            <div className="cashier-page" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh'}}>
+                <Alert variant="danger">
+                    <Alert.Heading>Access Denied</Alert.Heading>
+                    <p>You must be logged in to access the Cashier view.</p>
+                    <hr />
+                    <div className="d-flex justify-content-end">
+                        <Button onClick={() => window.location.href = '/'}>Back to Portal</Button>
+                    </div>
+                </Alert>
+            </div>
+        );
     }
 
     return (

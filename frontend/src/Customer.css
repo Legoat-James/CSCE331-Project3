@@ -38,7 +38,6 @@
       rgba(0, 0, 0, 0) 18px
     );
   color: var(--tea-text);
-  padding: 1.5rem 1rem 2.5rem;
 }
 
 .customer-shell {
@@ -93,12 +92,53 @@
   color: #fff;
 }
 
+/* Big, chunky, touch-friendly buttons */
+.kiosk-category-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 3rem; /* Huge tap target area */
+  font-size: 1.75rem; /* Very large text */
+  font-weight: 700;
+  border-radius: 50px; /* Pill shape naturally invites tapping */
+  
+  /* Styling to match your tea theme */
+  background-color: rgba(251, 244, 234, 0.8);
+  color: var(--tea-wood);
+  border: 3px solid var(--tea-wood);
+  
+  /* Snappy transitions */
+  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              background-color 0.2s ease, 
+              color 0.2s ease,
+              box-shadow 0.2s ease;
+              
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The Active (Selected) State */
+.kiosk-category-btn.is-active {
+  background-color: var(--tea-wood);
+  color: #ffffff;
+  border-color: var(--tea-wood-dark);
+  box-shadow: 0 8px 16px rgba(111, 76, 54, 0.25); /* Glowing drop shadow */
+}
+
+/* The Physical Touch/Press Effect */
+.kiosk-category-btn:active {
+  transform: scale(0.94); /* Satisfying physical press effect */
+  box-shadow: 0 2px 4px rgba(111, 76, 54, 0.15);
+}
+
 /* Kiosk Layout */
 .kiosk-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 2.2fr) minmax(280px, 1fr);
-  gap: 1rem;
-  align-items: start;
+  flex-grow: 1;
+  max-height: 800px;
+  height: clamp(500px, calc(100vh - 140px), 800px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   border: 2px solid var(--tea-wood-dark);
   border-radius: 16px;
   padding: 1rem;
@@ -116,13 +156,18 @@
 }
 
 .menu-panel {
-  min-height: 460px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
 }
 
 .order-panel {
-  min-height: 460px;
   position: sticky;
   top: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-heading-row {
@@ -130,6 +175,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.75rem;
+  flex-shrink: 0;
 }
 
 .panel-title {
@@ -144,20 +190,95 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 1rem;
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+/* 1. Standard CSS (For Firefox) */
+.brown-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tea-wood) transparent;
+}
+
+/* 2. WebKit CSS (For Chrome, Safari, Edge) */
+.brown-scroll::-webkit-scrollbar {
+  width: 8px; /* Makes the scrollbar nice and slim */
+}
+
+/* The track (background) of the scrollbar */
+.brown-scroll::-webkit-scrollbar-track {
+  background: transparent; 
+  border-radius: 8px;
+}
+
+/* The draggable thumb */
+.brown-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--tea-wood); /* Uses your main brown color */
+  border-radius: 8px;
+  /* Adds a tiny border that matches the panel to give it a floating/padded look */
+  border: 2px solid var(--tea-panel); 
+}
+
+/* Hover state for the thumb */
+.brown-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--tea-wood-dark); 
 }
 
 /* Tea Cards */
 .tea-card {
   border: 2px solid #7b543b;
   border-radius: 14px;
-  overflow: hidden;
   background: #fffaf4;
   box-shadow: 0 3px 0 rgba(111, 76, 54, 0.2);
+  min-width: 0;
+}
+
+/* Base setup for the clickable card */
+.clickable-card {
+  cursor: pointer;
+  /* Use a smooth cubic-bezier transition for a premium, snappy feel */
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              box-shadow 0.15s cubic-bezier(0.2, 0.8, 0.2, 1),
+              background-color 0.15s ease-in-out;
+}
+
+/* Hover State (For testing with a mouse on your PC) */
+.clickable-card:hover {
+  transform: translateY(-4px); /* Lifts the card slightly */
+  box-shadow: 0 10px 20px rgba(111, 76, 54, 0.15); /* Soft, expansive brown shadow */
+  border-color: var(--tea-wood-dark); /* Highlights the border */
+}
+
+/* Active State (The crucial "Touch/Press" effect for Kiosks) */
+.clickable-card:active {
+  /* Squishes the card down slightly to mimic a physical button press */
+  transform: scale(0.96); 
+  /* Tightens the shadow to look pressed against the screen */
+  box-shadow: 0 2px 4px rgba(111, 76, 54, 0.25); 
+  /* Slightly darkens the background on tap */
+  background-color: rgba(230, 215, 195, 0.3); 
+}
+
+/* Optional: Removes the blue highlight box Android/iOS sometimes adds to tapped elements */
+.clickable-card {
+  -webkit-tap-highlight-color: transparent;
 }
 
 .tea-card .card-img-top {
   height: 155px;
   object-fit: cover;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.tea-card .card-title{
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
 }
 
 .tea-description {
@@ -180,7 +301,7 @@
 /* Buttons */
 .tea-btn-select,
 .tea-btn-finish {
-  border-radius: 999px;
+  border-radius: 24px;
   font-weight: 600;
   border: 1px solid transparent;
 }
@@ -245,6 +366,8 @@
   flex-direction: column;
   gap: 0.65rem;
   margin-bottom: 0.9rem;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .order-empty {
@@ -668,9 +791,6 @@
 }
 
 @media (max-width: 576px) {
-  .customer-page {
-    padding: 1rem 0.7rem 1.4rem;
-  }
 
   .tea-nav {
     border-radius: 12px;

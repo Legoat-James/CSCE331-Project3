@@ -1,0 +1,119 @@
+/* Login theme - matching the warm Portal tones */
+:root {
+  --login-bg: #ead8c0;
+  --login-panel: #fbf4ea;
+  --login-wood-dark: #6f4c36;
+  --login-border: #7b543b;
+  --login-accent: #b67a45;
+  --login-muted: #7a5e4c;
+  --login-btn-hover: #9c683b;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--login-bg);
+  background-image:
+    linear-gradient(180deg, rgba(255, 248, 237, 0.28), rgba(122, 94, 76, 0.08)),
+    repeating-linear-gradient(
+      8deg,
+      rgba(146, 108, 79, 0.16) 0px,
+      rgba(146, 108, 79, 0.16) 2px,
+      rgba(236, 217, 190, 0.08) 2px,
+      rgba(236, 217, 190, 0.08) 14px
+    ),
+    repeating-linear-gradient(
+      -6deg,
+      rgba(120, 82, 58, 0.08) 0px,
+      rgba(120, 82, 58, 0.08) 1px,
+      transparent 1px,
+      transparent 18px
+    );
+  padding: 2rem;
+}
+
+.login-card {
+  background-color: var(--login-panel);
+  border: 2px solid var(--login-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(111, 76, 54, 0.15);
+  padding: 2rem;
+  width: 100%;
+  max-width: 450px;
+}
+
+.login-title {
+  color: var(--login-wood-dark);
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.login-form-label {
+  color: var(--login-wood-dark);
+  font-weight: 600;
+}
+
+.login-form-control {
+  border: 1px solid var(--login-muted);
+  border-radius: 6px;
+  padding: 0.75rem;
+  background-color: #fff;
+}
+
+.login-form-control:focus {
+  border-color: var(--login-accent);
+  box-shadow: 0 0 0 0.25rem rgba(182, 122, 69, 0.25);
+}
+
+.login-btn,
+.logout-btn {
+  background-color: var(--login-wood-dark);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-weight: bold;
+  transition: background-color 0.2s, transform 0.1s;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.logout-btn {
+  background-color: #d32f2f; /* Keep logout red but styled nicely */
+}
+.logout-btn:hover {
+  background-color: #b71c1c;
+}
+
+.login-btn:hover {
+  background-color: var(--login-btn-hover);
+  color: #fff;
+}
+
+.login-btn:active,
+.logout-btn:active {
+  transform: scale(0.98);
+}
+
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  border-top: 1px solid var(--login-muted);
+  padding-top: 1.5rem;
+}
+
+.logout-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.logout-container p {
+  color: var(--login-muted);
+  margin-bottom: 2rem;
+}

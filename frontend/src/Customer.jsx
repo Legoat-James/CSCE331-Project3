@@ -2,7 +2,7 @@ import './Customer.css';
 import { useGet, useMutate } from './hooks/useApi';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Navbar, Nav, Container, Spinner } from 'react-bootstrap';
-import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal } from './components/customer';
+import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal, Chatbot } from './components/customer';
 
 // Import images from assets
 import blackTeaImg from './assets/Black-tea.jpg';
@@ -26,9 +26,24 @@ import bagelSandwichImg from './assets/bagel-sandwich.jpg';
 import friesImg from './assets/fries.jpg';
 import grilledCheeseImg from './assets/grilled-cheese.jpg';
 import Weather from './components/customer/Weather';
+import { Button, Card } from 'react-bootstrap';
 
 const fallbackCardImage = '/teashopLogo.png';
-const iceLevelOptions = ['No Ice', 'Light Ice', 'Regular Ice', 'Extra Ice'];
+const iceLevelOptions = ['50%', '75%', '100%', '125%', '150%'];
+const iceLevelMultipliers = [0.5, 0.75, 1, 1.25, 1.5];
+
+const formatMultiplier = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '1';
+  return Number.isInteger(numeric) ? String(numeric) : String(numeric);
+};
+
+const parseModifierMultiplier = (name, prefix) => {
+  const pattern = new RegExp(`^${prefix}\\s+([0-9.]+)x$`, 'i');
+  const match = String(name || '').trim().match(pattern);
+  const value = match ? Number(match[1]) : NaN;
+  return Number.isFinite(value) ? value : null;
+};
 
 const itemVisualsByName = {
   'black tea': {
@@ -115,6 +130,38 @@ const itemVisualsByName = {
 
 // Utility functions
 const normalizeItemName = (name) => String(name || '').trim().toLowerCase();
+const normalizeChatText = (value) => String(value || '').trim().toLowerCase();
+
+const getRequestedToppings = (item) => {
+  const explicitToppings = Array.isArray(item?.toppings) ? item.toppings : [];
+  const fromExplicit = explicitToppings
+    .map((topping) => {
+      if (typeof topping === 'string') {
+        return { name: normalizeChatText(topping), menuId: null };
+      }
+      const menuId = Number(topping?.menu_id ?? topping?.menuId);
+      const name = normalizeChatText(topping?.name);
+      return {
+        name,
+        menuId: Number.isInteger(menuId) ? menuId : null,
+      };
+    })
+    .filter((topping) => topping.name || Number.isInteger(topping.menuId));
+
+  if (fromExplicit.length > 0) return fromExplicit;
+
+  const modifications = Array.isArray(item?.modifications_array) ? item.modifications_array : [];
+  return modifications
+    .filter((modification) => normalizeChatText(modification?.category) === 'topping')
+    .map((topping) => {
+      const menuId = Number(topping?.menu_id ?? topping?.menuId);
+      return {
+        name: normalizeChatText(topping?.name),
+        menuId: Number.isInteger(menuId) ? menuId : null,
+      };
+    })
+    .filter((topping) => topping.name || Number.isInteger(topping.menuId));
+};
 
 const normalizeCategory = (categoryValue) => {
   const normalized = String(categoryValue || '').trim().toLowerCase();
@@ -160,6 +207,12 @@ function Customer() {
   const [orderSubmitMessage, setOrderSubmitMessage] = useState('');
   const [orderSubmitError, setOrderSubmitError] = useState('');
 
+  //chatbot
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  //state for customer name
+  const [customerName, setCustomerName] = useState('');
+
   // API hooks
   const { data, isLoading, error, isError } = useGet(['full-menu'], '/api/menu/all', {
     retry: false,
@@ -175,6 +228,10 @@ function Customer() {
     if (mappedImage) return mappedImage;
     return fallbackCardImage;
   }, []);
+
+  useEffect(() => {
+    console.log(`Current order items:`, orderItems);
+  },[orderItems])
 
   const getMenuDescription = useCallback((name, category) => {
     const normalizedName = normalizeItemName(name);
@@ -280,6 +337,44 @@ function Customer() {
     }, {});
   }, [modificationItems]);
 
+  const iceMenuId = modificationByName.ice?.id;
+  const sugarMenuId = modificationByName.sugar?.id;
+  const swapSugarMenuId = modificationByName['swap sugar']?.id;
+  const oatMilkMenuId = (modificationByName['oat milk'] || modificationByName['oak milk'])?.id;
+
+  const buildOrderEntry = useCallback(
+    ({
+      entryId,
+      menuId,
+      name,
+      baseCost,
+      modificationsArray = [],
+      quantity = 1,
+    }) => {
+      const normalizedMods = modificationsArray
+        .map((modification) => ({
+          category: String(modification?.category || '').trim().toLowerCase(),
+          cost: Number(modification?.cost || 0),
+          menu_id: Number(modification?.menu_id),
+          name: String(modification?.name || '').trim(),
+        }))
+        .filter((modification) => Number.isInteger(modification.menu_id));
+
+      const modificationsTotal = normalizedMods.reduce((sum, mod) => sum + mod.cost, 0);
+
+      return {
+        id: entryId || `order-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        menuId,
+        cost: Number(baseCost) || 0,
+        name,
+        quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
+        modifications_array: normalizedMods,
+        totalPrice: (Number(baseCost) || 0) + modificationsTotal,
+      };
+    },
+    []
+  );
+
   // Computed values for current selection
   const visibleItems = activeCategory === 'drink' ? drinkItems : foodItems;
   const selectedDrinkPrice = selectedDrink?.sizeOptions?.[selectedDrinkSize] ?? selectedDrink?.price;
@@ -334,7 +429,9 @@ function Customer() {
 
     if (item.category === 'food') {
       setSelectedFood(item);
-      setIsFoodConfirmOpen(true);
+      //the food confirm modal is stupid, we dont need it
+      addFood(item);
+     
     }
   }, []);
 
@@ -355,27 +452,43 @@ function Customer() {
     setSelectedFood(null);
   }, []);
 
+  function addFood(item){
+    if(!item){
+      return;
+    }
+    const orderEntry = buildOrderEntry({
+      entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      menuId: item.id,
+      name: item.name,
+      baseCost: item.price,
+      modificationsArray: [],
+    });
+
+    setOrderSubmitMessage('');
+    setOrderSubmitError('');
+    setOrderItems((prev) => [...prev, orderEntry]);
+  }
+
   const confirmAddFood = useCallback(() => {
     if (!selectedFood) {
+      console.log("none");
       closeFoodConfirm();
       return;
     }
 
-    const orderEntry = {
-      id: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      type: 'food',
+    const orderEntry = buildOrderEntry({
+      entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       menuId: selectedFood.id,
-      quantity: 1,
       name: selectedFood.name,
-      price: selectedFood.price,
-      totalPrice: selectedFood.price,
-    };
+      baseCost: selectedFood.price,
+      modificationsArray: [],
+    });
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
     setOrderItems((prev) => [...prev, orderEntry]);
     closeFoodConfirm();
-  }, [selectedFood, closeFoodConfirm]);
+  }, [selectedFood, closeFoodConfirm, buildOrderEntry]);
 
   const updateToppingQuantity = useCallback((toppingId, delta) => {
     setSelectedToppings((prev) => {
@@ -397,27 +510,67 @@ function Customer() {
       closeToppingsScreen();
       return;
     }
+    const modificationsArray = [];
 
-    const orderEntry = {
-      id: editingOrderItemId || `drink-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      type: 'drink',
+    if (Number.isInteger(sugarMenuId)) {
+      modificationsArray.push({
+        category: 'modifications',
+        cost: 0,
+        menu_id: sugarMenuId,
+        name: `Sugar ${formatMultiplier(sugarMultiplier)}x`,
+      });
+    }
+
+    if (Number.isInteger(iceMenuId)) {
+      const iceMultiplier = iceLevelMultipliers[iceLevelIndex] ?? 1;
+      modificationsArray.push({
+        category: 'modifications',
+        cost: 0,
+        menu_id: iceMenuId,
+        name: `Ice ${formatMultiplier(iceMultiplier)}x`,
+      });
+    }
+
+    if (swapSugar && Number.isInteger(swapSugarMenuId)) {
+      const swapSugarMod = modificationItems.find((mod) => mod.id === swapSugarMenuId);
+      modificationsArray.push({
+        category: swapSugarMod?.category || 'modifications',
+        cost: swapSugarMod?.price || 0,
+        menu_id: swapSugarMenuId,
+        name: swapSugarMod?.name || 'Swap Sugar',
+      });
+    }
+
+    if (useOatMilk && Number.isInteger(oatMilkMenuId)) {
+      const oatMilkMod = modificationItems.find((mod) => mod.id === oatMilkMenuId);
+      modificationsArray.push({
+        category: oatMilkMod?.category || 'modifications',
+        cost: oatMilkMod?.price || 0,
+        menu_id: oatMilkMenuId,
+        name: oatMilkMod?.name || 'Oat Milk',
+      });
+    }
+
+    selectedToppingEntries.forEach((topping) => {
+      const qty = Number.isInteger(topping.quantity) && topping.quantity > 0 ? topping.quantity : 0;
+      for (let i = 0; i < qty; i += 1) {
+        modificationsArray.push({
+          category: 'topping',
+          cost: topping.price,
+          menu_id: topping.id,
+          name: topping.name,
+        });
+      }
+    });
+
+    const selectedDrinkMenuItem = allMenuItems.find((menuItem) => menuItem.id === selectedDrinkMenuId);
+    const orderEntry = buildOrderEntry({
+      entryId: editingOrderItemId || `drink-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       menuId: selectedDrinkMenuId,
-      quantity: 1,
-      name: selectedDrink.name,
-      size: selectedDrinkSize,
-      price: selectedDrinkPrice,
-      sugarMultiplier,
-      iceLevel: iceLevelOptions[iceLevelIndex],
-      swapSugar,
-      useOatMilk,
-      toppings: selectedToppingEntries.map((topping) => ({
-        id: topping.id,
-        name: topping.name,
-        quantity: topping.quantity,
-        price: topping.price,
-      })),
-      totalPrice: selectedDrinkTotal,
-    };
+      name: selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`,
+      baseCost: selectedDrinkPrice,
+      modificationsArray,
+    });
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
@@ -442,73 +595,92 @@ function Customer() {
     selectedToppingEntries,
     editingOrderItemId,
     closeToppingsScreen,
+    sugarMenuId,
+    iceMenuId,
+    swapSugarMenuId,
+    oatMilkMenuId,
+    modificationItems,
+    buildOrderEntry,
+    allMenuItems,
   ]);
 
   const editOrderItem = useCallback((item) => {
-    if (item.type !== 'drink') return;
+    const menuItem = allMenuItems.find((candidate) => candidate.id === item.menuId);
+    if (!menuItem || menuItem.category !== 'drink') return;
+
+    const parsedDrink = parseDrinkVariant(menuItem.name);
+    const baseName = parsedDrink.baseName;
+    const parsedSize = parsedDrink.size;
 
     const matchedDrink = drinkItems.find(
-      (drink) => drink.name.toLowerCase() === String(item.name || '').toLowerCase()
+      (drink) => drink.name.toLowerCase() === baseName.toLowerCase()
     );
 
-    const fallbackSize = item.size || 'medium';
     const fallbackDrink = {
-      id: item.menuId ?? item.id,
-      name: item.name,
+      id: menuItem.id,
+      name: baseName,
       category: 'drink',
-      image: getMenuImage(item.name, 'drink'),
-      description: getMenuDescription(item.name, 'drink'),
-      sizeOptions: { [fallbackSize]: item.price },
-      sizeMenuIds: { [fallbackSize]: item.menuId ?? item.id },
+      image: getMenuImage(baseName, 'drink'),
+      description: getMenuDescription(baseName, 'drink'),
+      sizeOptions: { [parsedSize]: menuItem.price },
+      sizeMenuIds: { [parsedSize]: menuItem.id },
     };
 
     const sourceDrink = matchedDrink || fallbackDrink;
-    const selectedSize = Number.isFinite(sourceDrink?.sizeOptions?.[item.size])
-      ? item.size
-      : ['medium', 'small', 'large'].find((size) => Number.isFinite(sourceDrink?.sizeOptions?.[size])) || fallbackSize;
+    const selectedSize = Number.isFinite(sourceDrink?.sizeOptions?.[parsedSize])
+      ? parsedSize
+      : ['medium', 'small', 'large'].find((size) => Number.isFinite(sourceDrink?.sizeOptions?.[size])) || 'medium';
 
-    const toppingsMap = (item.toppings || []).reduce((acc, topping) => {
-      acc[topping.id] = topping.quantity;
+    const toppingsMap = (item.modifications_array || []).reduce((acc, modification) => {
+      if (modification.category === 'topping' && Number.isInteger(modification.menu_id)) {
+        acc[modification.menu_id] = (acc[modification.menu_id] || 0) + 1;
+      }
       return acc;
     }, {});
 
-    const iceIndex = iceLevelOptions.indexOf(item.iceLevel);
+    const sugarMod = (item.modifications_array || []).find(
+      (modification) => modification.menu_id === sugarMenuId
+    );
+    const iceMod = (item.modifications_array || []).find(
+      (modification) => modification.menu_id === iceMenuId
+    );
+
+    const parsedSugarMultiplier = parseModifierMultiplier(sugarMod?.name, 'Sugar');
+    const parsedIceMultiplier = parseModifierMultiplier(iceMod?.name, 'Ice');
+    const resolvedSugar = parsedSugarMultiplier ?? 1;
+    const resolvedIce = parsedIceMultiplier ?? 1;
+    const iceIndex = iceLevelMultipliers.findIndex((value) => value === resolvedIce);
+
+    const hasSwapSugarMod = Number.isInteger(swapSugarMenuId)
+      && (item.modifications_array || []).some((modification) => modification.menu_id === swapSugarMenuId);
+    const hasOatMilkMod = Number.isInteger(oatMilkMenuId)
+      && (item.modifications_array || []).some((modification) => modification.menu_id === oatMilkMenuId);
 
     setEditingOrderItemId(item.id);
     setSelectedDrink(sourceDrink);
     setSelectedDrinkSize(selectedSize);
     setSelectedToppings(toppingsMap);
-    setSugarMultiplier(item.sugarMultiplier ?? 1);
+    setSugarMultiplier(resolvedSugar);
     setIceLevelIndex(iceIndex >= 0 ? iceIndex : 2);
-    setSwapSugar(Boolean(item.swapSugar));
-    setUseOatMilk(Boolean(item.useOatMilk));
+    setSwapSugar(hasSwapSugarMod);
+    setUseOatMilk(hasOatMilkMod);
     setIsToppingsOpen(true);
-  }, [drinkItems, getMenuImage, getMenuDescription]);
+  }, [
+    allMenuItems,
+    drinkItems,
+    getMenuImage,
+    getMenuDescription,
+    sugarMenuId,
+    iceMenuId,
+    swapSugarMenuId,
+    oatMilkMenuId,
+  ]);
 
   const removeOrderItem = useCallback((itemId) => {
     setOrderSubmitMessage('');
     setOrderSubmitError('');
     setOrderItems((prev) => prev.filter((item) => item.id !== itemId));
   }, []);
-
-  const resolveItemMenuId = useCallback((item) => {
-    if (Number.isInteger(item?.menuId)) return item.menuId;
-
-    if (item?.type === 'drink') {
-      const matchedDrink = drinkItems.find(
-        (drink) => drink.name.toLowerCase() === String(item.name || '').toLowerCase()
-      );
-      if (matchedDrink) {
-        const sizeKey = item.size || 'medium';
-        return matchedDrink.sizeMenuIds?.[sizeKey] ?? matchedDrink.id;
-      }
-    }
-
-    const matchedMenu = allMenuItems.find(
-      (menuItem) => menuItem.category === item?.type && menuItem.name.toLowerCase() === String(item?.name || '').toLowerCase()
-    );
-    return matchedMenu?.id;
-  }, [drinkItems, allMenuItems]);
 
   const handleFinishOrder = useCallback(() => {
     if (orderItems.length === 0) return;
@@ -517,33 +689,29 @@ function Customer() {
     setOrderSubmitError('');
 
     try {
-      const swapSugarMenuId = modificationByName['swap sugar']?.id;
-      const oatMilkMenuId = (modificationByName['oat milk'] || modificationByName['oak milk'])?.id;
-
       const payloadItems = orderItems.map((item, itemIndex) => {
-        const menuId = resolveItemMenuId(item);
-        if (!Number.isInteger(menuId)) {
+        if (!Number.isInteger(item?.menuId)) {
           throw new Error(`Could not resolve menu ID for order item ${itemIndex + 1} (${item.name}).`);
         }
 
-        const toppings = Array.isArray(item.toppings)
-          ? item.toppings.map((topping) => ({
-              id: topping.id,
-              quantity: topping.quantity,
-            }))
-          : [];
+        const toppingCounts = Array.isArray(item.modifications_array)
+          ? item.modifications_array.reduce((acc, modification) => {
+              if (Number.isInteger(modification?.menu_id)) {
+                acc[modification.menu_id] = (acc[modification.menu_id] || 0) + 1;
+              }
+              return acc;
+            }, {})
+          : {};
 
-        if (item.type === 'drink') {
-          if (item.swapSugar && Number.isInteger(swapSugarMenuId)) {
-            toppings.push({ id: swapSugarMenuId, quantity: 1 });
-          }
-          if (item.useOatMilk && Number.isInteger(oatMilkMenuId)) {
-            toppings.push({ id: oatMilkMenuId, quantity: 1 });
-          }
-        }
+        const toppings = Object.entries(toppingCounts)
+          .map(([id, quantity]) => ({
+            id: Number(id),
+            quantity,
+          }))
+          .filter((entry) => Number.isInteger(entry.id) && Number.isFinite(entry.quantity) && entry.quantity > 0);
 
         return {
-          menuId,
+          menuId: item.menuId,
           quantity: Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1,
           toppings,
         };
@@ -551,13 +719,154 @@ function Customer() {
 
       orderMutation.mutate({
         orderTotal: Number(orderSubtotal.toFixed(2)),
-        customerName: 'Guest',
+        customerName: customerName.trim() || 'Guest',
         items: payloadItems,
       });
     } catch (submitError) {
       setOrderSubmitError(submitError.message || 'Unable to submit order. Please try again.');
     }
-  }, [orderItems, orderSubtotal, modificationByName, resolveItemMenuId, orderMutation]);
+  }, [orderItems, orderSubtotal, orderMutation, customerName]);
+
+  const handleChatAction = useCallback((chatAction) => {
+    const action = normalizeChatText(chatAction?.action);
+    const incomingItems = Array.isArray(chatAction?.orderItems) ? chatAction.orderItems : [];
+    console.log(`Received chat action: ${action} with items:`, incomingItems);
+    if (incomingItems.length === 0) return;
+    
+
+    if (action === 'add_to_order') {
+      const normalizedOrderItems = incomingItems
+        .map((item, index) => {
+          const menuId = Number(item?.menuId);
+          if (!Number.isInteger(menuId)) {
+            return null;
+          }
+
+          const matchedMenuItem = allMenuItems.find((menuItem) => menuItem.id === menuId);
+          if (!matchedMenuItem) {
+            return null;
+          }
+
+          const rawMods = Array.isArray(item?.modifications_array) ? item.modifications_array : [];
+          const menuModifications = rawMods
+            .map((modification) => {
+              const modificationMenuId = Number(modification?.menu_id);
+              if (!Number.isInteger(modificationMenuId)) return null;
+              const matchedModification = allMenuItems.find((menuItem) => menuItem.id === modificationMenuId);
+              if (!matchedModification) return null;
+              return {
+                category: String(modification?.category || matchedModification.category || '').toLowerCase(),
+                cost: Number.isFinite(Number(modification?.cost)) ? Number(modification.cost) : matchedModification.price,
+                menu_id: matchedModification.id,
+                name: String(modification?.name || matchedModification.name || '').trim(),
+              };
+            })
+            .filter(Boolean);
+
+          if (matchedMenuItem.category === 'food') {
+            return buildOrderEntry({
+              entryId: `chat-food-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
+              menuId: matchedMenuItem.id,
+              name: matchedMenuItem.name,
+              baseCost: matchedMenuItem.price,
+              modificationsArray: [],
+            });
+          }
+
+          if (matchedMenuItem.category !== 'drink') {
+            return null;
+          }
+
+          const hasSugar = Number.isInteger(sugarMenuId)
+            && menuModifications.some((modification) => modification.menu_id === sugarMenuId);
+          const hasIce = Number.isInteger(iceMenuId)
+            && menuModifications.some((modification) => modification.menu_id === iceMenuId);
+
+          if (!hasSugar && Number.isInteger(sugarMenuId)) {
+            menuModifications.push({
+              category: 'modifications',
+              cost: 0,
+              menu_id: sugarMenuId,
+              name: 'Sugar 1x',
+            });
+          }
+          if (!hasIce && Number.isInteger(iceMenuId)) {
+            menuModifications.push({
+              category: 'modifications',
+              cost: 0,
+              menu_id: iceMenuId,
+              name: 'Ice 1x',
+            });
+          }
+
+          return buildOrderEntry({
+            entryId: `chat-drink-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
+            menuId: matchedMenuItem.id,
+            name: matchedMenuItem.name,
+            baseCost: matchedMenuItem.price,
+            modificationsArray: menuModifications,
+          });
+        })
+        .filter(Boolean);
+
+      if (normalizedOrderItems.length === 0) return;
+
+      setOrderSubmitMessage('');
+      setOrderSubmitError('');
+      setOrderItems((prev) => [...prev, ...normalizedOrderItems]);
+      return;
+    }
+
+    if (action !== 'remove_from_order' ) return;
+
+    setOrderSubmitMessage('');
+    setOrderSubmitError('');
+    setOrderItems((prev) => {
+      const remainingItems = [...prev];
+
+      incomingItems.forEach((itemToRemove) => {
+        const requestedMenuId = Number(itemToRemove?.menuId);
+        const requestedName = normalizeChatText(itemToRemove?.name || itemToRemove?.description);
+        const requestedToppings = getRequestedToppings(itemToRemove);
+
+        const indexToRemove = remainingItems.findIndex((orderItem) => {
+          if (Number.isInteger(requestedMenuId) && orderItem.menuId !== requestedMenuId) {
+            return false;
+          }
+
+          const orderItemName = normalizeChatText(orderItem?.name);
+          if (requestedName && !(orderItemName === requestedName || orderItemName.includes(requestedName) || requestedName.includes(orderItemName))) {
+            return false;
+          }
+
+          if (requestedToppings.length === 0) {
+            return true;
+          }
+
+          const orderToppings = getRequestedToppings(orderItem);
+          const orderToppingCounts = orderToppings.reduce((acc, topping) => {
+            const key = Number.isInteger(topping.menuId) ? `id:${topping.menuId}` : `name:${topping.name}`;
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+          }, {});
+
+          return requestedToppings.every((topping) => {
+            const key = Number.isInteger(topping.menuId) ? `id:${topping.menuId}` : `name:${topping.name}`;
+            const available = orderToppingCounts[key] || 0;
+            if (available <= 0) return false;
+            orderToppingCounts[key] = available - 1;
+            return true;
+          });
+        });
+
+        if (indexToRemove >= 0) {
+          remainingItems.splice(indexToRemove, 1);
+        }
+      });
+
+      return remainingItems;
+    });
+  }, [allMenuItems, buildOrderEntry, sugarMenuId, iceMenuId]);
 
   if (isLoading) {
     return (
@@ -569,11 +878,11 @@ function Customer() {
 
   return (
     <div className="customer-page">
-      <div className="customer-shell">
+      <div className="customer-shell pt-2">
         {/* Category Navigation */}
-        <Navbar expand="lg" className="tea-nav" aria-label="Category navigation">
+        <Navbar expand="lg" className="tea-nav container mb-3" aria-label="Category navigation">
           <Container fluid className="p-0 align-items-center">
-            <Navbar.Brand href="#" className="tea-brand" aria-label="Tea shop home">
+            <Navbar.Brand href="#" className="tea-brand me-4" aria-label="Tea shop home">
               <img src="teashopLogo.png" alt="Tea Shop Logo" className="tea-logo" />
             </Navbar.Brand>
 
@@ -584,19 +893,19 @@ function Customer() {
                 <Nav.Item>
                   <button
                     type="button"
-                    className={`nav-link tea-link ${activeCategory === 'drink' ? 'is-active' : ''}`}
+                    className={`kiosk-category-btn ${activeCategory === 'drink' ? 'is-active' : ''}`}
                     onClick={() => setActiveCategory('drink')}
                   >
-                    Drinks
+                    <span className='me-2'>Drinks</span>
                   </button>
                 </Nav.Item>
                 <Nav.Item>
                   <button
                     type="button"
-                    className={`nav-link tea-link ${activeCategory === 'food' ? 'is-active' : ''}`}
+                    className={`kiosk-category-btn ${activeCategory === 'food' ? 'is-active' : ''}`}
                     onClick={() => setActiveCategory('food')}
                   >
-                    Food
+                    <span className='me-2'>Food</span>
                   </button>
                 </Nav.Item>
               </Nav>
@@ -609,31 +918,40 @@ function Customer() {
           </Container>
         </Navbar>
 
-        <div className="kiosk-layout">
-          {/* Menu Panel */}
-          <Menu
-            items={visibleItems}
-            activeCategory={activeCategory}
-            isLoading={false}
-            onSelectItem={handleSelectItem}
-            onCardImageError={handleCardImageError}
-          />
-
-          {/* Order Summary Panel */}
-          <OrderSummary
-            orderItems={orderItems}
-            subtotal={orderSubtotal}
-            isError={isError}
-            errorMessage={error?.message}
-            menuItemCount={allMenuItems.length}
-            submitMessage={orderSubmitMessage}
-            submitError={orderSubmitError}
-            isPending={orderMutation.isPending}
-            onEditItem={editOrderItem}
-            onRemoveItem={removeOrderItem}
-            onFinishOrder={handleFinishOrder}
-          />
+        <div className="kiosk-layout container">
+          <div className='row h-100 w-100' style={{minHeight: 0}}>
+            <div className='col-8 h-100 d-flex flex-column'>
+              <Menu
+                items={visibleItems}
+                activeCategory={activeCategory}
+                isLoading={false}
+                onSelectItem={handleSelectItem}
+                onCardImageError={handleCardImageError}
+              />
+            </div>
+            <div className='col-4 h-100'>
+                <OrderSummary
+                orderItems={orderItems}
+                subtotal={orderSubtotal}
+                isError={isError}
+                errorMessage={error?.message}
+                menuItemCount={allMenuItems.length}
+                submitMessage={orderSubmitMessage}
+                submitError={orderSubmitError}
+                isPending={orderMutation.isPending}
+                sugarMenuId={sugarMenuId}
+                iceMenuId={iceMenuId}
+                onEditItem={editOrderItem}
+                onRemoveItem={removeOrderItem}
+                onFinishOrder={handleFinishOrder}
+                customerName={customerName}
+                setCustomerName={setCustomerName}
+              />
+            </div> 
+          </div>
         </div>
+        
+        
 
         {/* Drink Customization Modal */}
         <DrinkCustomizer
@@ -671,6 +989,54 @@ function Customer() {
           onClose={closeFoodConfirm}
           onConfirm={confirmAddFood}
         />
+        {/* --- NEW: Floating Chatbot Widget --- */}
+        <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1050 }}>
+          
+          {/* The Chat Window (Only renders if isChatOpen is true) */}
+          {isChatOpen && (
+            <Card 
+              className="mb-3 shadow-lg border-0" 
+              style={{ width: '350px', height: '500px', borderRadius: '16px', overflow: 'hidden' }}
+            >
+              <Card.Header 
+                className="d-flex justify-content-between align-items-center text-white"
+                style={{ backgroundColor: 'var(--tea-wood)' }}
+              >
+                <h6 className="mb-0 fw-bold">AI Assistant</h6>
+                <button 
+                  type="button" 
+                  className="btn-close btn-close-white" 
+                  aria-label="Close"
+                  onClick={() => setIsChatOpen(false)}
+                ></button>
+              </Card.Header>
+              <Card.Body className="p-0 overflow-auto bg-light">
+                <Chatbot onChatAction={handleChatAction} />
+              </Card.Body>
+            </Card>
+          )}
+          {/* The Chat Bubble Button */}
+          <div className="d-flex justify-content-end">
+            <Button
+              className="rounded-circle shadow-lg d-flex justify-content-center align-items-center border-0"
+              style={{ 
+                width: '65px', 
+                height: '65px', 
+                backgroundColor: 'var(--tea-wood)',
+                transition: 'transform 0.2s'
+              }}
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              aria-label="Toggle Chatbot"
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <span style={{ fontSize: '1.5rem' }}>
+                {isChatOpen ? '✖️' : '💬'}
+              </span>
+            </Button>
+          </div>
+        </div>
+        {/* --- END Floating Chatbot Widget --- */}
       </div>
     </div>
   );

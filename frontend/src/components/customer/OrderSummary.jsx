@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button, Spinner } from 'react-bootstrap';
+import { useEffect, useRef } from 'react';
+import { Button, Spinner, Form } from 'react-bootstrap';
 
 function OrderSummary({ 
   orderItems = [], 
@@ -10,34 +10,56 @@ function OrderSummary({
   submitMessage = '',
   submitError = '',
   isPending = false,
+  sugarMenuId,
+  iceMenuId,
   onEditItem,
   onRemoveItem,
-  onFinishOrder
+  onFinishOrder,
+  customerName,
+  setCustomerName
 }) {
+  const bottomRef = useRef(null);
+
+  useEffect(()=>{
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  },[orderItems])
+
   return (
     <aside className="order-panel" aria-label="Current order">
       <h4 className="panel-title">Current Order</h4>
       <p className="order-subtitle">Your selected drinks and snacks will appear here.</p>
 
-      {!isError && (
+      {/* {!isError && (
         <div className="backend-status">
           Loaded {menuItemCount} active item{menuItemCount === 1 ? '' : 's'} from the menu database.
         </div>
-      )}
+      )} */}
       {isError && <div className="backend-status error">{errorMessage}</div>}
 
-      <div className="order-list">
+      <div className="order-list brown-scroll">
         {orderItems.length === 0 && (
           <p className="order-empty">No items in order yet.</p>
         )}
 
-        {orderItems.map((item) => (
+        {orderItems.map((item) => {
+          const modifications = Array.isArray(item.modifications_array) ? item.modifications_array : [];
+          const sugarMod = modifications.find((mod) => mod.menu_id === sugarMenuId);
+          const iceMod = modifications.find((mod) => mod.menu_id === iceMenuId);
+          const toppings = modifications.filter((mod) => mod.category === 'topping');
+          const hasDrinkCoreMods = Boolean(sugarMod || iceMod);
+          const swapSugarSelected = modifications.some((mod) => String(mod.name || '').toLowerCase() === 'swap sugar');
+          const oatMilkSelected = modifications.some((mod) => {
+            const lower = String(mod.name || '').toLowerCase();
+            return lower === 'oat milk' || lower === 'oak milk';
+          });
+
+          return (
           <div key={item.id} className="order-line-item">
             <div className="order-line-header">
               <span className="order-line-name">{item.name}</span>
               <div className="order-line-actions">
                 <span className="order-line-price">${item.totalPrice.toFixed(2)}</span>
-                {item.type === 'drink' && (
+                {hasDrinkCoreMods && (
                   <button
                     type="button"
                     className="order-edit-btn"
@@ -61,52 +83,69 @@ function OrderSummary({
                 </button>
               </div>
             </div>
-
-            {item.type === 'drink' && (
+             
+            {hasDrinkCoreMods && (
               <div className="order-line-details">
-                <div>Size: {item.size}</div>
-                <div>Sugar: {item.sugarMultiplier.toFixed(2)}x</div>
-                <div>Ice: {item.iceLevel}</div>
-                {item.swapSugar && <div>Swap Sugar: selected</div>}
-                {item.useOatMilk && <div>Oat Milk: selected</div>}
-                {item.toppings && item.toppings.length > 0 && (
+                {sugarMod && <div>{sugarMod.name}</div>}
+                {iceMod && <div>{iceMod.name}</div>}
+                {swapSugarSelected && <div>Swap Sugar: selected</div>}
+                {oatMilkSelected && <div>Oat Milk: selected</div>}
+                {toppings.length > 0 && (
                   <div>
-                    Toppings: {item.toppings.map((topping) => `${topping.name} x${topping.quantity}`).join(', ')}
+                    Toppings: {toppings.map((topping) => topping.name).join(', ')}
                   </div>
                 )}
               </div>
             )}
           </div>
-        ))}
+        );
+        })}
+        {/* bottom scroll anchor */}
+        <div ref={bottomRef} />
       </div>
 
-      <p className="order-subtotal">Subtotal: ${subtotal.toFixed(2)}</p>
+      <div className='mt-auto'>
 
-      {submitMessage && <div className="order-submit-message success">{submitMessage}</div>}
-      {submitError && <div className="order-submit-message error">{submitError}</div>}
+        <p className="order-subtotal">Subtotal: ${subtotal.toFixed(2)}</p>
 
-      <Button
-        size="sm"
-        className="tea-btn-finish w-100"
-        onClick={onFinishOrder}
-        disabled={isPending || orderItems.length === 0}
-      >
-        {isPending ? (
-          <>
-            <Spinner
-              as="span"
-              animation="border"
-              size="sm"
-              role="status"
-              aria-hidden="true"
-              className="me-2"
-            />
-            Submitting...
-          </>
-        ) : (
-          'Finish Order'
-        )}
-      </Button>
+        {submitMessage && <div className="order-submit-message success">{submitMessage}</div>}
+        {submitError && <div className="order-submit-message error">{submitError}</div>}
+        <Form className='order-name'>
+          <Form.Group className="mb-3" controlId="customerName">
+              <Form.Control
+              type="text"
+              placeholder="enter name here..."
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="cashier-order-total"
+              />
+          </Form.Group>
+
+      </Form>
+
+        <Button
+          size="sm"
+          className="tea-btn-finish w-100 py-4 mt-2"
+          onClick={onFinishOrder}
+          disabled={isPending || orderItems.length === 0 || customerName===''}
+        >
+          {isPending ? (
+            <>
+              <Spinner
+                as="span"
+                animation="border"
+                size="sm"
+                role="status"
+                aria-hidden="true"
+                className="me-2"
+              />
+              Submitting...
+            </>
+          ) : (
+            'Checkout'
+          )}
+        </Button>
+      </div>
     </aside>
   );
 }
