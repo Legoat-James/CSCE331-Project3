@@ -47,7 +47,7 @@ function Menu({
         )}
 
         {items.map((item) => (
-          <Card key={item.id} className="h-100 text-center tea-card clickable-card"
+          <Card key={item.id} className="text-center tea-card clickable-card"
           onClick={() => onSelectItem(item)}
           >
             <Card.Img
