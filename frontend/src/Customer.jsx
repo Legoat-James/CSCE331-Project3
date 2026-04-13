@@ -25,6 +25,7 @@ import avocadoToastImg from './assets/avocado-toast.jpg';
 import bagelSandwichImg from './assets/bagel-sandwich.jpg';
 import friesImg from './assets/fries.jpg';
 import grilledCheeseImg from './assets/grilled-cheese.jpg';
+import Weather from './components/customer/Weather';
 import { Button, Card } from 'react-bootstrap';
 
 const fallbackCardImage = '/teashopLogo.png';
@@ -906,6 +907,11 @@ function Customer() {
                   >
                     <span className='me-2'>Food</span>
                   </button>
+                </Nav.Item>
+              </Nav>
+              <Nav className="ms-auto">
+                <Nav.Item>
+                  <Weather />
                 </Nav.Item>
               </Nav>
             </Navbar.Collapse>

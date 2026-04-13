@@ -2223,6 +2223,63 @@ app.post('/api/chat', async (req, res, next) => {
   }
 });
 
+/* 
+Weather Endpoint
+*/
+app.get('/api/weather', async (req, res, next) => {
+  // #swagger.tags = ['Weather']
+  // #swagger.summary = "Get weather data for a city"
+  /* #swagger.parameters['city'] = {
+    in: 'query',                        
+    description: 'The city name',
+    required: true,                        
+    type: 'string',                   
+    example: 'College Station'                    
+  }*/
+  /* #swagger.responses[200] = { 
+    description: 'Successfully retrieved weather data',
+    schema: { 
+      humidity: 65,
+      windSpeed: 10.5,
+      temperature: 72,
+      location: 'College Station',
+      icon: '01d'
+    }
+  } */
+  try {
+    const city = req.query.city;
+    if (!city) {
+      throw new ApiError(400, "Missing city parameter", null, req.path);
+    }
+
+    const apiKey = process.env.OPENWEATHER_API_KEY;
+    if (!apiKey) {
+      throw new ApiError(500, "Weather API key not configured", null, req.path);
+    }
+
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=imperial&appid=${apiKey}`;
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new ApiError(response.status, `Weather API error: ${response.statusText}`, null, req.path);
+    }
+
+    const data = await response.json();
+    
+    const weatherData = {
+      humidity: data.main.humidity,
+      windSpeed: data.wind.speed,
+      temperature: Math.floor(data.main.temp),
+      location: data.name,
+      icon: data.weather[0].icon
+    };
+
+    res.json(weatherData);
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use('/api', (req, res) => {
   res.status(404).json({
     status: 404,
