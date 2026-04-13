@@ -130,7 +130,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
                         <h4 className="tea-mod-heading">Toppings & Add-ons</h4>
                         <div className="tea-toppings-grid">
                             {modifications
-                                .filter(mod => mod.category === 'topping')
+                                .filter(mod => mod.category === 'topping' || mod.name ==='swap sugar' || mod.name === 'Oak Milk')
                                 .map(mod => {
                                     const isSelected = !!selectedMods.find(m => m.menu_id === mod.menu_id);
                                     return (
