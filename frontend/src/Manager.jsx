@@ -717,6 +717,11 @@ const NavBar = () => {
           </div>
         </Col>
       </Row>
+      {/* Third row for inventory table*/}
+      <InventoryTable></InventoryTable>
+      <Row>
+
+      </Row>
     </div>
   ), [salesData, chartOptions, timeframe, recentOrders, isPending, error, isSuccess, generateReport, selectedReport, reportData, reportLoading, startDate, endDate, startHour, endHour, isSingleDay, salesReportMode]);
 
