@@ -13,14 +13,27 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
         return null;
     }
 
-    const handleModSelection = (mod) => {
+    const handleModSelection = (mod, action) => {
+        if (action === 1) {//add item to order
         setSelectedMods(prevMods => {
-            if (prevMods.find(m => m.menu_id === mod.menu_id)) {
-                return prevMods.filter(m => m.menu_id !== mod.menu_id);
-            } else {
-                return [...prevMods, mod];
-            }
+            // if (prevMods.find(m => m.menu_id === mod.menu_id)) {
+            //     return prevMods.filter(m => m.menu_id !== mod.menu_id);
+            // } else {
+            return [...prevMods, mod];
+            // }
         });
+        }
+        else {
+            setSelectedMods(prevMods => {
+                const index = prevMods.findIndex(m => m.menu_id === mod.menu_id); //returns -1 if not found
+                if (index !== -1) {
+                    const newMods = [...prevMods];
+                    newMods.splice(index, 1);
+                    return newMods;
+                }
+                return prevMods;
+            });
+        }
     };
 
     const handleConfirm = () => {
@@ -41,6 +54,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
         }
         console.log(`selected size:`, itemSize);
         console.log('selected item:', item);
+        console.log('final item after size adjustment:', finalItem);
         console.log(`modification array is:`, selectedMods);
         onAddItem(+finalItem.cost, finalItem.name, finalItem.menu_id, selectedMods);
         
@@ -134,14 +148,31 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
                                 .map(mod => {
                                     const isSelected = !!selectedMods.find(m => m.menu_id === mod.menu_id);
                                     return (
-                                        <button
-                                            key={mod.menu_id}
-                                            className={`tea-topping-btn ${isSelected ? 'is-selected' : ''}`}
-                                            onClick={() => handleModSelection(mod)}
-                                        >
+                                        // <button
+                                        //     key={mod.menu_id}
+                                        //     className={`tea-topping-btn ${isSelected ? 'is-selected' : ''}`}
+                                        //     onClick={() => handleModSelection(mod)}
+                                        // >
+                                        //     <span className="tea-topping-btn-name">{mod.name}</span>
+                                        //     <span className="tea-topping-btn-price">+${parseFloat(mod.cost).toFixed(2)}</span>
+                                        // </button>
+                                        // style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '5px' }}
+                                        <div key={mod.menu_id} className={`tea-topping-row`} >
+                                            <button
+                                            className={`tea-topping-btn`}
+                                            onClick={() => handleModSelection(mod, -1)}
+                                            >
+                                            -
+                                            </button>
                                             <span className="tea-topping-btn-name">{mod.name}</span>
                                             <span className="tea-topping-btn-price">+${parseFloat(mod.cost).toFixed(2)}</span>
-                                        </button>
+                                            <button
+                                            className={`tea-topping-btn`}
+                                            onClick={() => handleModSelection(mod, +1)}
+                                            >
+                                            +
+                                            </button>
+                                        </div>
                                     );
                                 })}
                         </div>
