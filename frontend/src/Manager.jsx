@@ -463,10 +463,10 @@ const NavBar = () => {
 
   const renderRecentOrders = (orders) => {
     const renderColumn = (columnItems) => (
-      <Col xs={6} className="d-flex flex-column gap-2">
+      <Col xs={4} className="d-flex flex-column gap-2">
         {/*Need to do a for loop through each item in the orders list */}
         {columnItems.map((order) => (
-          <Card key={order.orderId} className="mb-2">
+          <Card key={order.orderId} className="mb-1">
             <Card.Body>
               <Card.Title>Order #{order.orderId}</Card.Title>
               <Card.Subtitle className="mb-2 text-muted">{new Date(order.timestamp).toLocaleString()}</Card.Subtitle>
@@ -553,10 +553,12 @@ const NavBar = () => {
   // Dashboard Content - memoized to prevent unnecessary re-renders and scroll resets
   const dashboardContent = useMemo(() => (
     <div className="dashboard-content">
-      {/* Sales Analytics Section */}
+      {/* Main Analytics and Reports Row */}
       <Row className="g-3 mb-4">
-        <Col lg={10}>
-          <Card className="dashboard-card h-100">
+        {/* Left Column: Analytics and Recent Orders */}
+        <Col lg={7} className="d-flex flex-column gap-3">
+          {/* Sales Analytics - Takes up most space automatically */}
+          <Card className="dashboard-card">
             <Card.Header className="dashboard-card-header">
               <h5 className="mb-0">Sales Analytics</h5>
             </Card.Header>
@@ -564,14 +566,27 @@ const NavBar = () => {
               <Bar data={salesData} options={chartOptions} />
             </Card.Body>
           </Card>
+
+          {/* Recent Orders - Right under Analytics */}
+          <Card className="dashboard-card">
+            <Card.Header className="dashboard-card-header">
+              <h5 className="mb-0">Recent Orders</h5>
+            </Card.Header>
+            <Card.Body className="dashboard-card-body" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <ListGroup variant="flush" className="dashboard-list">
+                {renderRecentOrders(recentOrders || [])}
+              </ListGroup>
+            </Card.Body>
+          </Card>
         </Col>
 
+        {/* Date Range Controls */}
         <Col lg={2}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Sales Report Date Range</h6>
             </Card.Header>
-            <Card.Body className="dashboard-card-body d-flex flex-column justify-content-center">
+            <Card.Body className="dashboard-card-body d-flex flex-column">
               <Form.Group className="mb-2">
                 <Form.Label className="small mb-1">Start Date</Form.Label>
                 <Form.Control
@@ -598,7 +613,7 @@ const NavBar = () => {
                   <Row className="mb-2">
                     <Col xs={6}>
                       <Form.Group>
-                        <Form.Label className="small mb-1">Start Hour</Form.Label>
+                        <Form.Label className="small mb-1">Start</Form.Label>
                         <Form.Select
                           value={startHour}
                           onChange={(e) => setStartHour(e.target.value)}
@@ -614,7 +629,7 @@ const NavBar = () => {
                     </Col>
                     <Col xs={6}>
                       <Form.Group>
-                        <Form.Label className="small mb-1">End Hour</Form.Label>
+                        <Form.Label className="small mb-1">End</Form.Label>
                         <Form.Select
                           value={endHour}
                           onChange={(e) => setEndHour(e.target.value)}
@@ -632,21 +647,19 @@ const NavBar = () => {
                 </>
               )}
               <Form.Group className="mb-2">
-                <Form.Label className="small mb-1">Display Mode</Form.Label>
-                <div className="d-flex gap-1 flex-wrap">
+                <Form.Label className="small mb-1">Mode</Form.Label>
+                <div className="d-flex flex-column gap-1">
                   <Button
                     size="sm"
                     variant={salesReportMode === 'quantity' ? 'primary' : 'outline-primary'}
                     onClick={() => setSalesReportMode('quantity')}
-                    className="flex-fill"
                   >
-                    Quantity
+                    Qty
                   </Button>
                   <Button
                     size="sm"
                     variant={salesReportMode === 'revenue' ? 'primary' : 'outline-primary'}
                     onClick={() => setSalesReportMode('revenue')}
-                    className="flex-fill"
                   >
                     Gross
                   </Button>
@@ -654,7 +667,6 @@ const NavBar = () => {
                     size="sm"
                     variant={salesReportMode === 'netRevenue' ? 'primary' : 'outline-primary'}
                     onClick={() => setSalesReportMode('netRevenue')}
-                    className="flex-fill"
                   >
                     Net
                   </Button>
@@ -662,49 +674,34 @@ const NavBar = () => {
               </Form.Group>
               <Button
                 variant="primary"
-                className="w-100 dashboard-btn mt-2"
+                className="w-100 dashboard-btn mt-3"
                 onClick={() => generateReport('Sales', { startDate, endDate, startHour, endHour })}
                 disabled={!startDate || !endDate}
               >
-                Generate Sales Report
+                Generate
               </Button>
             </Card.Body>
           </Card>
         </Col>
-      </Row>
 
-      {/* Orders and Reports Section */}
-      <Row className="g-3 mb-4">
-        <Col lg={5}>
-          <Card className="dashboard-card h-100">
-            <Card.Header className="dashboard-card-header">
-              <h5 className="mb-0">Recent Orders</h5>
-            </Card.Header>
-            <Card.Body className="dashboard-card-body">
-              <ListGroup variant="flush" className="dashboard-list">
-                {renderRecentOrders(recentOrders || [])}
-              </ListGroup>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col lg={3}>
+        {/* X/Z Reports Buttons */}
+        <Col lg={1}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Reports</h6>
             </Card.Header>
-            <Card.Body className="dashboard-card-body d-flex flex-column justify-content-center">
+            <Card.Body className="dashboard-card-body d-flex flex-column">
               <ButtonGroup vertical className="w-100">
                 <Button
                   variant="outline-success"
-                  className="mb-2 dashboard-btn"
+                  className="mb-3 dashboard-btn"
                   onClick={() => generateReport('X')}
                 >
                   X Report
                 </Button>
                 <Button
                   variant="outline-success"
-                  className="mb-2 dashboard-btn"
+                  className="dashboard-btn"
                   onClick={() => generateReport('Z')}
                 >
                   Z Report
@@ -714,12 +711,13 @@ const NavBar = () => {
           </Card>
         </Col>
 
-        <Col lg={4}>
+        {/* Report Data Output */}
+        <Col lg={2}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Report Data</h6>
             </Card.Header>
-            <Card.Body className="dashboard-card-body">
+            <Card.Body className="dashboard-card-body" style={{ overflowY: 'auto', maxHeight: '800px' }}>
               {renderReportData()}
             </Card.Body>
           </Card>
