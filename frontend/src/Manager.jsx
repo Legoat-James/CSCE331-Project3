@@ -462,26 +462,10 @@ const NavBar = () => {
   }, [salesReportMode, reportData]);
 
   const renderRecentOrders = (orders) => {
-    const renderColumn = (columnItems) => (
-      <Col xs={6} className="d-flex flex-column gap-2">
-        {/*Need to do a for loop through each item in the orders list */}
-        {columnItems.map((order) => (
-          <Card key={order.orderId} className="mb-2">
-            <Card.Body>
-              <Card.Title>Order #{order.orderId}</Card.Title>
-              <Card.Subtitle className="mb-2 text-muted">{new Date(order.timestamp).toLocaleString()}</Card.Subtitle>
-              <Card.Text>
-                Total: ${parseFloat(order.orderTotal)}
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        ))}
-      </Col>
-    );
     console.log('Rendering recent orders:', orders);
     if(isPending) {
       return <Spinner animation="border" role="status">
-        <span className="visually-hidden .text-center">Loading...</span>
+        <span className="visually-hidden text-center">Loading...</span>
       </Spinner>;
     }
     else if(isSuccess && orders.length === 0) {
@@ -489,24 +473,23 @@ const NavBar = () => {
     }
     else if(isSuccess && orders.length > 0) {
       console.log('Successfully loaded recent orders:', orders);
-      //need to parse through orders list and show in nice format. Split into 2 columns if more than 5 orders. Show customer name, order total, timestamp, and order_id of order at minimum.
-      if(orders.length > 5) {
-        console.log('More than 5 recent orders, splitting into columns.');
-        return (
-          <Row>
-            {renderColumn(orders.slice(0, Math.ceil(orders.length / 2)))}
-            {renderColumn(orders.slice(Math.ceil(orders.length / 2)))}
-          </Row>
-        );
-      }
-      else{
-        console.log('5 or fewer recent orders, showing in single column.');
-        return (
-          <Row>
-            {renderColumn(orders)}
-          </Row>
-        );
-      }
+      return (
+        <Row className="g-2">
+          {orders.map((order) => (
+            <Col xs={12} md={6} xl={4} key={order.orderId}>
+              <Card className="h-100">
+                <Card.Body>
+                  <Card.Title>Order #{order.orderId}</Card.Title>
+                  <Card.Subtitle className="mb-2 text-muted">{new Date(order.timestamp).toLocaleString()}</Card.Subtitle>
+                  <Card.Text>
+                    Total: ${parseFloat(order.orderTotal).toFixed(2)}
+                  </Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      );
     }
     else if(error) {
       return <div>Error loading recent orders: {error.message}</div>;
@@ -553,9 +536,10 @@ const NavBar = () => {
   // Dashboard Content - memoized to prevent unnecessary re-renders and scroll resets
   const dashboardContent = useMemo(() => (
     <div className="dashboard-content">
-      {/* Sales Analytics Section */}
+      {/* Analytics, Controls, and Reports Row */}
       <Row className="g-3 mb-4">
-        <Col lg={10}>
+        {/* Sales Analytics - Sets the height standard for this row */}
+        <Col lg={7}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h5 className="mb-0">Sales Analytics</h5>
@@ -566,12 +550,13 @@ const NavBar = () => {
           </Card>
         </Col>
 
+        {/* Date Range Controls */}
         <Col lg={2}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Sales Report Date Range</h6>
             </Card.Header>
-            <Card.Body className="dashboard-card-body d-flex flex-column justify-content-center">
+            <Card.Body className="dashboard-card-body d-flex flex-column">
               <Form.Group className="mb-2">
                 <Form.Label className="small mb-1">Start Date</Form.Label>
                 <Form.Control
@@ -598,7 +583,7 @@ const NavBar = () => {
                   <Row className="mb-2">
                     <Col xs={6}>
                       <Form.Group>
-                        <Form.Label className="small mb-1">Start Hour</Form.Label>
+                        <Form.Label className="small mb-1">Start</Form.Label>
                         <Form.Select
                           value={startHour}
                           onChange={(e) => setStartHour(e.target.value)}
@@ -614,7 +599,7 @@ const NavBar = () => {
                     </Col>
                     <Col xs={6}>
                       <Form.Group>
-                        <Form.Label className="small mb-1">End Hour</Form.Label>
+                        <Form.Label className="small mb-1">End</Form.Label>
                         <Form.Select
                           value={endHour}
                           onChange={(e) => setEndHour(e.target.value)}
@@ -632,21 +617,19 @@ const NavBar = () => {
                 </>
               )}
               <Form.Group className="mb-2">
-                <Form.Label className="small mb-1">Display Mode</Form.Label>
-                <div className="d-flex gap-1 flex-wrap">
+                <Form.Label className="small mb-1">Mode</Form.Label>
+                <div className="d-flex flex-column gap-1">
                   <Button
                     size="sm"
                     variant={salesReportMode === 'quantity' ? 'primary' : 'outline-primary'}
                     onClick={() => setSalesReportMode('quantity')}
-                    className="flex-fill"
                   >
-                    Quantity
+                    Qty
                   </Button>
                   <Button
                     size="sm"
                     variant={salesReportMode === 'revenue' ? 'primary' : 'outline-primary'}
                     onClick={() => setSalesReportMode('revenue')}
-                    className="flex-fill"
                   >
                     Gross
                   </Button>
@@ -654,7 +637,6 @@ const NavBar = () => {
                     size="sm"
                     variant={salesReportMode === 'netRevenue' ? 'primary' : 'outline-primary'}
                     onClick={() => setSalesReportMode('netRevenue')}
-                    className="flex-fill"
                   >
                     Net
                   </Button>
@@ -662,49 +644,34 @@ const NavBar = () => {
               </Form.Group>
               <Button
                 variant="primary"
-                className="w-100 dashboard-btn mt-2"
+                className="w-100 dashboard-btn mt-3"
                 onClick={() => generateReport('Sales', { startDate, endDate, startHour, endHour })}
                 disabled={!startDate || !endDate}
               >
-                Generate Sales Report
+                Generate
               </Button>
             </Card.Body>
           </Card>
         </Col>
-      </Row>
 
-      {/* Orders and Reports Section */}
-      <Row className="g-3 mb-4">
-        <Col lg={5}>
-          <Card className="dashboard-card h-100">
-            <Card.Header className="dashboard-card-header">
-              <h5 className="mb-0">Recent Orders</h5>
-            </Card.Header>
-            <Card.Body className="dashboard-card-body">
-              <ListGroup variant="flush" className="dashboard-list">
-                {renderRecentOrders(recentOrders || [])}
-              </ListGroup>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col lg={3}>
+        {/* X/Z Reports Buttons */}
+        <Col lg={1}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Reports</h6>
             </Card.Header>
-            <Card.Body className="dashboard-card-body d-flex flex-column justify-content-center">
+            <Card.Body className="dashboard-card-body d-flex flex-column">
               <ButtonGroup vertical className="w-100">
                 <Button
                   variant="outline-success"
-                  className="mb-2 dashboard-btn"
+                  className="mb-3 dashboard-btn"
                   onClick={() => generateReport('X')}
                 >
                   X Report
                 </Button>
                 <Button
                   variant="outline-success"
-                  className="mb-2 dashboard-btn"
+                  className="dashboard-btn"
                   onClick={() => generateReport('Z')}
                 >
                   Z Report
@@ -714,15 +681,40 @@ const NavBar = () => {
           </Card>
         </Col>
 
-        <Col lg={4}>
+        {/* Report Data Output */}
+        <Col lg={2}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Report Data</h6>
             </Card.Header>
-            <Card.Body className="dashboard-card-body">
+            <Card.Body className="dashboard-card-body" style={{ overflowY: 'auto', maxHeight: '420px' }}>
               {renderReportData()}
             </Card.Body>
           </Card>
+        </Col>
+      </Row>
+
+      {/* Secondary Row for Recent Orders */}
+      <Row className="g-3 mb-4">
+        {/* Recent Orders - Matches width of Sales Analytics (lg={7}) */}
+        <Col lg={7} className="d-flex">
+          <Card className="dashboard-card h-100 w-100 d-flex flex-column">
+            <Card.Header className="dashboard-card-header flex-shrink-0">
+              <h5 className="mb-0">Recent Orders</h5>
+            </Card.Header>
+            <Card.Body className="dashboard-card-body flex-grow-1" style={{ overflowY: 'auto', minHeight: 0, paddingBottom: '1rem' }}>
+              <ListGroup variant="flush" className="dashboard-list h-100">
+                {renderRecentOrders(recentOrders || [])}
+              </ListGroup>
+            </Card.Body>
+          </Card>
+        </Col>
+        
+        {/* Employee List Next To Recent Orders - Matches lg={5} */}
+        <Col lg={5} className="d-flex">
+          <div className="w-100 h-100">
+            <EmployeeList> </EmployeeList>
+          </div>
         </Col>
       </Row>
     </div>
