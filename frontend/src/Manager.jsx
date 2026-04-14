@@ -709,13 +709,6 @@ const NavBar = () => {
             </Card.Body>
           </Card>
         </Col>
-        
-        {/* Employee List Next To Recent Orders - Matches lg={5} */}
-        <Col lg={5} className="d-flex">
-          <div className="w-100 h-100">
-            <EmployeeList> </EmployeeList>
-          </div>
-        </Col>
       </Row>
     </div>
   ), [salesData, chartOptions, timeframe, recentOrders, isPending, error, isSuccess, generateReport, selectedReport, reportData, reportLoading, startDate, endDate, startHour, endHour, isSingleDay, salesReportMode]);
