@@ -6,8 +6,10 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import App from './App';
 
-const isDevelopmentRotation = false;
-
+// IF THIS IS EVER SET TO TRUE ON THE SERVER SIDE I WILL MAKE YOU FARM QUESTS FOR AWS CREDITS
+// FOR TESTING ONLY!!!!!!!!!!!
+const isDevelopmentRotation = false; //set to true to rotate the app. FOR TESTING ONLY!!!!!!!!!!!
+// FOR TESTING ONLY!!!!!!!!!!!
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
