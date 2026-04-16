@@ -1,3 +1,22 @@
+/* CSS class to rotate display by 90 degrees to emulate a vertical kiosk */
+.kiosk-mode-rotation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  
+  /* We swap width and height because we are rotating */
+  width: 100vh; 
+  height: 100vw;
+  
+  transform: rotate(90deg) translateX(0);
+  transform-origin: top left;
+  
+  /* This moves the app back into view after rotation */
+  margin-left: 100vw; 
+  
+  overflow: auto;
+}
+
 /* High Contrast Theme Overrides */
 [data-bs-theme='high-contrast'] {
   --bs-body-bg: #000000;

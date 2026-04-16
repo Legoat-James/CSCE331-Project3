@@ -1710,7 +1710,7 @@ app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
   }
 });
 
-app.get('/api/ingredients/all', requireAuth(true), async (req, res, next) => {
+app.get('/api/ingredients/all', async (req, res, next) => {
     /* #swagger.tags = ['Ingredients']
     #swagger.summary = "Get all Ingredients"
     #swagger.security = [{"cookieAuth": []}]
