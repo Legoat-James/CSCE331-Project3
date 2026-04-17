@@ -11,9 +11,7 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [isLoggedIn, setIsLoggedIn] = useState(() => {
-        return !!localStorage.getItem('authToken');
-    });
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const loginMutation = useMutate('/api/employee/login', 'POST', []);
 
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;

@@ -140,6 +140,156 @@ app.get('/api/menu/all', async (req,res,next)=>{
   }
 });
 
+app.get('/api/menu/drinks', async (req,res,next)=>{
+  try{
+    // #swagger.tags = ['Menu']
+    // #swagger.summary = "Get all drinks in the menu"
+    /* #swagger.responses[200] = { 
+            description: 'Successfully retrieved the menu list',
+            schema: [{ 
+                menu_id: 0, 
+                name: 'Black Tea', 
+                category: 'Drink',
+                cost: 4.99,
+                subcategory: 'Teas',
+                is_active: true 
+            }]
+    } */
+
+    const result = await pool.query("SELECT * FROM menu WHERE is_active = true AND category = 'drink' ORDER BY menu_id");
+    const menuList = result.rows;
+    res.json(menuList);
+
+  }catch(err){
+    next(err);
+  }
+});
+
+app.get('/api/menu/drinks/teas', async (req,res,next)=>{
+  try{
+    // #swagger.tags = ['Menu']
+    // #swagger.summary = "Get all Tea drinks in the menu"
+    /* #swagger.responses[200] = { 
+            description: 'Successfully retrieved the menu list',
+            schema: [{ 
+                menu_id: 0, 
+                name: 'Black Tea', 
+                category: 'Drink',
+                cost: 4.99,
+                subcategory: 'Teas',
+                is_active: true 
+            }]
+    } */
+
+    const result = await pool.query("SELECT * FROM menu WHERE is_active = true AND category = 'drink' AND subcategory = 'Teas' ORDER BY menu_id");
+    const menuList = result.rows;
+    res.json(menuList);
+
+  }catch(err){
+    next(err);
+  }
+});
+
+app.get('/api/menu/drinks/refreshers', async (req,res,next)=>{
+  try{
+    // #swagger.tags = ['Menu']
+    // #swagger.summary = "Get all refresher drinks in the menu"
+    /* #swagger.responses[200] = { 
+            description: 'Successfully retrieved the menu list',
+            schema: [{ 
+                menu_id: 0, 
+                name: 'Black Tea', 
+                category: 'Drink',
+                cost: 4.99,
+                subcategory: 'Teas',
+                is_active: true 
+            }]
+    } */
+
+    const result = await pool.query("SELECT * FROM menu WHERE is_active = true AND category = 'drink' AND subcategory = 'Refreshers' ORDER BY menu_id");
+    const menuList = result.rows;
+    res.json(menuList);
+
+  }catch(err){
+    next(err);
+  }
+});
+
+app.get('/api/menu/drinks/coffee-matcha', async (req,res,next)=>{
+  try{
+    // #swagger.tags = ['Menu']
+    // #swagger.summary = "Get all Coffee/Matcha drinks in the menu"
+    /* #swagger.responses[200] = { 
+            description: 'Successfully retrieved the menu list',
+            schema: [{ 
+                menu_id: 0, 
+                name: 'Black Tea', 
+                category: 'Drink',
+                cost: 4.99,
+                subcategory: 'Teas',
+                is_active: true 
+            }]
+    } */
+
+    const result = await pool.query("SELECT * FROM menu WHERE is_active = true AND category = 'drink' AND subcategory = 'Coffee/Matcha' ORDER BY menu_id");
+    const menuList = result.rows;
+    res.json(menuList);
+
+  }catch(err){
+    next(err);
+  }
+});
+
+app.get('/api/menu/drinks/specials', async (req,res,next)=>{
+  try{
+    // #swagger.tags = ['Menu']
+    // #swagger.summary = "Get all Tea drinks in the menu"
+    /* #swagger.responses[200] = { 
+            description: 'Successfully retrieved the menu list',
+            schema: [{ 
+                menu_id: 0, 
+                name: 'Black Tea', 
+                category: 'Drink',
+                cost: 4.99,
+                subcategory: 'Teas',
+                is_active: true 
+            }]
+    } */
+
+    const result = await pool.query("SELECT * FROM menu WHERE is_active = true AND category = 'drink' AND subcategory = 'Specials' ORDER BY menu_id");
+    const menuList = result.rows;
+    res.json(menuList);
+
+  }catch(err){
+    next(err);
+  }
+});
+
+app.get('/api/menu/drinks/seasonal', async (req,res,next)=>{
+  try{
+    // #swagger.tags = ['Menu']
+    // #swagger.summary = "Get all Tea drinks in the menu"
+    /* #swagger.responses[200] = { 
+            description: 'Successfully retrieved the menu list',
+            schema: [{ 
+                menu_id: 0, 
+                name: 'Black Tea', 
+                category: 'Drink',
+                cost: 4.99,
+                subcategory: 'Teas',
+                is_active: true 
+            }]
+    } */
+
+    const result = await pool.query("SELECT * FROM menu WHERE is_active = true AND category = 'drink' AND subcategory = 'Seasonal' ORDER BY menu_id");
+    const menuList = result.rows;
+    res.json(menuList);
+
+  }catch(err){
+    next(err);
+  }
+});
+
 app.get('/api/menu/manager-all', requireAuth(true), async (req,res,next)=>{
   // #swagger.tags = ['Menu']
     // #swagger.summary = "Get all items in the menu for managers"
@@ -273,7 +423,7 @@ app.put('/api/menu/update', requireAuth(true), async (req,res,next)=>{
     }
     #swagger.parameters['item'] = {
             in: 'body',
-            description: 'new Menu item data',
+            description: 'new Menu item data. Drinks required a \'subcategory\' ',
             required: true,
             schema: {
                 name: "example-food",
@@ -296,6 +446,7 @@ app.put('/api/menu/update', requireAuth(true), async (req,res,next)=>{
     const name = req.body.name;
     const category = req.body.category;
     const cost = req.body.cost;
+    const subcategory = req.body.subcategory ? req.body.subcategory : "";
     if(!name || !category || !cost){
       throw new ApiError(400, "Missing fields in 'item'",null,req.path);
     }
@@ -304,8 +455,16 @@ app.put('/api/menu/update', requireAuth(true), async (req,res,next)=>{
        throw new ApiError(400, "Item cost must be an floating point number.",null,req.path);
     }
 
-    const query = "UPDATE menu SET name = $1, category = $2, cost = $3 WHERE menu_id = $4 RETURNING *;"
-    const insertValues = [name, category, cost, menuID];
+    if(category === "drink" && !subcategory){
+      throw new ApiError(400, "Drinks must have a subcategory",null,req.path);
+    }
+    if(subcategory !== "Teas" && subcategory !== "Refreshers" && subcategory !== "Coffee/Matcha" &&
+      subcategory !== "Specials" && subcategory !== "Seasonal"){
+        throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, or Seasonal",null,req.path);
+      }
+
+    const query = "UPDATE menu SET name = $1, category = $2, cost = $3, subcategory = $4 WHERE menu_id = $5 RETURNING *;"
+    const insertValues = [name, category, cost, subcategory, menuID];
 
     const result = await pool.query(query, insertValues);
 
@@ -437,7 +596,7 @@ app.post('/api/menu/create', requireAuth(true), async (req,res,next)=>{
     } 
     #swagger.parameters['item'] = {
             in: 'body',
-            description: 'new Menu item data',
+            description: 'new Menu item data. Drinks must have a \'subcategory\'',
             required: true,
             schema: {
                 name: "example-food",
@@ -454,6 +613,8 @@ app.post('/api/menu/create', requireAuth(true), async (req,res,next)=>{
     const name = req.body.name;
     const category = req.body.category;
     const cost = req.body.cost;
+    const subcategory = req.body.subcategory ? req.body.subcategory : "";
+
     if(!name || !category || !cost){
       throw new ApiError(400, "Missing fields in 'item'",null,req.path);
     }
@@ -462,8 +623,16 @@ app.post('/api/menu/create', requireAuth(true), async (req,res,next)=>{
        throw new ApiError(400, "Item cost must be an floating point number.",null,req.path);
     }
 
-    const query = "INSERT INTO menu (name, category, cost) VALUES ($1, $2, $3) RETURNING *;"
-    const insertValues = [name, category, cost];
+    if(category === "drink" && !subcategory){
+      throw new ApiError(400, "Drinks must have a subcategory",null,req.path);
+    }
+    if(subcategory !== "Teas" && subcategory !== "Refreshers" && subcategory !== "Coffee/Matcha" &&
+      subcategory !== "Specials" && subcategory !== "Seasonal"){
+        throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, or Seasonal",null,req.path);
+      }
+
+    const query = "INSERT INTO menu (name, category, cost, subcategory) VALUES ($1, $2, $3, $4) RETURNING *;"
+    const insertValues = [name, category, cost, subcategory];
 
     const result = await pool.query(query, insertValues);
 
