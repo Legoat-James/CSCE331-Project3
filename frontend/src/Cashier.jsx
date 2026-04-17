@@ -232,9 +232,6 @@ export default function Cashier() {
                                 Cancel Order
                             </Button>
                         </div>
-                        <div>
-                            <ChatBot />
-                        </div>
                     </div>
                 </div>
             </div>
