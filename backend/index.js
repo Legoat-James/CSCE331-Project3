@@ -2459,6 +2459,35 @@ app.get('/api/weather', async (req, res, next) => {
   }
 });
 
+/*
+Kitchen View Endpoints
+*/
+/* 
+Requirements: Gathers all the orders from the transactions table where the: is_filled is false.
+Then for each transaction that is_filled is false, store the transaction_id, find the corresponding order_id. Using the order_ids, go into
+the order_history table and for each order id find all the unique item id's for each order and store that in an array that is an attribute of the orders array that contains each order.
+After getting all the item id's for each order, go into the toppings table, find the topping_menu_id's for each unique item_menu_id for that transaction
+within the transaction_id's and gather the quantity of each topping. Store the quantity. Then using the topping_menu_id and item_menu_id, find the name of the topping from the menu table and the item name from the menu table corresponding to the id.
+Using the form: orders = array(order,...,) where order has attributes: 
+transaction_id, id, customerName, and items. items = array(item, ...,) where item has attributes: quantity, name, and modifications.
+modifications = array(modification,...) where modification has attributes: ingredient_name and name (modification name)
+
+RETURNS: in res, an array that can be mapped that has all the orders. Attributes for each order: order.transaction_id, order.id, order.timestamp, order.customerName, and order.items.
+          items attributes: items to be mapped to item: item.quantity, item.name, and item.modifications.
+          Modifications attributes: modifications mapped to modification: modification.ingredient_name, mod.name
+*/
+/*TODO */
+//Reference Kitchen.jsx lines 59-114 and lines 10-14 for more
+app.get('/api/orders/fetch', async(req, res, next) => {
+
+});
+/*TODO*/
+//Passes in a transaction id to have status changed to: is_filled = true
+//Reference Kitchen.jsx lines 17-39
+app.put('/api/transactions/fill', async(req, res, next) => {
+
+});
+
 app.use('/api', (req, res) => {
   res.status(404).json({
     status: 404,
@@ -2467,6 +2496,8 @@ app.use('/api', (req, res) => {
     method: req.method,
   });
 });
+
+
 
 // // Catch-all handler: send back React's index.html file for non-API routes
 // app.get(/^(?!\/api).*/, (req, res) => {

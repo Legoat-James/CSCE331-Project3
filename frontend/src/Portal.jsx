@@ -43,6 +43,14 @@ export default function Portal() {
       protected: false,
     },
     {
+      id: 'kitchen',
+      title: 'Kitchen',
+      description: 'View pending kitchen orders',
+      icon: '🍳',
+      path: '/kitchen',
+      protected: false,
+    },
+    {
       id: 'login',
       title: 'Login',
       description: isLoggedIn ? 'Logout of the system' : 'Login to the system',
