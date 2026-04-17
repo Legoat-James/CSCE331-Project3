@@ -20,6 +20,13 @@ export default function Login() {
 
     const navigate = useNavigate();
 
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            setIsLoggedIn(true);
+        }
+    }, []);
+
     async function googleLogin(credentialResponse){
         const googleToken = credentialResponse.credential;
         try{
@@ -91,6 +98,17 @@ export default function Login() {
         }
     };
     if(isLoggedIn){
+        const userStr = localStorage.getItem('user');
+        let isManager = false;
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                isManager = user?.is_manager;
+            } catch (e) {
+                console.error("Error parsing user from localStorage", e);
+            }
+        }
+
         return (
         <div className="login-page">
             <Container>
@@ -102,14 +120,26 @@ export default function Login() {
                                     <h2>Account Access</h2>
                                 </Card.Title>
                                 <p>You are already logged in to the system.</p>
-                                <button className="logout-btn" onClick={()=>{
-                                    localStorage.removeItem('authToken');
-                                    localStorage.removeItem('user');
-                                    setIsLoggedIn(false);
-                                    window.location.href = '/';
-                                }}>
-                                    Sign Out
-                                </button>
+                                <div className="d-flex flex-column align-items-center gap-3 mt-3 w-100">
+                                    {isManager && (
+                                        <>
+                                            <button className="login-btn" style={{width: '100%'}} onClick={() => navigate("/manager")}>
+                                                Manager View
+                                            </button>
+                                            <button className="login-btn" style={{width: '100%'}} onClick={() => navigate("/cashier")}>
+                                                Cashier View
+                                            </button>
+                                        </>
+                                    )}
+                                    <button className="logout-btn" style={{width: '100%'}} onClick={()=>{
+                                        localStorage.removeItem('authToken');
+                                        localStorage.removeItem('user');
+                                        setIsLoggedIn(false);
+                                        window.location.href = '/';
+                                    }}>
+                                        Sign Out
+                                    </button>
+                                </div>
                             </Card.Body>
                         </Card>
                     </div>
