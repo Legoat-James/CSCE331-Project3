@@ -1,3 +1,46 @@
+/* CSS class to rotate display by 90 degrees to emulate a vertical kiosk */
+.kiosk-mode-rotation {
+  position: fixed;
+  top: 0;
+  left: 100vw;
+  
+  /* We swap width and height because we are rotating */
+  width: 100vh; 
+  height: 100vw;
+  
+  transform: rotate(90deg);
+  transform-origin: top left;
+  
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Fix for whitespace: Any inner components that rely on `100vh` will only take up the 
+   unrotated physical screen height. We override them here to take up 100vw 
+   (which acts as our new rotated height). */
+.kiosk-mode-rotation > * {
+  min-height: 100vw;
+}
+
+/* Explicitly override classes that have hardcoded inline minHeight: "100vh" */
+.kiosk-mode-rotation .cashier-page {
+  min-height: 100vw !important;
+}
+
+.kiosk-mode-rotation .customer-page {
+  min-height: 100vw !important;
+}
+
+.kiosk-mode-rotation .customer-shell {
+  height: 80vw !important;
+}
+
+.kiosk-mode-rotation .kiosk-layout {
+  /* Override the max-height and 100vh clamps from Customer.css */
+  height: 100% !important;
+  max-height: none !important;
+}
+
 /* High Contrast Theme Overrides */
 [data-bs-theme='high-contrast'] {
   --bs-body-bg: #000000;

@@ -10,6 +10,8 @@ import Cashier from './Cashier';
 import Manager from './Manager';
 import Login from './Login';
 import MenuBoard from './MenuBoard';
+import Kitchen from './Kitchen';
+import AuthRoute from './components/AuthRoute';
 //create a client for react query
 const queryClient = new QueryClient();
 //create a theme context
@@ -58,8 +60,17 @@ export default function App(){
               <Routes>
                 <Route path="/" index element={<Portal />} />
                 <Route path="/customer" element={<Customer />} />
-                <Route path="/cashier" element={<Cashier />} />
-                <Route path="/manager" element={<Manager />} />
+                <Route path="/kitchen" element={<Kitchen />} />
+                <Route path="/cashier" element={
+                  <AuthRoute allowedRoles={["Manager", "Cashier"]}>
+                    <Cashier />
+                  </AuthRoute>
+                  } />
+                <Route path="/manager" element={
+                  <AuthRoute allowedRoles={["Manager"]}>
+                    <Manager />
+                  </AuthRoute>
+                  } />
                 <Route path="/menuboard" element={<MenuBoard />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="*" element={<NotFound />} />

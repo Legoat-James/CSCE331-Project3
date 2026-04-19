@@ -1,4 +1,4 @@
-import {useGet} from './hooks/useApi.js';
+import { useGet } from './hooks/useApi.js';
 import { useMutate } from './hooks/useApi';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -61,7 +61,7 @@ ChartJS.register(
 export default function Manager() {
   const isLoggedIn = !!localStorage.getItem('authToken');
   const user = JSON.parse(localStorage.getItem('user'));
-    
+
   // State management for different sections
   const [activeView, setActiveView] = useState('dashboard');
   const queryClient = useQueryClient();
@@ -71,7 +71,7 @@ export default function Manager() {
     labels: [],
     datasets: []
   });
-  
+
   // Date range state for Sales report
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
@@ -81,13 +81,13 @@ export default function Manager() {
   const [endDate, setEndDate] = useState(() => {
     return new Date().toISOString().split('T')[0]; // Default to today
   });
-  
+
   // Hour selection for single-day reports
   const [startHour, setStartHour] = useState('00');
   const [endHour, setEndHour] = useState('23');
   const isSingleDay = startDate === endDate;
 
-  const {data: recentOrders, isPending, error, isSuccess} = useGet(['recent-orders'],'/api/orders/recent', {
+  const { data: recentOrders, isPending, error, isSuccess } = useGet(['recent-orders'], '/api/orders/recent', {
     retry: true,
     staleTime: 30000,
     refetchOnWindowFocus: false,
@@ -102,37 +102,37 @@ export default function Manager() {
   // Sample data for tables
   //need to call backend api to get real data and set state accordingly
   //we used useGet to fetch menu items now actually have to load it and show.
-const NavBar = () => {
+  const NavBar = () => {
     return (
       <Navbar bg="primary" variant="dark" sticky="top" className="mb-4 px-3">
         <Container fluid>
           <Navbar.Brand>Manager Dashboard</Navbar.Brand>
           <Nav className="me-auto">
-            <Nav.Link 
+            <Nav.Link
               onClick={() => setActiveView('dashboard')}
               className={activeView === 'dashboard' ? 'text-white fw-bold' : 'text-white-50'}
             >
               Dashboard
             </Nav.Link>
-            <Nav.Link 
+            <Nav.Link
               onClick={() => setActiveView('employees')}
               className={activeView === 'employees' ? 'text-white fw-bold' : 'text-white-50'}
             >
               Employee List
             </Nav.Link>
-            <Nav.Link 
+            <Nav.Link
               onClick={() => setActiveView('inventory')}
               className={activeView === 'inventory' ? 'text-white fw-bold' : 'text-white-50'}
             >
               Inventory Table
             </Nav.Link>
-            <Nav.Link 
+            <Nav.Link
               onClick={() => setActiveView('menu')}
               className={activeView === 'menu' ? 'text-white fw-bold' : 'text-white-50'}
             >
               Menu Editor
             </Nav.Link>
-            <Nav.Link 
+            <Nav.Link
               onClick={() => setActiveView('recipes')}
               className={activeView === 'recipes' ? 'text-white fw-bold' : 'text-white-50'}
             >
@@ -156,32 +156,32 @@ const NavBar = () => {
   };
 
   if (!isLoggedIn || !user || !user.is_manager) {
-      return (
-          <Container className="mt-5 d-flex justify-content-center align-items-center" style={{minHeight: '80vh'}}>
-              <Alert variant="danger">
-                  <Alert.Heading>Access Denied</Alert.Heading>
-                  <p>You must have Manager privileges and be logged in to access this view.</p>
-                  <hr />
-                  <div className="d-flex justify-content-end">
-                      <Button onClick={() => window.location.href = '/'}>Back to Portal</Button>
-                  </div>
-              </Alert>
-          </Container>
-      );
+    return (
+      <Container className="mt-5 d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+        <Alert variant="danger">
+          <Alert.Heading>Access Denied</Alert.Heading>
+          <p>You must have Manager privileges and be logged in to access this view.</p>
+          <hr />
+          <div className="d-flex justify-content-end">
+            <Button onClick={() => window.location.href = '/'}>Back to Portal</Button>
+          </div>
+        </Alert>
+      </Container>
+    );
   }
 
   //Render report data
   const renderReportData = () => {
-    if(reportLoading) {
+    if (reportLoading) {
       return <div className="text-center">
         <Spinner animation="border" role="status">
           <span className="visually-hidden">Loading...</span>
         </Spinner>
       </div>;
     }
-    else if(reportData) {
+    else if (reportData) {
       //check the cases to determine what type of report data to show:
-      switch(selectedReport) {
+      switch (selectedReport) {
         case 'X':
           console.log('Rendering X Report data:', reportData);
           // Calculate totals for the day
@@ -232,52 +232,52 @@ const NavBar = () => {
         case 'Z':
           console.log('Rendering Z Report data:', reportData);
           // Calculate totals for the day
-          try{
-            if(zReportGenerated) {
+          try {
+            if (zReportGenerated) {
               return <div className="text-center text-danger">Z Report has already been generated for today. Totals have not been reset. Please contact support if you believe this is an error.</div>;
             }
             const totalZ = reportData.reduce((acc, hourData) => ({
-            drinks_sold: acc.drinks_sold + (hourData.drinks_sold || 0),
-            food_sold: acc.food_sold + (hourData.food_sold || 0),
-            total_items_sold: acc.total_items_sold + (hourData.total_items_sold || 0),
-            total_sales_amount: acc.total_sales_amount + (parseFloat(hourData.total_sales_amount) || 0),
-            total_transactions: acc.total_transactions + (hourData.total_transactions || 0),
-          }), { drinks_sold: 0, food_sold: 0, total_items_sold: 0, total_sales_amount: 0, total_transactions: 0 });
-          //now set the zReportGenerated to true to prevent multiple generations in the same day
-          setZReportGenerated(true);
-          return (
-            <Table striped hover responsive size="sm" className="dashboard-table">
-              <thead>
-                <tr>
-                  <th className="text-start"></th>
-                  <th className="text-end">Drinks Sold</th>
-                  <th className="text-end">Food Sold</th>
-                  <th className="text-end">Total Items</th>
-                  <th className="text-end">Sales ($)</th>
-                  <th className="text-end">Transactions</th>
-                </tr>
-              </thead>
-              <tfoot>
-                <tr className="fw-bold table-secondary">
-                  <td className="text-start">Today's Totals</td>
-                  <td className="text-end">{totalZ.drinks_sold}</td>
-                  <td className="text-end">{totalZ.food_sold}</td>
-                  <td className="text-end">{totalZ.total_items_sold}</td>
-                  <td className="text-end">${totalZ.total_sales_amount.toFixed(2)}</td>
-                  <td className="text-end">{totalZ.total_transactions}</td>
-                </tr>
-              </tfoot>
-            </Table>
-          );
-          } catch(err){
+              drinks_sold: acc.drinks_sold + (hourData.drinks_sold || 0),
+              food_sold: acc.food_sold + (hourData.food_sold || 0),
+              total_items_sold: acc.total_items_sold + (hourData.total_items_sold || 0),
+              total_sales_amount: acc.total_sales_amount + (parseFloat(hourData.total_sales_amount) || 0),
+              total_transactions: acc.total_transactions + (hourData.total_transactions || 0),
+            }), { drinks_sold: 0, food_sold: 0, total_items_sold: 0, total_sales_amount: 0, total_transactions: 0 });
+            //now set the zReportGenerated to true to prevent multiple generations in the same day
+            setZReportGenerated(true);
+            return (
+              <Table striped hover responsive size="sm" className="dashboard-table">
+                <thead>
+                  <tr>
+                    <th className="text-start"></th>
+                    <th className="text-end">Drinks Sold</th>
+                    <th className="text-end">Food Sold</th>
+                    <th className="text-end">Total Items</th>
+                    <th className="text-end">Sales ($)</th>
+                    <th className="text-end">Transactions</th>
+                  </tr>
+                </thead>
+                <tfoot>
+                  <tr className="fw-bold table-secondary">
+                    <td className="text-start">Today's Totals</td>
+                    <td className="text-end">{totalZ.drinks_sold}</td>
+                    <td className="text-end">{totalZ.food_sold}</td>
+                    <td className="text-end">{totalZ.total_items_sold}</td>
+                    <td className="text-end">${totalZ.total_sales_amount.toFixed(2)}</td>
+                    <td className="text-end">{totalZ.total_transactions}</td>
+                  </tr>
+                </tfoot>
+              </Table>
+            );
+          } catch (err) {
             console.error('Error calculating Z Report totals:', err);
             return <div>Error calculating Z Report totals. Please try again later.</div>;
           }
-          
+
         case 'Sales':
           const isMoneyMode = salesReportMode === 'revenue' || salesReportMode === 'netRevenue';
           let columnHeader, dataArray;
-          
+
           if (salesReportMode === 'revenue') {
             columnHeader = 'Gross Revenue';
             dataArray = reportData.revenue;
@@ -288,7 +288,7 @@ const NavBar = () => {
             columnHeader = 'Quantity Sold';
             dataArray = reportData.quantities;
           }
-          
+
           const total = dataArray?.reduce((sum, val) => sum + val, 0) || 0;
           return (
             <Table striped bordered hover size="sm" className="report-table">
@@ -331,9 +331,9 @@ const NavBar = () => {
   const generateReport = useCallback(async (type, options = {}) => {
     setSelectedReport(type);
     setReportLoading(true);
-    
+
     try {
-      switch(type) {
+      switch (type) {
         case 'X':
           console.log('Generating X Report...');
           /*TODO: Gives sales activites per hour for the current day of operation. 
@@ -345,18 +345,18 @@ const NavBar = () => {
           discards
           payment methods
           */
-          
+
           const xReportData = await queryClient.fetchQuery({
             queryKey: ['x-report'],
             queryFn: () => apiClient('/api/reports/x'),
             staleTime: 0, // Always fetch fresh
           });
-          
+
           console.log('X Report data:', xReportData);
           setReportData(xReportData);
-          
+
           break;
-          
+
         case 'Z':
           console.log('Generating Z Report...');
           /* TODO: This report is similar to the X-Report, except it is run at the end of the day, when you close and will have no more customers. 
@@ -373,7 +373,7 @@ const NavBar = () => {
           Resetting the Z-report and X-report values in the database to zero after generating and displaying the Z-display.
           Only allowing the Z-report to be generated once a day.
           */
-          
+
           // First, check if Z report was already generated by calling /api/reports/z
           try {
             await apiClient('/api/reports/z');
@@ -394,12 +394,12 @@ const NavBar = () => {
             }
           }
           break;
-          
+
         case 'Sales':
           console.log('Generating Sales Report...');
           //TODO: Given a time window, display the sales by item from the order history.
           //Should probably use a calendar type of view to select start and end date
-          
+
           const { startDate: start, endDate: end, startHour: sHour, endHour: eHour } = options;
           let salesUrl = `/api/reports/sales?startDate=${start}&endDate=${end}`;
           if (start === end && sHour && eHour) {
@@ -410,7 +410,7 @@ const NavBar = () => {
             queryFn: () => apiClient(salesUrl),
             staleTime: 30000,
           });
-          
+
           console.log('Sales Report data:', salesReportData);
           setReportData(salesReportData);
           break;
@@ -428,7 +428,7 @@ const NavBar = () => {
   useEffect(() => {
     if (reportData && reportData.labels && reportData.revenue) {
       let label, data, backgroundColor, borderColor;
-      
+
       if (salesReportMode === 'revenue') {
         label = 'Gross Revenue ($)';
         data = reportData.revenue;
@@ -445,7 +445,7 @@ const NavBar = () => {
         backgroundColor = 'rgba(75, 192, 192, 0.6)';
         borderColor = 'rgb(75, 192, 192)';
       }
-      
+
       setSalesData({
         labels: reportData.labels,
         datasets: [
@@ -462,56 +462,39 @@ const NavBar = () => {
   }, [salesReportMode, reportData]);
 
   const renderRecentOrders = (orders) => {
-    const renderColumn = (columnItems) => (
-      <Col xs={6} className="d-flex flex-column gap-2">
-        {/*Need to do a for loop through each item in the orders list */}
-        {columnItems.map((order) => (
-          <Card key={order.orderId} className="mb-2">
-            <Card.Body>
-              <Card.Title>Order #{order.orderId}</Card.Title>
-              <Card.Subtitle className="mb-2 text-muted">{new Date(order.timestamp).toLocaleString()}</Card.Subtitle>
-              <Card.Text>
-                Total: ${parseFloat(order.orderTotal)}
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        ))}
-      </Col>
-    );
     console.log('Rendering recent orders:', orders);
-    if(isPending) {
+    if (isPending) {
       return <Spinner animation="border" role="status">
-        <span className="visually-hidden .text-center">Loading...</span>
+        <span className="visually-hidden text-center">Loading...</span>
       </Spinner>;
     }
-    else if(isSuccess && orders.length === 0) {
+    else if (isSuccess && orders.length === 0) {
       return <div>No recent orders found.</div>;
     }
-    else if(isSuccess && orders.length > 0) {
+    else if (isSuccess && orders.length > 0) {
       console.log('Successfully loaded recent orders:', orders);
-      //need to parse through orders list and show in nice format. Split into 2 columns if more than 5 orders. Show customer name, order total, timestamp, and order_id of order at minimum.
-      if(orders.length > 5) {
-        console.log('More than 5 recent orders, splitting into columns.');
-        return (
-          <Row>
-            {renderColumn(orders.slice(0, Math.ceil(orders.length / 2)))}
-            {renderColumn(orders.slice(Math.ceil(orders.length / 2)))}
-          </Row>
-        );
-      }
-      else{
-        console.log('5 or fewer recent orders, showing in single column.');
-        return (
-          <Row>
-            {renderColumn(orders)}
-          </Row>
-        );
-      }
+      return (
+        <Row className="g-2">
+          {orders.map((order) => (
+            <Col xs={12} md={6} xl={4} key={order.orderId}>
+              <Card className="h-100">
+                <Card.Body>
+                  <Card.Title>Order #{order.orderId}</Card.Title>
+                  <Card.Subtitle className="mb-2 text-muted">{new Date(order.timestamp).toLocaleString()}</Card.Subtitle>
+                  <Card.Text>
+                    Total: ${parseFloat(order.orderTotal).toFixed(2)}
+                  </Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      );
     }
-    else if(error) {
+    else if (error) {
       return <div>Error loading recent orders: {error.message}</div>;
     }
-    else{
+    else {
       return <div>Unexpected state while loading recent orders.</div>;
     }
 
@@ -553,9 +536,10 @@ const NavBar = () => {
   // Dashboard Content - memoized to prevent unnecessary re-renders and scroll resets
   const dashboardContent = useMemo(() => (
     <div className="dashboard-content">
-      {/* Sales Analytics Section */}
+      {/* Analytics, Controls, and Reports Row */}
       <Row className="g-3 mb-4">
-        <Col lg={10}>
+        {/* Sales Analytics - Sets the height standard for this row */}
+        <Col lg={6}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h5 className="mb-0">Sales Analytics</h5>
@@ -566,12 +550,13 @@ const NavBar = () => {
           </Card>
         </Col>
 
+        {/* Date Range Controls */}
         <Col lg={2}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Sales Report Date Range</h6>
             </Card.Header>
-            <Card.Body className="dashboard-card-body d-flex flex-column justify-content-center">
+            <Card.Body className="dashboard-card-body d-flex flex-column">
               <Form.Group className="mb-2">
                 <Form.Label className="small mb-1">Start Date</Form.Label>
                 <Form.Control
@@ -598,7 +583,7 @@ const NavBar = () => {
                   <Row className="mb-2">
                     <Col xs={6}>
                       <Form.Group>
-                        <Form.Label className="small mb-1">Start Hour</Form.Label>
+                        <Form.Label className="small mb-1">Start</Form.Label>
                         <Form.Select
                           value={startHour}
                           onChange={(e) => setStartHour(e.target.value)}
@@ -614,7 +599,7 @@ const NavBar = () => {
                     </Col>
                     <Col xs={6}>
                       <Form.Group>
-                        <Form.Label className="small mb-1">End Hour</Form.Label>
+                        <Form.Label className="small mb-1">End</Form.Label>
                         <Form.Select
                           value={endHour}
                           onChange={(e) => setEndHour(e.target.value)}
@@ -632,21 +617,19 @@ const NavBar = () => {
                 </>
               )}
               <Form.Group className="mb-2">
-                <Form.Label className="small mb-1">Display Mode</Form.Label>
-                <div className="d-flex gap-1 flex-wrap">
+                <Form.Label className="small mb-1">Mode</Form.Label>
+                <div className="d-flex flex-column gap-1">
                   <Button
                     size="sm"
                     variant={salesReportMode === 'quantity' ? 'primary' : 'outline-primary'}
                     onClick={() => setSalesReportMode('quantity')}
-                    className="flex-fill"
                   >
-                    Quantity
+                    Qty
                   </Button>
                   <Button
                     size="sm"
                     variant={salesReportMode === 'revenue' ? 'primary' : 'outline-primary'}
                     onClick={() => setSalesReportMode('revenue')}
-                    className="flex-fill"
                   >
                     Gross
                   </Button>
@@ -654,7 +637,6 @@ const NavBar = () => {
                     size="sm"
                     variant={salesReportMode === 'netRevenue' ? 'primary' : 'outline-primary'}
                     onClick={() => setSalesReportMode('netRevenue')}
-                    className="flex-fill"
                   >
                     Net
                   </Button>
@@ -662,49 +644,34 @@ const NavBar = () => {
               </Form.Group>
               <Button
                 variant="primary"
-                className="w-100 dashboard-btn mt-2"
+                className="w-100 dashboard-btn mt-3"
                 onClick={() => generateReport('Sales', { startDate, endDate, startHour, endHour })}
                 disabled={!startDate || !endDate}
               >
-                Generate Sales Report
+                Generate
               </Button>
             </Card.Body>
           </Card>
         </Col>
-      </Row>
 
-      {/* Orders and Reports Section */}
-      <Row className="g-3 mb-4">
-        <Col lg={5}>
-          <Card className="dashboard-card h-100">
-            <Card.Header className="dashboard-card-header">
-              <h5 className="mb-0">Recent Orders</h5>
-            </Card.Header>
-            <Card.Body className="dashboard-card-body">
-              <ListGroup variant="flush" className="dashboard-list">
-                {renderRecentOrders(recentOrders || [])}
-              </ListGroup>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col lg={3}>
+        {/* X/Z Reports Buttons */}
+        <Col lg={2}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Reports</h6>
             </Card.Header>
-            <Card.Body className="dashboard-card-body d-flex flex-column justify-content-center">
+            <Card.Body className="dashboard-card-body d-flex flex-column">
               <ButtonGroup vertical className="w-100">
                 <Button
                   variant="outline-success"
-                  className="mb-2 dashboard-btn"
+                  className="mb-3 dashboard-btn"
                   onClick={() => generateReport('X')}
                 >
                   X Report
                 </Button>
                 <Button
                   variant="outline-success"
-                  className="mb-2 dashboard-btn"
+                  className="dashboard-btn"
                   onClick={() => generateReport('Z')}
                 >
                   Z Report
@@ -714,13 +681,31 @@ const NavBar = () => {
           </Card>
         </Col>
 
-        <Col lg={4}>
+        {/* Report Data Output */}
+        <Col lg={2}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Report Data</h6>
             </Card.Header>
-            <Card.Body className="dashboard-card-body">
+            <Card.Body className="dashboard-card-body" style={{ overflowY: 'auto', maxHeight: '50vh' }}>
               {renderReportData()}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Secondary Row for Recent Orders */}
+      <Row className="g-3 mb-4">
+        {/* Recent Orders - Matches width of Sales Analytics */}
+        <Col lg={6} className="d-flex">
+          <Card className="dashboard-card h-100 w-100 d-flex flex-column">
+            <Card.Header className="dashboard-card-header flex-shrink-0">
+              <h5 className="mb-0">Recent Orders</h5>
+            </Card.Header>
+            <Card.Body className="dashboard-card-body flex-grow-1" style={{ overflowY: 'auto', minHeight: 0, paddingBottom: '1rem' }}>
+              <ListGroup variant="flush" className="dashboard-list h-100">
+                {renderRecentOrders(recentOrders || [])}
+              </ListGroup>
             </Card.Body>
           </Card>
         </Col>
@@ -730,7 +715,7 @@ const NavBar = () => {
 
   // Render active view based on state
   const renderActiveView = () => {
-    switch(activeView) {
+    switch (activeView) {
       case 'dashboard':
         return dashboardContent;
       case 'employees':

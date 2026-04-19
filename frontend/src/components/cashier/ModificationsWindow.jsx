@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './ModificationsWindow.css';
 
-export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems }) {
+export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems, ingredients }) {
+    useEffect(() => {
+        console.log('ingredients received by modifications window:', ingredients);
+    }, [ingredients]);
+
     const [selectedMods, setSelectedMods] = useState([]);
     const [iceLevel, setIceLevel] = useState('1x');
     const [sugarLevel, setSugarLevel] = useState('1x');
@@ -13,14 +17,33 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
         return null;
     }
 
-    const handleModSelection = (mod) => {
-        setSelectedMods(prevMods => {
-            if (prevMods.find(m => m.menu_id === mod.menu_id)) {
-                return prevMods.filter(m => m.menu_id !== mod.menu_id);
-            } else {
-                return [...prevMods, mod];
+    const handleModSelection = (mod, action) => {
+        if (action === 1) {//add item to order
+            if(mod.menu_id === 63 || mod.menu_id === 66) {
+                //if we already have swap sugar or oat milk, we cannot add a second one
+                if(selectedMods.some(selected => selected.menu_id === mod.menu_id)) {
+                    return;
+                }
             }
-        });
+            setSelectedMods(prevMods => {
+                // if (prevMods.find(m => m.menu_id === mod.menu_id)) {
+                //     return prevMods.filter(m => m.menu_id !== mod.menu_id);
+                // } else {
+                return [...prevMods, mod];
+                // }
+            });
+        }
+        else {
+            setSelectedMods(prevMods => {
+                const index = prevMods.findIndex(m => m.menu_id === mod.menu_id); //returns -1 if not found
+                if (index !== -1) {
+                    const newMods = [...prevMods];
+                    newMods.splice(index, 1);
+                    return newMods;
+                }
+                return prevMods;
+            });
+        }
     };
 
     const handleConfirm = () => {
@@ -41,6 +64,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
         }
         console.log(`selected size:`, itemSize);
         console.log('selected item:', item);
+        console.log('final item after size adjustment:', finalItem);
         console.log(`modification array is:`, selectedMods);
         onAddItem(+finalItem.cost, finalItem.name, finalItem.menu_id, selectedMods);
         
@@ -130,18 +154,48 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
                         <h4 className="tea-mod-heading">Toppings & Add-ons</h4>
                         <div className="tea-toppings-grid">
                             {modifications
-                                .filter(mod => mod.category === 'topping')
+                                .filter(mod => mod.category === 'topping' || mod.name ==='swap sugar' || mod.name === 'Oak Milk')
                                 .map(mod => {
                                     const isSelected = !!selectedMods.find(m => m.menu_id === mod.menu_id);
+                                    const toppingIngredient = ingredients.find(i => (i.name.toLowerCase() === mod.name) && i.is_active)
+                                    console.log('ingredient is: ' ,toppingIngredient);
+                                    if (mod.name === 'swap sugar' || mod.name === 'Oak Milk') {
+                                        return (
+                                            <button
+                                                key={mod.menu_id}
+                                                className={`tea-topping-btn ${isSelected ? 'is-selected' : ''}`}
+                                                onClick={() => handleModSelection(mod, isSelected ? -1 : 1)}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '5px', width: '100%' }}
+                                            >
+                                                <span className="tea-topping-btn-name">{mod.name}</span>
+                                                <span className="tea-topping-btn-price">+${parseFloat(mod.cost).toFixed(2)}</span>
+                                            </button>
+                                        );
+                                    }
+
                                     return (
-                                        <button
-                                            key={mod.menu_id}
-                                            className={`tea-topping-btn ${isSelected ? 'is-selected' : ''}`}
-                                            onClick={() => handleModSelection(mod)}
-                                        >
-                                            <span className="tea-topping-btn-name">{mod.name}</span>
+                                        <div key={mod.menu_id} className={`tea-topping-row`} >
+                                            
+                                            <span className="tea-topping-btn-name">{mod.name} , ({toppingIngredient?.unit || 'N/A'})</span>
                                             <span className="tea-topping-btn-price">+${parseFloat(mod.cost).toFixed(2)}</span>
-                                        </button>
+
+                                            <button
+                                            className={`tea-topping-btn`}
+                                            onClick={() => handleModSelection(mod, -1)}
+                                            >
+                                            -
+                                            </button>
+
+                                            <span>{selectedMods.filter(selMod => selMod.menu_id === mod.menu_id).length}</span>
+                                            
+                                            <button
+                                            className={`tea-topping-btn`}
+                                            onClick={() => handleModSelection(mod, +1)}
+                                            >
+                                            +
+                                            </button>
+                                            
+                                        </div>
                                     );
                                 })}
                         </div>

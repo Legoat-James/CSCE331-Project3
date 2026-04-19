@@ -3,6 +3,7 @@ import { Form, Button, Alert, Container, Card} from 'react-bootstrap';
 import { loginUser } from './api/authAPI.js';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useMutate } from './hooks/useApi.js';
+import { useNavigate } from 'react-router';
 import './Login.css';
 
 export default function Login() {
@@ -11,12 +12,20 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [isLoggedIn, setIsLoggedIn] = useState(() => {
-        return !!localStorage.getItem('authToken');
-    });
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [displayNavOptions, setDisplayNavOptions] = useState(false);
     const loginMutation = useMutate('/api/employee/login', 'POST', []);
 
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            setIsLoggedIn(true);
+        }
+    }, []);
 
     async function googleLogin(credentialResponse){
         const googleToken = credentialResponse.credential;
@@ -36,15 +45,15 @@ export default function Login() {
             }
             const user = loginMutation.data?.user || JSON.parse(localStorage.getItem('user'));
             
-            alert("logged in with google");
-            setSuccess('Google Login successful! Redirecting...');
-            setTimeout(() => {
-                if (user?.is_manager) {
-                    window.location.href = '/manager';
-                } else {
-                    window.location.href = '/cashier';
-                }
+            if(!user.is_manager){
+                setSuccess('Google Login successful! Redirecting...');
+                setTimeout(() => {
+                    navigate("/cashier");
             }, 1500);
+                return;
+            }
+            setSuccess('Welcome Manager! Choose a view.');
+            setDisplayNavOptions(true);
         }else if(loginMutation.isError){
             setError(loginMutation.error.message);
         }
@@ -68,17 +77,16 @@ export default function Login() {
             //store auth info in localStorage
             localStorage.setItem('authToken', response.token);
             localStorage.setItem('user', JSON.stringify(response.user));
-            
-            setSuccess('Login successful! Redirecting...');
-
-            //redirect after successful login
-            setTimeout(() => {
-                if(response.user.is_manager) {
-                    window.location.href = '/manager';
-                } else {
-                    window.location.href = '/cashier';
-                }
+            if(!response.user.is_manager){
+                setSuccess('Login successful! Redirecting...');
+                setTimeout(() => {
+                    navigate("/cashier");
             }, 1500);
+                return;
+            }
+            setSuccess('Welcome Manager! Choose a view.');
+            setDisplayNavOptions(true);
+
 
         } catch (err){
             //Handle error
@@ -90,6 +98,17 @@ export default function Login() {
         }
     };
     if(isLoggedIn){
+        const userStr = localStorage.getItem('user');
+        let isManager = false;
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                isManager = user?.is_manager;
+            } catch (e) {
+                console.error("Error parsing user from localStorage", e);
+            }
+        }
+
         return (
         <div className="login-page">
             <Container>
@@ -101,14 +120,26 @@ export default function Login() {
                                     <h2>Account Access</h2>
                                 </Card.Title>
                                 <p>You are already logged in to the system.</p>
-                                <button className="logout-btn" onClick={()=>{
-                                    localStorage.removeItem('authToken');
-                                    localStorage.removeItem('user');
-                                    setIsLoggedIn(false);
-                                    window.location.href = '/';
-                                }}>
-                                    Sign Out
-                                </button>
+                                <div className="d-flex flex-column align-items-center gap-3 mt-3 w-100">
+                                    {isManager && (
+                                        <>
+                                            <button className="login-btn" style={{width: '100%'}} onClick={() => navigate("/manager")}>
+                                                Manager View
+                                            </button>
+                                            <button className="login-btn" style={{width: '100%'}} onClick={() => navigate("/cashier")}>
+                                                Cashier View
+                                            </button>
+                                        </>
+                                    )}
+                                    <button className="logout-btn" style={{width: '100%'}} onClick={()=>{
+                                        localStorage.removeItem('authToken');
+                                        localStorage.removeItem('user');
+                                        setIsLoggedIn(false);
+                                        window.location.href = '/';
+                                    }}>
+                                        Sign Out
+                                    </button>
+                                </div>
                             </Card.Body>
                         </Card>
                     </div>
@@ -133,7 +164,9 @@ export default function Login() {
                                 {error && <Alert variant="danger">{error}</Alert>}
                                 {success && <Alert variant="success">{success}</Alert>}
                                 
-                                <Form onSubmit={handleSubmit}>
+                                {!displayNavOptions &&<>
+
+                                    <Form onSubmit={handleSubmit}>
                                     <Form.Group className="mb-3">
                                         <Form.Label className="login-form-label">Username</Form.Label>
                                         <Form.Control
@@ -177,6 +210,18 @@ export default function Login() {
                                         onError={() => console.log('Google Login Failed')}
                                     />
                                 </div>
+                                </>
+                                }
+                                {displayNavOptions &&
+                                    <div className='d-flex flex-column align-items-center'>
+                                        <button className='login-btn' onClick={()=>navigate("/cashier")}>
+                                            Cashier View
+                                        </button>
+                                         <button className='login-btn' onClick={()=>navigate("/manager")}>
+                                            Manager View
+                                        </button>
+                                    </div>
+                                }
                             </Card.Body>
                         </Card>
                     </div>

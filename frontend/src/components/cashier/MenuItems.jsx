@@ -8,6 +8,7 @@ export default function Menuitems({ onAddItem, menuView }) {
     const [modifications, setModifications] = useState([]);
     const [showModWindow, setShowModWindow] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [ingredients, setIngredients] = useState([]);
 
     useEffect(() => {
     const fetchMenuItems = async () => {
@@ -26,9 +27,30 @@ export default function Menuitems({ onAddItem, menuView }) {
             setMenuItems([]); // Ensure it's always an array
         }
     };
-    
+    const fetchIngredients = async () => {
+        try {
+            const data = await apiClient(`/api/ingredients/all`);
+            if (Array.isArray(data) && data.length > 0) {
+                setIngredients(data);
+                // console.log(`fetched data is : `, data);
+                
+            } else{
+                console.error('Expected array of length > 0 but got:', typeof data, data);
+                setIngredients([]); // Fallback to empty array
+            }
+        } catch (error) {
+            console.error('Error fetching menu items:', error);
+            setIngredients([]);
+        }
+    }
     fetchMenuItems();
+    fetchIngredients();
     }, []);
+
+    //function to track ingredients change
+    // useEffect(() => {
+    //     console.log('ingredients state updated:', ingredients);
+    // }, [ingredients]);
 
     const handleItemClick = (item) => {
         setSelectedItem(item);
@@ -68,6 +90,7 @@ export default function Menuitems({ onAddItem, menuView }) {
                 modifications={modifications}
                 menuItems={menuItems}
                 onAddItem={onAddItem}
+                ingredients={ingredients}
             />
         </div>
     );

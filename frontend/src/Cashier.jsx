@@ -101,15 +101,25 @@ export default function Cashier() {
                 return {
                     menuId: item.menu_id,
                     quantity: 1,
-                    toppings: item.modifications_array ? item.modifications_array.map(mod => {
-                        // Quantity should always be an integer for database
-                        // Ice/Sugar levels are stored in the modification name, not quantity
-                        //but when its passed into the DB we need the quantity field, so we parse string name for quantity
-                        return { id: mod.menu_id, 
-                            quantity: (mod.name.toLowerCase().includes("ice") ||  mod.name.toLowerCase().includes("sugar"))
-                            ? parseFloat(mod.name.replace(/x/g, '').split(' ')[1]) : 1
-                        };
-                    }) : []
+                    toppings: item.modifications_array ? Object.values(item.modifications_array.reduce((acc, mod) => {
+                        const isIceOrSugar = mod.name.toLowerCase().includes("ice") || mod.name.toLowerCase().includes("sugar");
+                        if (isIceOrSugar) {
+                            acc[mod.menu_id] = {
+                                id: mod.menu_id,
+                                quantity: parseFloat(mod.name.replace(/x/g, '').split(' ')[1])
+                            };
+                        } else {
+                            if (acc[mod.menu_id]) {
+                                acc[mod.menu_id].quantity += 1;
+                            } else {
+                                acc[mod.menu_id] = {
+                                    id: mod.menu_id,
+                                    quantity: 1
+                                };
+                            }
+                        }
+                        return acc;
+                    }, {})) : []
                 }
             })
         }
@@ -221,9 +231,6 @@ export default function Cashier() {
                             <Button onClick={handleCancel} className="cashier-btn-cancel">
                                 Cancel Order
                             </Button>
-                        </div>
-                        <div>
-                            <ChatBot />
                         </div>
                     </div>
                 </div>
