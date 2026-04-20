@@ -1,9 +1,10 @@
 import './Customer.css';
 import { useGet, useMutate } from './hooks/useApi';
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useContext } from 'react';
 import { Navbar, Nav, Container, Spinner } from 'react-bootstrap';
 import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal, Chatbot, AccessibilityWidget } from './components/customer';
 import { useTranslate } from './contexts/TranslationContext';
+import { ThemeContext } from './App';
 
 // Import images from assets
 import blackTeaImg from './assets/Black-tea.jpg';
@@ -215,6 +216,9 @@ function Customer() {
 
   //state for customer name
   const [customerName, setCustomerName] = useState('');
+
+  //theme
+  const { theme } = useContext(ThemeContext);
 
   // API hooks
   const { data, isLoading, error, isError } = useGet(['full-menu'], '/api/menu/all', {
@@ -873,14 +877,14 @@ function Customer() {
 
   if (isLoading) {
     return (
-      <div className="customer-page d-flex justify-content-center align-items-center">
+      <div className={`${theme === "high-contrast" ? "customer-page-2" : "customer-page"} d-flex justify-content-center align-items-center`}>
         <Spinner animation="border" className="tea-spinner" />
       </div>
     );
   }
 
   return (
-    <div className="customer-page">
+    <div className={`${theme === "high-contrast" ? "customer-page-2" : "customer-page"}`}>
       <div className="customer-shell pt-2">
         {/* Category Navigation */}
         <Navbar expand="lg" className="tea-nav container mb-3" aria-label="Category navigation">

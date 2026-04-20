@@ -4,23 +4,12 @@
  */
 
 /* CSS Custom Properties */
-:root {
-  --tea-bg: #f2e5d3;
-  --tea-bg-soft: #f8f0e5;
-  --tea-panel: #fbf4ea;
-  --tea-wood: #8a6245;
-  --tea-wood-dark: #6f4c36;
-  --tea-border: #d7c2aa;
-  --tea-text: #3f2a1d;
-  --tea-muted: #7a5e4c;
-  --tea-accent: #b67a45;
-  --tea-accent-soft: #f2d9bc;
-}
+
 
 /* Page Layout */
 .customer-page {
   min-height: 100vh;
-  background-color: #ead8c0;
+  background-color: var(--tea-root-bg);
   background-image:
     linear-gradient(180deg, rgba(255, 248, 237, 0.28), rgba(122, 94, 76, 0.08)),
     repeating-linear-gradient(
@@ -37,7 +26,13 @@
       rgba(0, 0, 0, 0) 1px,
       rgba(0, 0, 0, 0) 18px
     );
-  color: var(--tea-text);
+  color: var(--tea-root-bg-line);
+}
+
+.customer-page-2 {
+  min-height: 100vh;
+  background-color: var(--tea-root-bg);
+  color: var(--tea-root-bg-line);
 }
 
 .customer-shell {
@@ -103,7 +98,7 @@
   border-radius: 50px; /* Pill shape naturally invites tapping */
   
   /* Styling to match your tea theme */
-  background-color: rgba(251, 244, 234, 0.8);
+  background-color: var(--tea-modal-btn-bg);
   color: var(--tea-wood);
   border: 3px solid var(--tea-wood);
   
@@ -142,7 +137,7 @@
   border: 2px solid var(--tea-wood-dark);
   border-radius: 16px;
   padding: 1rem;
-  background: rgba(251, 244, 234, 0.55);
+  background: var(--tea-bg-soft-trans);
 }
 
 /* Panels */
@@ -231,9 +226,9 @@
 
 /* Tea Cards */
 .tea-card {
-  border: 2px solid #7b543b;
+  border: 2px solid var(--tea-wood-dark);
   border-radius: 14px;
-  background: #fffaf4;
+  background: var(--tea-bg-soft);
   box-shadow: 0 3px 0 rgba(111, 76, 54, 0.2);
   min-width: 0;
 }
@@ -261,7 +256,7 @@
   /* Tightens the shadow to look pressed against the screen */
   box-shadow: 0 2px 4px rgba(111, 76, 54, 0.25); 
   /* Slightly darkens the background on tap */
-  background-color: rgba(230, 215, 195, 0.3); 
+  background-color: var(--tea-accent-soft); 
 }
 
 /* Optional: Removes the blue highlight box Android/iOS sometimes adds to tapped elements */
@@ -413,9 +408,9 @@
 }
 
 .order-edit-btn {
-  border: 1px solid #b99474;
-  background: #efe1ce;
-  color: #6a4733;
+  border: 1px solid var(--order-edit-btn-border);
+  background: var(--order-edit-btn-bg);
+  color: var(--order-edit-btn-color);
 }
 
 .order-edit-btn svg,
@@ -427,20 +422,18 @@
 
 .order-edit-btn:hover,
 .order-edit-btn:focus-visible {
-  background: #e6d2b9;
-  border-color: #9f7658;
+  transform: scale(1.05);
 }
 
 .order-remove-btn {
-  border: 1px solid #c99d82;
-  background: #f4dcc8;
-  color: #7d352f;
+  border: 1px solid var(--order-remove-btn-border);
+  background: var(--order-remove-btn-bg);
+  color: var(--order-remove-btn-color);
 }
 
 .order-remove-btn:hover,
 .order-remove-btn:focus-visible {
-  background: #eec3b2;
-  border-color: #b76d63;
+  transform: scale(1.05);
 }
 
 .order-line-details {
@@ -530,24 +523,6 @@
   font-weight: 700;
 }
 
-.tea-modal-close {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  border: 1px solid var(--tea-wood);
-  background: #f2ddc2;
-  color: var(--tea-wood-dark);
-  font-size: 1.1rem;
-  line-height: 1;
-  display: inline-grid;
-  place-items: center;
-}
-
-.tea-modal-close:hover,
-.tea-modal-close:focus-visible {
-  background: #e9cfae;
-}
-
 .tea-modal-price {
   margin: 0 0 0.85rem;
   color: var(--tea-muted);
@@ -568,7 +543,7 @@
 
 .tea-modal-note {
   margin: 0;
-  color: #6e5647;
+  color: var(--tea-text);
   font-style: italic;
 }
 
@@ -632,7 +607,7 @@
   display: flex;
   align-items: center;
   gap: 0.28rem;
-  color: #5b4434;
+  color: var(--tea-text);
   min-width: 0;
 }
 
@@ -657,9 +632,9 @@
 
 .tea-qty-btn {
   border-radius: 7px;
-  border: 1px solid #b99474;
-  background: #efe1ce;
-  color: #5a4334;
+  border: 1px solid var(--tea-modal-btn-border);
+  background: var(--tea-modal-btn-bg);
+  color: var(--tea-modal-btn-color);
   padding: 0.05rem 0.35rem;
   line-height: 1;
   font-weight: 700;
@@ -668,8 +643,8 @@
 
 .tea-qty-btn:hover,
 .tea-qty-btn:focus-visible {
-  background: #e6d2b9;
-  color: #5a4334;
+  background: var(--tea-modal-btn-hover-bg);
+  color: var(--tea-modal-btn-hover-color);
 }
 
 .tea-qty-value {
@@ -688,7 +663,7 @@
 .tea-slider-label {
   display: block;
   margin-bottom: 0.25rem;
-  color: #5b4434;
+  color: var(--tea-text);
   font-size: 0.92rem;
 }
 
@@ -708,7 +683,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: #5b4434;
+  color: var(--tea-text);
 }
 
 .tea-modal-total {

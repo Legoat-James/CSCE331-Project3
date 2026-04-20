@@ -33,7 +33,7 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 
 export default function App(){
     //themes will be used for accessiblity (ex: light, dark, high contrast)
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'standard');
     //added line to track if signed in yet.
     const [signedIn, setSignedIn] = useState(false);
     const location = useLocation();
@@ -43,7 +43,11 @@ export default function App(){
     
     useEffect(() => {
         // Apply the theme to the HTML element for Bootstrap 5.3+
-        document.documentElement.setAttribute('data-bs-theme', theme);
+        if(theme == 'high-contrast'){
+          document.body.classList.add('theme-high-contrast');
+        }else{
+          document.body.classList.remove('theme-high-contrast');
+        }
         localStorage.setItem('theme', theme);
   }, [theme]);
 

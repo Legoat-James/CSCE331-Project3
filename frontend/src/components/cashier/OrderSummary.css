@@ -16,7 +16,7 @@
 .order-line-item {
   border: 1px solid var(--tea-border, #d7c2aa);
   border-radius: 10px;
-  background: #f8efe2;
+  background: var(--tea-accent-soft);
   padding: 0.65rem 0.75rem;
   transition: box-shadow 0.2s;
 }
@@ -67,18 +67,18 @@
   transition: all 0.2s;
 }
 
-.order-remove-btn {
+/* .order-remove-btn {
   border-color: #c99d82;
   background: #f4dcc8;
   color: #7d352f;
-}
+} */
 
-.order-remove-btn:hover,
+/* .order-remove-btn:hover,
 .order-remove-btn:focus-visible {
   background: #eec3b2;
   border-color: #b76d63;
   transform: scale(1.05);
-}
+} */
 
 .order-line-details {
   margin-top: 0.45rem;

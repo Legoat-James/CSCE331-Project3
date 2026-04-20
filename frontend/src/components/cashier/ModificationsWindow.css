@@ -17,7 +17,7 @@
   max-height: calc(100vh - 2rem);
   border: 2px solid #6f4c36;
   border-radius: 16px;
-  background: #fff8ef;
+  background: var(--tea-bg);
   box-shadow: 0 16px 42px rgba(69, 45, 30, 0.3);
   padding: 1.05rem;
   margin: auto 0;
@@ -50,9 +50,9 @@
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
-  border: 1px solid #8a6245;
-  background: #f2ddc2;
-  color: var(--tea-wood-dark, #6f4c36);
+  border: 1px solid var(--tea-wood);
+  background: var(--tea-modal-btn-bg);
+  color: var(--tea-wood-dark);
   font-size: 1.5rem;
   line-height: 1;
   display: inline-grid;
@@ -64,7 +64,7 @@
 
 .tea-modal-close:hover,
 .tea-modal-close:focus-visible {
-  background: #e9cfae;
+  background: var(--tea-modal-btn-hover-bg);
   transform: scale(1.05);
 }
 
@@ -79,9 +79,9 @@
 }
 
 .tea-modal-body {
-  border: 1px dashed #b88f6e;
+  border: 1px dashed var(--tea-border);
   border-radius: 12px;
-  background: #f8efe1;
+  background: var(--tea-bg-soft);
   padding: 0.85rem;
   margin-bottom: 0.95rem;
   overflow-y: auto;
@@ -111,9 +111,9 @@
 
 .tea-size-btn {
   border-radius: 999px;
-  border: 1px solid #b99474;
-  background: #efe1ce;
-  color: #5a4334;
+  border: 1px solid var(--tea-modal-btn-border);
+  background: var(--tea-modal-btn-bg);
+  color: var(--tea-modal-btn-color);
   padding: 0.35rem 0.85rem;
   font-size: 0.88rem;
   font-weight: 600;
@@ -122,9 +122,10 @@
 }
 
 .tea-size-btn:hover,
-.tea-size-btn:focus-visible {
-  background: #e6d2b9;
-  color: #5a4334;
+.tea-size-btn:focus-visible,
+.tea-size-btn:active {
+  background: var(--tea-modal-btn-hover-bg);
+  color: var(--tea-modal-btn-hover-color);
   transform: translateY(-1px);
 }
 
@@ -142,7 +143,7 @@
 }
 
 .tea-topping-btn {
-  border: 1px solid #d8bf9f;
+  border: 1px solid var(--tea-border);
   border-radius: 10px;
   background: #fff9f1;
   padding: 0.55rem 0.65rem;
@@ -156,9 +157,9 @@
 }
 
 .tea-topping-row {
-  border: 1px solid #d8bf9f;
+  border: 1px solid var(--tea-border);
   border-radius: 10px;
-  background: #fff9f1;
+  background: var(--tea-bg-soft);
   padding: 0.3rem 0.45rem;
   display: flex;
   justify-content: space-between;
@@ -223,15 +224,15 @@
 }
 
 .tea-modal-btn-secondary {
-  background: #efe1ce;
-  color: #5a4334;
-  border-color: #b99474;
+  background: var( --tea-modal-btn-bg);
+  color: var(--tea-modal-btn-color);
+  border-color: var(--tea-modal-btn-border);
 }
 
 .tea-modal-btn-secondary:hover,
 .tea-modal-btn-secondary:focus-visible {
-  background: #e6d2b9;
-  color: #5a4334;
+  background: var(--tea-modal-btn-hover-bg);
+  color: var(--tea-modal-btn-hover-color);
   transform: translateY(-1px);
 }
 

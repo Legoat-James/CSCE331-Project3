@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useTranslate, SUPPORTED_LANGUAGES } from '../../contexts/TranslationContext';
+import { ThemeContext } from '../../App';
 import './AccessibilityWidget.css';
 
 function AccessibilityWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState('menu'); // 'menu' | 'language'
   const { language, setLanguage, translate } = useTranslate();
+  const { theme, setTheme } = useContext(ThemeContext);
 
   const handleToggle = () => {
     setIsOpen(prev => !prev);
@@ -41,10 +43,13 @@ function AccessibilityWidget() {
 
           <div className="a11y-panel-body">
             {view === 'menu' && (
+              <>
               <button
                 type="button"
                 className="a11y-option-btn"
-                onClick={() => setView('language')}
+                onClick={() => setView('language')
+                }
+                aria-label='Set Language Button'
               >
                 {/* Globe icon */}
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
@@ -56,6 +61,13 @@ function AccessibilityWidget() {
                 </svg>
                 {translate('Language')}
               </button>
+              <button
+                type="button"
+                className="a11y-option-btn"
+                onClick={() => setTheme(prevTheme => prevTheme === 'standard' ? 'high-contrast' : 'standard')}
+                aria-label='Toggle High Contrast Button'
+              >High Contrast</button>
+              </>
             )}
 
             {view === 'language' && (
