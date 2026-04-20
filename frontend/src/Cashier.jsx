@@ -103,10 +103,11 @@ export default function Cashier() {
                     quantity: 1,
                     toppings: item.modifications_array ? Object.values(item.modifications_array.reduce((acc, mod) => {
                         const isIceOrSugar = mod.name.toLowerCase().includes("ice") || mod.name.toLowerCase().includes("sugar");
+                        // console.log(mod.name);
                         if (isIceOrSugar) {
                             acc[mod.menu_id] = {
                                 id: mod.menu_id,
-                                quantity: parseFloat(mod.name.replace(/x/g, '').split(' ')[1])
+                                quantity: parseFloat(mod.name.replace(/x/g, '').split(' ').at(-1))
                             };
                         } else {
                             if (acc[mod.menu_id]) {

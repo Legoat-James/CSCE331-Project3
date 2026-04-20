@@ -704,7 +704,12 @@ function Customer() {
         const toppingCounts = Array.isArray(item.modifications_array)
           ? item.modifications_array.reduce((acc, modification) => {
               if (Number.isInteger(modification?.menu_id)) {
-                acc[modification.menu_id] = (acc[modification.menu_id] || 0) + 1;
+                const isIceOrSugar = modification.name?.toLowerCase().includes("ice") || modification.name?.toLowerCase().includes("sugar");
+                if (isIceOrSugar) {
+                  acc[modification.menu_id] = parseFloat(modification.name.replace(/x/g, '').split(' ').at(-1));
+                } else {
+                  acc[modification.menu_id] = (acc[modification.menu_id] || 0) + 1;
+                }
               }
               return acc;
             }, {})
@@ -716,6 +721,7 @@ function Customer() {
             quantity,
           }))
           .filter((entry) => Number.isInteger(entry.id) && Number.isFinite(entry.quantity) && entry.quantity > 0);
+        
 
         return {
           menuId: item.menuId,
