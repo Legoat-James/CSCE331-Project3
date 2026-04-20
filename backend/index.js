@@ -2530,22 +2530,24 @@ app.get('/api/orders/fetch', async (req, res, next) => {
         order._itemsMap.set(row.item_id, {
           quantity: row.item_quantity,
           name: row.item_name,
-          modifications: [],
-          _seenToppings: new Set(),
+          toppingsMap: new Map(),
         });
       }
 
       const item = order._itemsMap.get(row.item_id);
 
       // --- modification (topping) level ---
-      if (row.topping_menu_id && !item._seenToppings.has(row.topping_menu_id)) {
-        item._seenToppings.add(row.topping_menu_id);
-        item.modifications.push({
-          name: row.topping_name,
-          ingredient_name: row.topping_name,
-          quantity: row.topping_quantity,
-          action: 'add',
-        });
+      if (row.topping_menu_id) {
+        if (!item.toppingsMap.has(row.topping_menu_id)) {
+          item.toppingsMap.set(row.topping_menu_id, {
+            id: row.topping_menu_id,
+            name: row.topping_name,
+            ingredient_name: row.topping_name,
+            quantity: 0,
+            action: 'add',
+          });
+        }
+        item.toppingsMap.get(row.topping_menu_id).quantity += Number(row.topping_quantity);
       }
     }
 
@@ -2553,13 +2555,48 @@ app.get('/api/orders/fetch', async (req, res, next) => {
     const orders = [];
     for (const order of ordersMap.values()) {
       const items = [];
-      for (const item of order._itemsMap.values()) {
-        items.push({
-          quantity: item.quantity,
-          name: item.name,
-          modifications: item.modifications,
-        });
+      for (const itemData of order._itemsMap.values()) {
+        const N = Number(itemData.quantity);
+        const itemInstances = Array.from({ length: N }, () => ({
+          quantity: 1,
+          name: itemData.name,
+          modifications: []
+        }));
+        
+        for (const topping of itemData.toppingsMap.values()) {
+          const qtyPerItem = Math.floor(topping.quantity / N);
+          const remainder = topping.quantity % N;
+          
+          for (let i = 0; i < N; i++) {
+            const assignedQty = qtyPerItem + (i < remainder ? 1 : 0);
+            if (assignedQty > 0) {
+              itemInstances[i].modifications.push({
+                name: topping.name,
+                ingredient_name: topping.ingredient_name,
+                quantity: assignedQty,
+                action: topping.action
+              });
+            }
+          }
+        }
+        
+        // Group itemInstances by exact modification signature
+        const groupedInstances = new Map();
+        for (const instance of itemInstances) {
+          instance.modifications.sort((a, b) => a.name.localeCompare(b.name));
+          const sig = instance.modifications.map(m => `${m.name}_${m.quantity}`).join('|');
+          
+          if (!groupedInstances.has(sig)) {
+            groupedInstances.set(sig, { ...instance, quantity: 0 });
+          }
+          groupedInstances.get(sig).quantity += 1;
+        }
+        
+        for (const grouped of groupedInstances.values()) {
+          items.push(grouped);
+        }
       }
+      
       orders.push({
         transaction_id: order.transaction_id,
         id: order.id,
