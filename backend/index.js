@@ -2485,20 +2485,25 @@ app.get('/api/orders/fetch', async (req, res, next) => {
         t.order_id,
         t.timestamp,
         t.customer_name,
-        oh.item_id,
-        oh.quantity        AS item_quantity,
-        m.name             AS item_name,
+        oh_agg.item_id,
+        oh_agg.total_quantity AS item_quantity,
+        m.name               AS item_name,
         tp.topping_menu_id,
-        tp.quantity         AS topping_quantity,
-        tm.name             AS topping_name
+        tp.quantity           AS topping_quantity,
+        tm.name              AS topping_name,
+        tp.topping_id
       FROM transactions t
-      JOIN order_history oh ON t.order_id = oh.order_id
-      JOIN menu m            ON oh.item_id = m.menu_id
+      JOIN (
+        SELECT order_id, item_id, SUM(quantity) AS total_quantity
+        FROM order_history
+        GROUP BY order_id, item_id
+      ) oh_agg ON t.order_id = oh_agg.order_id
+      JOIN menu m            ON oh_agg.item_id = m.menu_id
       LEFT JOIN toppings tp  ON tp.transaction_id = t.order_id
-                             AND tp.item_menu_id  = oh.item_id
+                             AND tp.item_menu_id  = oh_agg.item_id
       LEFT JOIN menu tm      ON tp.topping_menu_id = tm.menu_id
       WHERE t.is_filled = false
-      ORDER BY t.timestamp ASC, t.order_id, oh.item_id;
+      ORDER BY t.timestamp ASC, t.order_id, oh_agg.item_id, tp.topping_id ASC;
     `;
 
     const result = await pool.query(query);
@@ -2526,20 +2531,21 @@ app.get('/api/orders/fetch', async (req, res, next) => {
         order._itemsMap.set(row.item_id, {
           quantity: row.item_quantity,
           name: row.item_name,
-          modifications: [],
-          _seenToppings: new Set(),
+          toppingRows: [],
         });
       }
 
       const item = order._itemsMap.get(row.item_id);
 
       // --- modification (topping) level ---
-      if (row.topping_menu_id && !item._seenToppings.has(row.topping_menu_id)) {
-        item._seenToppings.add(row.topping_menu_id);
-        item.modifications.push({
+      if (row.topping_menu_id) {
+        item.toppingRows.push({
+          id: row.topping_menu_id,
           name: row.topping_name,
           ingredient_name: row.topping_name,
+          quantity: Number(row.topping_quantity),
           action: 'add',
+          topping_id: row.topping_id
         });
       }
     }
@@ -2548,13 +2554,49 @@ app.get('/api/orders/fetch', async (req, res, next) => {
     const orders = [];
     for (const order of ordersMap.values()) {
       const items = [];
-      for (const item of order._itemsMap.values()) {
-        items.push({
-          quantity: item.quantity,
-          name: item.name,
-          modifications: item.modifications,
-        });
+      for (const itemData of order._itemsMap.values()) {
+        const N = Number(itemData.quantity);
+        const itemInstances = Array.from({ length: N }, () => ({
+          quantity: 1,
+          name: itemData.name,
+          modifications: []
+        }));
+        
+        // Assume toppingRows are ordered by topping_id (from SQL query)
+        // Check if current item already has this topping, move to next item
+        let currentItemIndex = 0;
+        for (const topping of itemData.toppingRows) {
+          const hasTopping = itemInstances[currentItemIndex].modifications.some(m => m.id === topping.id);
+          if (hasTopping && currentItemIndex < N - 1) {
+            currentItemIndex++;
+          }
+          
+          itemInstances[currentItemIndex].modifications.push({
+            id: topping.id,
+            name: topping.name,
+            ingredient_name: topping.ingredient_name,
+            quantity: topping.quantity,
+            action: topping.action
+          });
+        }
+        
+        // Group itemInstances by exact modification signature
+        const groupedInstances = new Map();
+        for (const instance of itemInstances) {
+          instance.modifications.sort((a, b) => a.id - b.id);
+          const sig = instance.modifications.map(m => `${m.id}_${m.quantity}`).join('|');
+          
+          if (!groupedInstances.has(sig)) {
+            groupedInstances.set(sig, { ...instance, quantity: 0 });
+          }
+          groupedInstances.get(sig).quantity += 1;
+        }
+        
+        for (const grouped of groupedInstances.values()) {
+          items.push(grouped);
+        }
       }
+      
       orders.push({
         transaction_id: order.transaction_id,
         id: order.id,
