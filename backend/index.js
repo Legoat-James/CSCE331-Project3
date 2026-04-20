@@ -2485,20 +2485,24 @@ app.get('/api/orders/fetch', async (req, res, next) => {
         t.order_id,
         t.timestamp,
         t.customer_name,
-        oh.item_id,
-        oh.quantity        AS item_quantity,
-        m.name             AS item_name,
+        oh_agg.item_id,
+        oh_agg.total_quantity AS item_quantity,
+        m.name               AS item_name,
         tp.topping_menu_id,
-        tp.quantity         AS topping_quantity,
-        tm.name             AS topping_name
+        tp.quantity           AS topping_quantity,
+        tm.name              AS topping_name
       FROM transactions t
-      JOIN order_history oh ON t.order_id = oh.order_id
-      JOIN menu m            ON oh.item_id = m.menu_id
+      JOIN (
+        SELECT order_id, item_id, SUM(quantity) AS total_quantity
+        FROM order_history
+        GROUP BY order_id, item_id
+      ) oh_agg ON t.order_id = oh_agg.order_id
+      JOIN menu m            ON oh_agg.item_id = m.menu_id
       LEFT JOIN toppings tp  ON tp.transaction_id = t.order_id
-                             AND tp.item_menu_id  = oh.item_id
+                             AND tp.item_menu_id  = oh_agg.item_id
       LEFT JOIN menu tm      ON tp.topping_menu_id = tm.menu_id
       WHERE t.is_filled = false
-      ORDER BY t.timestamp ASC, t.order_id, oh.item_id;
+      ORDER BY t.timestamp ASC, t.order_id, oh_agg.item_id;
     `;
 
     const result = await pool.query(query);
@@ -2539,6 +2543,7 @@ app.get('/api/orders/fetch', async (req, res, next) => {
         item.modifications.push({
           name: row.topping_name,
           ingredient_name: row.topping_name,
+          quantity: row.topping_quantity,
           action: 'add',
         });
       }
