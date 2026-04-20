@@ -8,6 +8,7 @@
   --menu-muted: #7a5e4c;
   --menu-accent: #b67a45;
   --menu-accent-soft: #f2d9bc;
+  --menu-surface: rgba(251, 244, 234, 0.82);
 }
 
 /* Page background with texture */
@@ -31,85 +32,180 @@
     );
 }
 
-/* Page Controls */
-.page-controls {
-  background: rgba(251, 244, 234, 0.95);
-  border-bottom: 2px solid var(--menu-wood-dark);
-}
-
-.control-btn {
-  border-color: var(--menu-wood-dark);
-  color: var(--menu-wood-dark);
-  background: transparent;
-  transition: all 0.3s ease;
-}
-
-.control-btn:hover {
-  background: var(--menu-accent-soft);
-  border-color: var(--menu-wood-dark);
-  color: var(--menu-wood-dark);
-  transform: translateY(-2px);
-}
-
-.control-btn.active {
-  background: var(--menu-wood);
-  border-color: var(--menu-wood);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(111, 76, 54, 0.2);
-}
-
 /* Display Section */
 .display-section {
-  background: rgba(251, 244, 234, 0.85);
+  background: transparent;
 }
 
-/* Title colors */
-.display-title {
+.board-header {
+  background: rgba(251, 244, 234, 0.94);
+  border-bottom: 2px solid var(--menu-wood-dark);
+  box-shadow: 0 2px 14px rgba(111, 76, 54, 0.08);
+  padding: 0.5rem 1.5rem !important;
+}
+
+.board-title {
   color: var(--menu-wood-dark);
-  letter-spacing: 0.05em;
+  font-size: clamp(1.4rem, 2vw, 1.8rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-/* Menu Item Card */
-.menu-item-card {
-  background: var(--menu-panel);
-  border-color: #7b543b;
-  transition: all 0.3s ease;
-  box-shadow: 0 3px 0 rgba(111, 76, 54, 0.2);
+.board-surface {
+  background: var(--menu-surface);
+  backdrop-filter: blur(2px);
+  padding: 0.25rem 0.4rem !important;
 }
 
-.menu-item-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(111, 76, 54, 0.15);
+.board-content {
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Hidden to prevent scrolling */
+  padding: 0.75rem 1.5rem;
 }
 
-/* Menu Item Row (compact stacked layout) */
+/* --- MENU TEXT SIZING --- */
+
+.board-section-title {
+  color: var(--menu-wood-dark);
+  font-size: clamp(1.3rem, 1.6vw, 1.6rem); 
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem; 
+  padding-left: 0.25rem;
+  border-bottom: 2px solid var(--menu-wood-dark);
+  padding-bottom: 0.25rem;
+}
+
+.menu-section-group {
+  background: rgba(251, 244, 234, 0.6);
+  border: 1px solid rgba(215, 194, 170, 0.5);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem; 
+  margin-bottom: 1rem; 
+  box-shadow: 0 2px 8px rgba(111, 76, 54, 0.02);
+}
+
+.menu-subcategory-title {
+  color: var(--menu-accent);
+  font-size: 0.95rem; 
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem; 
+  border-bottom: 1px solid var(--menu-accent-soft);
+  padding-bottom: 0.2rem;
+}
+
+/* Menu Item Row - Improved Readability */
 .menu-item-row {
-  background: var(--menu-panel);
-  border: 1px solid var(--menu-border);
+  background: transparent;
+  padding: 0.25rem 0 !important; 
+  gap: 0.4rem;
 }
 
 .menu-item-row .item-name {
   color: var(--menu-wood-dark);
-  font-size: 1.1rem;
+  font-size: 1rem; 
+  font-weight: 600;
+  line-height: 1.2;
+  flex-shrink: 0;
+  text-transform: capitalize; 
+}
+
+.menu-item-row .item-dots {
+  flex: 1;
+  border-bottom: 2px dotted var(--menu-border);
+  margin: 0 0.5rem;
+  position: relative;
+  top: -0.25rem;
 }
 
 .menu-item-row .item-price {
   color: var(--menu-accent);
-  font-size: 1.1rem;
+  font-size: 1.05rem; 
+  font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* --- SPOTLIGHT PANEL SIZING --- */
+
+.spotlight-panel {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(255, 248, 237, 0.98), rgba(242, 217, 188, 0.92));
+  border: 1px solid rgba(111, 76, 54, 0.18) !important;
+  border-radius: 1rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.spotlight-panel .card-body {
+  padding: 2rem; 
+  justify-content: space-evenly;
+}
+
+.spotlight-label {
+  color: var(--menu-accent);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  font-weight: 700;
+}
+
+.spotlight-subtitle {
+  color: var(--menu-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+
+.spotlight-item-name {
+  font-size: clamp(1.8rem, 2.5vw, 2.5rem); 
+  margin-bottom: 0.25rem;
+  text-transform: capitalize;
+  font-weight: 800;
+}
+
+.spotlight-price {
+  font-size: clamp(2rem, 3vw, 3rem); 
+  margin-top: 0.25rem;
+  font-weight: 700;
 }
 
 /* Animated Item */
 .item-emoji {
-  font-size: 6rem;
-  animation: bounce 0.6s ease-in-out infinite;
+  font-size: 12rem; 
+  line-height: 1;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+  animation: bounce 1.4s ease-in-out infinite;
+  display: block; 
+}
+
+/* Ensure SVG/Images also scale if used instead of text emoji */
+.item-emoji img, 
+.item-emoji svg {
+  width: 12rem;
+  height: 12rem;
+  object-fit: contain;
 }
 
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
+  50% { transform: translateY(-15px); }
 }
 
-.animated-item-name {
+.animated-item-name, .animated-item-price {
   color: var(--menu-wood-dark);
   animation: fadeIn 0.5s ease-in-out;
 }
@@ -121,7 +217,6 @@
 
 .animated-item-price {
   color: var(--menu-accent);
-  animation: fadeIn 0.5s ease-in-out;
 }
 
 @keyframes fadeIn {
@@ -131,8 +226,8 @@
 
 /* Dots Indicator */
 .dot {
-  width: 1rem;
-  height: 1rem;
+  width: 0.6rem;
+  height: 0.6rem;
   background-color: var(--menu-border);
   transition: all 0.3s ease;
 }
@@ -140,4 +235,11 @@
 .dot.active {
   background-color: var(--menu-accent);
   transform: scale(1.3);
+}
+
+@media (max-width: 992px) {
+  .board-content {
+    padding: 1rem;
+    overflow-y: auto; /* Re-enable scroll for smaller screens */
+  }
 }
