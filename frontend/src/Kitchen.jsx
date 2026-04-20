@@ -81,7 +81,7 @@ export default function Kitchen() {
                                                 <ul className="text-danger small mb-1 list-unstyled ms-3">
                                                     {item.modifications.map((mod, modIndex) => (
                                                         <li key={modIndex}>
-                                                            - {mod.action === 'remove' ? 'NO' : 'ADD'} {mod.quantity && mod.quantity > 1 ? `${mod.quantity}x ` : ''}{mod.ingredient_name || mod.name}
+                                                            - {mod.action === 'remove' ? 'NO' : 'ADD'} {mod.quantity && mod.quantity !== 1 ? `${mod.quantity}x ` : ''}{mod.ingredient_name || mod.name}
                                                         </li>
                                                     ))}
                                                 </ul>
