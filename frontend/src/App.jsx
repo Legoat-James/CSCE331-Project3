@@ -5,6 +5,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { Navbar } from 'react-bootstrap';
 import Portal from './Portal';
 import Customer from './Customer';
+import { TranslationProvider } from './contexts/TranslationContext';
 import NotFound from './NotFound';
 import Cashier from './Cashier';
 import Manager from './Manager';
@@ -59,7 +60,7 @@ export default function App(){
             <ErrorBoundary FallbackComponent={ErrorFallback}>
               <Routes>
                 <Route path="/" index element={<Portal />} />
-                <Route path="/customer" element={<Customer />} />
+                <Route path="/customer" element={<TranslationProvider><Customer /></TranslationProvider>} />
                 <Route path="/kitchen" element={<Kitchen />} />
                 <Route path="/cashier" element={
                   <AuthRoute allowedRoles={["Manager", "Cashier"]}>

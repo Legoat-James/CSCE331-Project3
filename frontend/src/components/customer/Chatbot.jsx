@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import './Chatbot.css';
 import apiClient from '../../api/client_config.js';
+import { useTranslate } from '../../contexts/TranslationContext';
 
 /**
  * Chatbot component - Testbench for TAMU AI API connection
  * Uses backend proxy at /api/chat to communicate with TAMU AI
  */
 export default function Chatbot({ onChatAction }) {
+  const { translate } = useTranslate();
+
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -293,25 +296,25 @@ name: string //the name of the modification or topping (for ice or sugar level m
       </div> */}
 
       <div className="chatbot-controls">
-        <button 
-          onClick={testConnection} 
+        <button
+          onClick={testConnection}
           disabled={connectionStatus === 'testing'}
           className="btn-test"
         >
-          {connectionStatus === 'testing' ? 'Testing...' : 'Test Connection'}
+          {connectionStatus === 'testing' ? translate('Testing...') : translate('Test Connection')}
         </button>
-        <span 
-            className="status-indicator" 
+        <span
+            className="status-indicator"
             style={{ backgroundColor: getStatusColor() }}
           />
         <button onClick={clearChat} className="btn-clear ms-auto">
-          Clear Chat
+          {translate('Clear Chat')}
         </button>
       </div>
 
       {errorDetails && (
         <div className="error-details">
-          <strong>Error Details:</strong> {errorDetails}
+          <strong>{translate('Error Details:')}</strong> {errorDetails}
         </div>
       )}
 
@@ -325,26 +328,27 @@ name: string //the name of the modification or topping (for ice or sugar level m
       <div className="chatbot-messages">
         {messages.length === 0 && (
           <div className="welcome-message">
-            <p>👋 Welcome to Claude's Teahouse! I'm here to help you with your order.</p>
-            <p>Try asking:</p>
+            <p>👋 {translate("Welcome to Claude's Teahouse! I'm here to help you with your order.")}</p>
+            <p>{translate('Try asking:')}</p>
             <ul style={{ textAlign: 'left', paddingLeft: '20px', margin: '8px 0' }}>
-              <li><em>"What drinks do you recommend?"</em></li>
-              <li><em>"How much is a Pearl Milk Tea?"</em></li>
-              <li><em>"What toppings can I add?"</em></li>
-              <li><em>"Do you have any food options?"</em></li>
+              <li><em>"{translate('What drinks do you recommend?')}"</em></li>
+              <li><em>"{translate('How much is a Pearl Milk Tea?')}"</em></li>
+              <li><em>"{translate('What toppings can I add?')}"</em></li>
+              <li><em>"{translate('Do you have any food options?')}"</em></li>
             </ul>
           </div>
         )}
         {messages.map((msg, index) => (
           <div key={index} className={`message ${msg.role}`}>
             <div className="message-content">
-              {msg.role === 'user' ? '👤' : '🤖'} {msg.content}
+              {msg.role === 'user' ? '👤' : '🤖'}{' '}
+              {msg.role === 'assistant' ? translate(msg.content) : msg.content}
             </div>
           </div>
         ))}
         {isLoading && (
           <div className="message assistant loading">
-            <div className="message-content">🤖 Thinking...</div>
+            <div className="message-content">🤖 {translate('Thinking...')}</div>
           </div>
         )}
       </div>
@@ -354,11 +358,11 @@ name: string //the name of the modification or topping (for ice or sugar level m
           type="text"
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
-          placeholder="Ask me about orders..."
+          placeholder={translate('Ask me about orders...')}
           disabled={isLoading}
         />
         <button type="submit" disabled={isLoading || !inputMessage.trim()}>
-          Send
+          {translate('Send')}
         </button>
       </form>
     </div>

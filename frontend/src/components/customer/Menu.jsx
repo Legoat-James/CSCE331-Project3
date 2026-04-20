@@ -1,15 +1,18 @@
 import React from 'react';
 import { Card, Button, Spinner } from 'react-bootstrap';
+import { useTranslate } from '../../contexts/TranslationContext';
 
 const fallbackCardImage = 'https://picsum.photos/id/1040/900/600';
 
-function Menu({ 
-  items, 
-  activeCategory, 
-  isLoading, 
+function Menu({
+  items,
+  activeCategory,
+  isLoading,
   onSelectItem,
-  onCardImageError 
+  onCardImageError
 }) {
+  const { translate } = useTranslate();
+
   const handleImageError = (event) => {
     if (onCardImageError) {
       onCardImageError(event);
@@ -30,7 +33,7 @@ function Menu({
     <section className="menu-panel" aria-label="Menu items">
       <div className="panel-heading-row">
         <h3 className="panel-title">
-          Featured {activeCategory === 'drink' ? 'Drinks' : 'Food'}
+          {translate(activeCategory === 'drink' ? 'Featured Drinks' : 'Featured Food')}
         </h3>
       </div>
 
@@ -38,9 +41,9 @@ function Menu({
         {items.length === 0 && (
           <Card className="h-100 text-center tea-card">
             <Card.Body>
-              <Card.Title>No items yet</Card.Title>
+              <Card.Title>{translate('No items yet')}</Card.Title>
               <Card.Text className="tea-description">
-                No {activeCategory} items were returned from the database.
+                {translate('No items were returned from the database.')}
               </Card.Text>
             </Card.Body>
           </Card>
@@ -58,8 +61,8 @@ function Menu({
               onError={handleImageError}
             />
             <Card.Body className="d-flex flex-column">
-              <Card.Title>{item.name}</Card.Title>
-              <Card.Text className="tea-description">{item.description}</Card.Text>
+              <Card.Title>{translate(item.name)}</Card.Title>
+              <Card.Text className="tea-description">{translate(item.description)}</Card.Text>
               <Card.Text className="tea-price mt-auto mb-0 fw-bold fs-5">${item.price.toFixed(2)}</Card.Text>
               {/* <Button
                 size="sm"

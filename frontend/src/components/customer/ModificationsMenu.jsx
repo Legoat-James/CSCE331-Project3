@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Form } from 'react-bootstrap';
+import { useTranslate } from '../../contexts/TranslationContext';
 
 const iceLevelOptions = ['50%', '75%', '100%', '125%', '150%'];
 
@@ -30,6 +31,8 @@ function DrinkCustomizer({
   onSwapSugarChange,
   onOatMilkChange
 }) {
+  const { translate } = useTranslate();
+
   if (!show || !selectedDrink) {
     return null;
   }
@@ -44,7 +47,10 @@ function DrinkCustomizer({
       <div className="tea-modal-card tea-modal-card--drink">
         <div className="tea-modal-header">
           <h3 id="toppings-modal-title" className="tea-modal-title">
-            {editingOrderItemId ? 'Edit' : 'Customize'} your {selectedDrink?.name}
+            {translate(editingOrderItemId
+              ? `Edit your ${selectedDrink?.name}`
+              : `Customize your ${selectedDrink?.name}`
+            )}
           </h3>
           <button
             type="button"
@@ -57,11 +63,11 @@ function DrinkCustomizer({
         </div>
 
         <p className="tea-modal-price">
-          Size: <strong>{selectedDrinkSize}</strong> | Base Price: <strong>${selectedDrinkPrice?.toFixed(2)}</strong>
+          {translate('Size:')} <strong>{translate(selectedDrinkSize)}</strong> | {translate('Base Price:')} <strong>${selectedDrinkPrice?.toFixed(2)}</strong>
         </p>
 
         <div className="tea-modal-body">
-          <p className="tea-mod-heading">Select Size</p>
+          <p className="tea-mod-heading">{translate('Select Size')}</p>
           <div className="tea-size-options">
             {availableDrinkSizes.map((size) => (
               <Button
@@ -70,21 +76,21 @@ function DrinkCustomizer({
                 className={`tea-size-btn ${selectedDrinkSize === size ? 'is-active' : ''}`}
                 onClick={() => onSizeChange(size)}
               >
-                {size.charAt(0).toUpperCase() + size.slice(1)} (${selectedDrink?.sizeOptions?.[size]?.toFixed(2)})
+                {translate(size.charAt(0).toUpperCase() + size.slice(1))} (${selectedDrink?.sizeOptions?.[size]?.toFixed(2)})
               </Button>
             ))}
           </div>
 
-          <p className="tea-mod-heading">Toppings</p>
+          <p className="tea-mod-heading">{translate('Toppings')}</p>
           <div className="tea-toppings-list">
             {toppingItems.length === 0 && (
-              <p className="tea-modal-note">No toppings available from the database.</p>
+              <p className="tea-modal-note">{translate('No toppings available from the database.')}</p>
             )}
 
             {toppingItems.map((topping) => (
               <div key={topping.id} className="tea-topping-row">
                 <div className="tea-topping-meta">
-                  <span className="tea-topping-name">{topping.name}</span>
+                  <span className="tea-topping-name">{translate(topping.name)}</span>
                   <span className="tea-topping-price">+${topping.price.toFixed(2)}</span>
                 </div>
                 <div className="tea-topping-controls">
@@ -108,12 +114,12 @@ function DrinkCustomizer({
             ))}
           </div>
 
-          <p className="tea-mod-heading">Modifications</p>
+          <p className="tea-mod-heading">{translate('Modifications')}</p>
 
           {hasSugarSlider && (
             <div className="tea-slider-block">
               <Form.Label htmlFor="sugar-slider" className="tea-slider-label">
-                Sugar Multiplier: <strong>{sugarMultiplier.toFixed(2)}x</strong>
+                {translate('Sugar Multiplier:')} <strong>{sugarMultiplier.toFixed(2)}x</strong>
               </Form.Label>
               <Form.Range
                 id="sugar-slider"
@@ -129,7 +135,7 @@ function DrinkCustomizer({
           {hasIceControl && (
             <div className="tea-slider-block">
               <Form.Label htmlFor="ice-slider" className="tea-slider-label">
-                Ice Level: <strong>{iceLevelOptions[iceLevelIndex]}</strong>
+                {translate('Ice Level:')} <strong>{iceLevelOptions[iceLevelIndex]}</strong>
               </Form.Label>
               <Form.Range
                 id="ice-slider"
@@ -147,7 +153,7 @@ function DrinkCustomizer({
               <Form.Check
                 type="checkbox"
                 id="swap-sugar-check"
-                label="Swap Sugar"
+                label={translate('Swap Sugar')}
                 checked={swapSugar}
                 onChange={(e) => onSwapSugarChange(e.target.checked)}
                 className="tea-toggle-item"
@@ -158,7 +164,7 @@ function DrinkCustomizer({
               <Form.Check
                 type="checkbox"
                 id="oat-milk-check"
-                label="Oat Milk"
+                label={translate('Oat Milk')}
                 checked={useOatMilk}
                 onChange={(e) => onOatMilkChange(e.target.checked)}
                 className="tea-toggle-item"
@@ -167,18 +173,18 @@ function DrinkCustomizer({
           </div>
 
           <p className="tea-modal-note">
-            Toppings can be added in any quantity. Swap sugar and oat milk are included in order submission when selected.
+            {translate('Toppings can be added in any quantity. Swap sugar and oat milk are included in order submission when selected.')}
           </p>
 
-          <p className="tea-modal-total">Current drink total: ${selectedDrinkTotal.toFixed(2)}</p>
+          <p className="tea-modal-total">{translate('Current drink total:')} ${selectedDrinkTotal.toFixed(2)}</p>
         </div>
 
         <div className="tea-modal-actions">
           <Button className="tea-modal-btn-secondary" onClick={onClose}>
-            Cancel
+            {translate('Cancel')}
           </Button>
           <Button className="tea-modal-btn-primary" onClick={onSave}>
-            {editingOrderItemId ? 'Save Changes' : 'Add Drink'}
+            {translate(editingOrderItemId ? 'Save Changes' : 'Add Drink')}
           </Button>
         </div>
       </div>
