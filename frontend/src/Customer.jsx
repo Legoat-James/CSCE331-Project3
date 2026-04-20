@@ -2,7 +2,8 @@ import './Customer.css';
 import { useGet, useMutate } from './hooks/useApi';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Navbar, Nav, Container, Spinner } from 'react-bootstrap';
-import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal, Chatbot } from './components/customer';
+import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal, Chatbot, AccessibilityWidget } from './components/customer';
+import { useTranslate } from './contexts/TranslationContext';
 
 // Import images from assets
 import blackTeaImg from './assets/Black-tea.jpg';
@@ -186,6 +187,8 @@ const parseDrinkVariant = (drinkName) => {
 };
 
 function Customer() {
+  const { translate } = useTranslate();
+
   // UI state
   const [activeCategory, setActiveCategory] = useState('drink');
   const [isToppingsOpen, setIsToppingsOpen] = useState(false);
@@ -896,7 +899,7 @@ function Customer() {
                     className={`kiosk-category-btn ${activeCategory === 'drink' ? 'is-active' : ''}`}
                     onClick={() => setActiveCategory('drink')}
                   >
-                    <span className='me-2'>Drinks</span>
+                    <span className='me-2'>{translate('Drinks')}</span>
                   </button>
                 </Nav.Item>
                 <Nav.Item>
@@ -905,7 +908,7 @@ function Customer() {
                     className={`kiosk-category-btn ${activeCategory === 'food' ? 'is-active' : ''}`}
                     onClick={() => setActiveCategory('food')}
                   >
-                    <span className='me-2'>Food</span>
+                    <span className='me-2'>{translate('Food')}</span>
                   </button>
                 </Nav.Item>
               </Nav>
@@ -1002,7 +1005,7 @@ function Customer() {
                 className="d-flex justify-content-between align-items-center text-white"
                 style={{ backgroundColor: 'var(--tea-wood)' }}
               >
-                <h6 className="mb-0 fw-bold">AI Assistant</h6>
+                <h6 className="mb-0 fw-bold">{translate('AI Assistant')}</h6>
                 <button 
                   type="button" 
                   className="btn-close btn-close-white" 
@@ -1037,6 +1040,10 @@ function Customer() {
           </div>
         </div>
         {/* --- END Floating Chatbot Widget --- */}
+
+        {/* --- Floating Accessibility Widget --- */}
+        <AccessibilityWidget />
+        {/* --- END Floating Accessibility Widget --- */}
       </div>
     </div>
   );

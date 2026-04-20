@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Button, Spinner, Form } from 'react-bootstrap';
+import { useTranslate } from '../../contexts/TranslationContext';
 
 function OrderSummary({ 
   orderItems = [], 
@@ -18,6 +19,7 @@ function OrderSummary({
   customerName,
   setCustomerName
 }) {
+  const { translate } = useTranslate();
   const bottomRef = useRef(null);
 
   useEffect(()=>{
@@ -26,8 +28,8 @@ function OrderSummary({
 
   return (
     <aside className="order-panel" aria-label="Current order">
-      <h4 className="panel-title">Current Order</h4>
-      <p className="order-subtitle">Your selected drinks and snacks will appear here.</p>
+      <h4 className="panel-title">{translate('Current Order')}</h4>
+      <p className="order-subtitle">{translate('Your selected drinks and snacks will appear here.')}</p>
 
       {/* {!isError && (
         <div className="backend-status">
@@ -38,7 +40,7 @@ function OrderSummary({
 
       <div className="order-list brown-scroll">
         {orderItems.length === 0 && (
-          <p className="order-empty">No items in order yet.</p>
+          <p className="order-empty">{translate('No items in order yet.')}</p>
         )}
 
         {orderItems.map((item) => {
@@ -56,7 +58,7 @@ function OrderSummary({
           return (
           <div key={item.id} className="order-line-item">
             <div className="order-line-header">
-              <span className="order-line-name">{item.name}</span>
+              <span className="order-line-name">{translate(item.name)}</span>
               <div className="order-line-actions">
                 <span className="order-line-price">${item.totalPrice.toFixed(2)}</span>
                 {hasDrinkCoreMods && (
@@ -86,13 +88,13 @@ function OrderSummary({
              
             {hasDrinkCoreMods && (
               <div className="order-line-details">
-                {sugarMod && <div>{sugarMod.name}</div>}
-                {iceMod && <div>{iceMod.name}</div>}
-                {swapSugarSelected && <div>Swap Sugar: selected</div>}
-                {oatMilkSelected && <div>Oat Milk: selected</div>}
+                {sugarMod && <div>{translate(sugarMod.name)}</div>}
+                {iceMod && <div>{translate(iceMod.name)}</div>}
+                {swapSugarSelected && <div>{translate('Swap Sugar: selected')}</div>}
+                {oatMilkSelected && <div>{translate('Oat Milk: selected')}</div>}
                 {toppings.length > 0 && (
                   <div>
-                    Toppings: {toppings.map((topping) => topping.name).join(', ')}
+                    {translate('Toppings:')} {toppings.map((topping) => translate(topping.name)).join(', ')}
                   </div>
                 )}
               </div>
@@ -106,7 +108,7 @@ function OrderSummary({
 
       <div className='mt-auto'>
 
-        <p className="order-subtotal">Subtotal: ${subtotal.toFixed(2)}</p>
+        <p className="order-subtotal">{translate('Subtotal:')} ${subtotal.toFixed(2)}</p>
 
         {submitMessage && <div className="order-submit-message success">{submitMessage}</div>}
         {submitError && <div className="order-submit-message error">{submitError}</div>}
@@ -114,7 +116,7 @@ function OrderSummary({
           <Form.Group className="mb-3" controlId="customerName">
               <Form.Control
               type="text"
-              placeholder="enter name here..."
+              placeholder={translate('enter name here...')}
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               className="cashier-order-total"
@@ -139,10 +141,10 @@ function OrderSummary({
                 aria-hidden="true"
                 className="me-2"
               />
-              Submitting...
+              {translate('Submitting...')}
             </>
           ) : (
-            'Checkout'
+            translate('Checkout')
           )}
         </Button>
       </div>

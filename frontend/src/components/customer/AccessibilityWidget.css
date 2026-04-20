@@ -1,0 +1,186 @@
+/* Accessibility Widget — floating button + panel */
+
+.a11y-container {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* ── Panel ─────────────────────────────────────────── */
+.a11y-panel {
+  margin-bottom: 0.75rem;
+  width: 230px;
+  border: 2px solid var(--tea-wood-dark);
+  border-radius: 16px;
+  background: var(--tea-bg-soft);
+  box-shadow: 0 8px 24px rgba(80, 57, 37, 0.2);
+  overflow: hidden;
+  animation: a11y-panel-in 180ms ease-out;
+}
+
+.a11y-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.8rem;
+  background: var(--tea-wood);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}
+
+.a11y-panel-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.a11y-panel-close:hover,
+.a11y-panel-close:focus-visible {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.a11y-panel-body {
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* ── Option buttons (top-level menu) ────────────────── */
+.a11y-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--tea-border);
+  background: #fff8ef;
+  color: var(--tea-wood-dark);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.a11y-option-btn:hover,
+.a11y-option-btn:focus-visible {
+  background: var(--tea-accent-soft);
+}
+
+/* ── Language sub-panel ─────────────────────────────── */
+.a11y-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  color: var(--tea-wood);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.15rem 0;
+  margin-bottom: 0.4rem;
+}
+
+.a11y-back-btn:hover,
+.a11y-back-btn:focus-visible {
+  color: var(--tea-wood-dark);
+}
+
+.a11y-lang-heading {
+  margin: 0 0 0.45rem;
+  color: var(--tea-wood-dark);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.a11y-lang-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem;
+}
+
+.a11y-lang-btn {
+  padding: 0.4rem 0.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--tea-border);
+  background: #fff8ef;
+  color: var(--tea-wood-dark);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.a11y-lang-btn:hover,
+.a11y-lang-btn:focus-visible {
+  background: var(--tea-accent-soft);
+  border-color: var(--tea-accent);
+}
+
+.a11y-lang-btn.is-active {
+  background: var(--tea-wood);
+  color: #fff;
+  border-color: var(--tea-wood-dark);
+}
+
+/* ── Trigger button ─────────────────────────────────── */
+.a11y-trigger-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--tea-wood-dark);
+  background: var(--tea-wood);
+  color: #fff;
+  font-size: 1.35rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(80, 57, 37, 0.28);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.a11y-trigger-btn:hover {
+  background: var(--tea-wood-dark);
+  transform: scale(1.06);
+}
+
+.a11y-trigger-btn:active {
+  transform: scale(0.94);
+}
+
+/* ── Animation ──────────────────────────────────────── */
+@keyframes a11y-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
