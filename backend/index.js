@@ -2490,7 +2490,8 @@ app.get('/api/orders/fetch', async (req, res, next) => {
         m.name               AS item_name,
         tp.topping_menu_id,
         tp.quantity           AS topping_quantity,
-        tm.name              AS topping_name
+        tm.name              AS topping_name,
+        tp.topping_id
       FROM transactions t
       JOIN (
         SELECT order_id, item_id, SUM(quantity) AS total_quantity
@@ -2502,7 +2503,7 @@ app.get('/api/orders/fetch', async (req, res, next) => {
                              AND tp.item_menu_id  = oh_agg.item_id
       LEFT JOIN menu tm      ON tp.topping_menu_id = tm.menu_id
       WHERE t.is_filled = false
-      ORDER BY t.timestamp ASC, t.order_id, oh_agg.item_id;
+      ORDER BY t.timestamp ASC, t.order_id, oh_agg.item_id, tp.topping_id ASC;
     `;
 
     const result = await pool.query(query);
@@ -2530,7 +2531,7 @@ app.get('/api/orders/fetch', async (req, res, next) => {
         order._itemsMap.set(row.item_id, {
           quantity: row.item_quantity,
           name: row.item_name,
-          toppingsMap: new Map(),
+          toppingRows: [],
         });
       }
 
@@ -2538,16 +2539,14 @@ app.get('/api/orders/fetch', async (req, res, next) => {
 
       // --- modification (topping) level ---
       if (row.topping_menu_id) {
-        if (!item.toppingsMap.has(row.topping_menu_id)) {
-          item.toppingsMap.set(row.topping_menu_id, {
-            id: row.topping_menu_id,
-            name: row.topping_name,
-            ingredient_name: row.topping_name,
-            quantity: 0,
-            action: 'add',
-          });
-        }
-        item.toppingsMap.get(row.topping_menu_id).quantity += Number(row.topping_quantity);
+        item.toppingRows.push({
+          id: row.topping_menu_id,
+          name: row.topping_name,
+          ingredient_name: row.topping_name,
+          quantity: Number(row.topping_quantity),
+          action: 'add',
+          topping_id: row.topping_id
+        });
       }
     }
 
@@ -2563,28 +2562,29 @@ app.get('/api/orders/fetch', async (req, res, next) => {
           modifications: []
         }));
         
-        for (const topping of itemData.toppingsMap.values()) {
-          const qtyPerItem = Math.floor(topping.quantity / N);
-          const remainder = topping.quantity % N;
-          
-          for (let i = 0; i < N; i++) {
-            const assignedQty = qtyPerItem + (i < remainder ? 1 : 0);
-            if (assignedQty > 0) {
-              itemInstances[i].modifications.push({
-                name: topping.name,
-                ingredient_name: topping.ingredient_name,
-                quantity: assignedQty,
-                action: topping.action
-              });
-            }
+        // Assume toppingRows are ordered by topping_id (from SQL query)
+        // Check if current item already has this topping, move to next item
+        let currentItemIndex = 0;
+        for (const topping of itemData.toppingRows) {
+          const hasTopping = itemInstances[currentItemIndex].modifications.some(m => m.id === topping.id);
+          if (hasTopping && currentItemIndex < N - 1) {
+            currentItemIndex++;
           }
+          
+          itemInstances[currentItemIndex].modifications.push({
+            id: topping.id,
+            name: topping.name,
+            ingredient_name: topping.ingredient_name,
+            quantity: topping.quantity,
+            action: topping.action
+          });
         }
         
         // Group itemInstances by exact modification signature
         const groupedInstances = new Map();
         for (const instance of itemInstances) {
-          instance.modifications.sort((a, b) => a.name.localeCompare(b.name));
-          const sig = instance.modifications.map(m => `${m.name}_${m.quantity}`).join('|');
+          instance.modifications.sort((a, b) => a.id - b.id);
+          const sig = instance.modifications.map(m => `${m.id}_${m.quantity}`).join('|');
           
           if (!groupedInstances.has(sig)) {
             groupedInstances.set(sig, { ...instance, quantity: 0 });
