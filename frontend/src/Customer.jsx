@@ -738,6 +738,8 @@ function Customer() {
         customerName: customerName.trim() || 'Guest',
         items: payloadItems,
       });
+      setCustomerName('');
+      
     } catch (submitError) {
       setOrderSubmitError(submitError.message || 'Unable to submit order. Please try again.');
     }
