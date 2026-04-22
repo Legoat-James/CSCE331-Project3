@@ -1,17 +1,62 @@
 import { useState, useContext } from 'react';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { useTranslate, SUPPORTED_LANGUAGES } from '../../contexts/TranslationContext';
 import { ThemeContext } from '../../App';
 import './AccessibilityWidget.css';
+import 'regenerator-runtime/runtime';
 
 function AccessibilityWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [view, setView] = useState('menu'); // 'menu' | 'language'
+  const [view, setView] = useState('menu'); // 'menu' | 'language' | 'dictation'
   const { language, setLanguage, translate } = useTranslate();
   const { theme, setTheme } = useContext(ThemeContext);
+  const {
+    transcript,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable,
+    listening,
+  } = useSpeechRecognition();
 
   const handleToggle = () => {
-    setIsOpen(prev => !prev);
+    if (isOpen) {
+      SpeechRecognition.stopListening();
+      setView('menu');
+      setIsOpen(false);
+      return;
+    }
+
+    setIsOpen(true);
     setView('menu');
+  };
+
+  const handleClose = () => {
+    SpeechRecognition.stopListening();
+    setIsOpen(false);
+    setView('menu');
+  };
+
+  const handleOpenDictation = () => {
+    resetTranscript();
+    setView('dictation');
+
+    if (browserSupportsSpeechRecognition) {
+      SpeechRecognition.startListening({ continuous: true, interimResults: true, language: 'en-US' });
+    }
+  };
+
+  const handleBackToMenu = () => {
+    SpeechRecognition.stopListening();
+    setView('menu');
+  };
+
+  const handleDictationToggle = () => {
+    if (listening) {
+      SpeechRecognition.stopListening();
+      return;
+    }
+
+    SpeechRecognition.startListening({ continuous: true, interimResults: true, language: 'en-US' });
   };
 
   const handleSelectLanguage = (code) => {
@@ -25,6 +70,7 @@ function AccessibilityWidget() {
       {isOpen && (
         <div
           className="a11y-panel"
+          style={view === 'dictation' ? { width: '280px' } : undefined}
           role="dialog"
           aria-modal="false"
           aria-label={translate('Accessibility')}
@@ -34,7 +80,7 @@ function AccessibilityWidget() {
             <button
               type="button"
               className="a11y-panel-close"
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
               aria-label={translate('Close accessibility menu')}
             >
               ×
@@ -67,6 +113,14 @@ function AccessibilityWidget() {
                 onClick={() => setTheme(prevTheme => prevTheme === 'standard' ? 'high-contrast' : 'standard')}
                 aria-label='Toggle High Contrast Button'
               >High Contrast</button>
+              <button
+                type="button"
+                className="a11y-option-btn"
+                onClick={handleOpenDictation}
+                aria-label="Open dictation test window"
+              >
+                Dictation
+              </button>
               </>
             )}
 
@@ -93,6 +147,81 @@ function AccessibilityWidget() {
                       {lang.label}
                     </button>
                   ))}
+                </div>
+              </>
+            )}
+
+            {view === 'dictation' && (
+              <>
+                <button
+                  type="button"
+                  className="a11y-back-btn"
+                  onClick={handleBackToMenu}
+                >
+                  ← {translate('Back')}
+                </button>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--tea-wood-dark)' }}>
+                    Dictation Test
+                  </div>
+
+                  <div style={{ fontSize: '0.78rem', color: 'var(--tea-wood-dark)' }}>
+                    Status: {listening ? 'Listening' : 'Idle'}
+                  </div>
+
+                  {!browserSupportsSpeechRecognition ? (
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--tea-wood-dark)' }}>
+                      Speech recognition is not supported in this browser.
+                    </p>
+                  ) : isMicrophoneAvailable === false ? (
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--tea-wood-dark)' }}>
+                      Microphone access is needed for dictation.
+                    </p>
+                  ) : (
+                    <>
+                      <div
+                        aria-live="polite"
+                        style={{
+                          minHeight: '88px',
+                          padding: '0.55rem',
+                          borderRadius: '10px',
+                          border: '1px solid var(--tea-border)',
+                          background: '#fff8ef',
+                          color: 'var(--tea-wood-dark)',
+                          fontSize: '0.82rem',
+                          lineHeight: 1.35,
+                          overflowY: 'auto',
+                          whiteSpace: 'pre-wrap',
+                        }}
+                      >
+                        {transcript || 'Speak here and your words will appear in this box.'}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                        <button
+                          type="button"
+                          className="a11y-option-btn"
+                          onClick={() => {
+                            handleDictationToggle();
+                          }}
+                          aria-label={listening ? 'Stop dictation' : 'Start dictation'}
+                          style={{ justifyContent: 'center', flex: '1 1 0' }}
+                        >
+                          {listening ? 'Stop' : 'Start'}
+                        </button>
+                        <button
+                          type="button"
+                          className="a11y-option-btn"
+                          onClick={resetTranscript}
+                          aria-label="Clear dictation transcript"
+                          style={{ justifyContent: 'center', flex: '1 1 0' }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </>
             )}
