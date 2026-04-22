@@ -691,8 +691,6 @@ function Customer() {
   }, []);
 
   const handleFinishOrder = useCallback(() => {
-    setTheme('standard');
-
     if (orderItems.length === 0) return;
 
     setOrderSubmitMessage('');
@@ -738,6 +736,8 @@ function Customer() {
         customerName: customerName.trim() || 'Guest',
         items: payloadItems,
       });
+      setCustomerName('');
+      setTheme('standard');
     } catch (submitError) {
       setOrderSubmitError(submitError.message || 'Unable to submit order. Please try again.');
     }
