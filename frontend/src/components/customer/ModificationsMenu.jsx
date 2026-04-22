@@ -118,33 +118,41 @@ function DrinkCustomizer({
 
           {hasSugarSlider && (
             <div className="tea-slider-block">
-              <Form.Label htmlFor="sugar-slider" className="tea-slider-label">
+              <p className="tea-slider-label">
                 {translate('Sugar Multiplier:')} <strong>{sugarMultiplier.toFixed(2)}x</strong>
-              </Form.Label>
-              <Form.Range
-                id="sugar-slider"
-                min={0.5}
-                max={1.5}
-                step={0.25}
-                value={sugarMultiplier}
-                onChange={(e) => onSugarChange(Number(e.target.value))}
-              />
+              </p>
+              <div className="tea-size-options">
+                {[0.5, 0.75, 1, 1.25, 1.5].map((level) => (
+                  <Button
+                    key={level}
+                    type="button"
+                    className={`tea-size-btn ${sugarMultiplier === level ? 'is-active' : ''}`}
+                    onClick={() => onSugarChange(level)}
+                  >
+                    {level}x
+                  </Button>
+                ))}
+              </div>
             </div>
           )}
 
           {hasIceControl && (
             <div className="tea-slider-block">
-              <Form.Label htmlFor="ice-slider" className="tea-slider-label">
+              <p className="tea-slider-label">
                 {translate('Ice Level:')} <strong>{iceLevelOptions[iceLevelIndex]}</strong>
-              </Form.Label>
-              <Form.Range
-                id="ice-slider"
-                min={0}
-                max={4}
-                step={1}
-                value={iceLevelIndex}
-                onChange={(e) => onIceChange(Number(e.target.value))}
-              />
+              </p>
+              <div className="tea-size-options">
+                {iceLevelOptions.map((label, idx) => (
+                  <Button
+                    key={idx}
+                    type="button"
+                    className={`tea-size-btn ${iceLevelIndex === idx ? 'is-active' : ''}`}
+                    onClick={() => onIceChange(idx)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
             </div>
           )}
 

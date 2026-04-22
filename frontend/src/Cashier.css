@@ -24,6 +24,7 @@
 .cashier-shell {
   width: min(1400px, 100%);
   margin: 0 auto;
+  height: 100%;
 }
 
 .cashier-layout {
@@ -35,6 +36,7 @@
   border-radius: 16px;
   padding: 1rem;
   background: rgba(251, 244, 234, 0.55);
+  height: 100%;
 }
 
 .cashier-menu-panel,
@@ -47,13 +49,20 @@
 }
 
 .cashier-menu-panel {
-  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  height: 100%;
 }
 
 .cashier-order-panel {
-  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   position: sticky;
   top: 1rem;
+  max-height: calc(100vh - 4rem);
 }
 
 .cashier-panel-title {

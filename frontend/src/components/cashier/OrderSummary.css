@@ -3,6 +3,9 @@
   flex-direction: column;
   gap: 0.65rem;
   margin-bottom: 0.9rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .order-empty {

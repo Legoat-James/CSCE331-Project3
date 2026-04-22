@@ -43,16 +43,16 @@ const enableAuthentication = false;
 // Middleware
 app.use(cors({
   origin: ['https://project3-backend.duckdns.org',
-          'http://localhost:3000',  // for local dev
-          'http://localhost:5000'   // for serving React from Express
-          ]
+    'http://localhost:3000',  // for local dev
+    'http://localhost:5000'   // for serving React from Express
+  ]
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 
-if(process.env.NODE_ENV === "development"){
+if (process.env.NODE_ENV === "development") {
   const swaggerFilePath = path.resolve(process.cwd(), "swagger-out.json");
 
   if (fs.existsSync(swaggerFilePath)) {
@@ -71,34 +71,34 @@ const pool = new pg.Pool({
   database: process.env.DB_NAME,
   password: process.env.DB_PASS,
   port: 5432,
-  ssl: {rejectUnauthorized: false}
+  ssl: { rejectUnauthorized: false }
 });
 
 
-const requireAuth = (needsManager = false) =>{
-    return async (req,res,next)=>{
-      try {
+const requireAuth = (needsManager = false) => {
+  return async (req, res, next) => {
+    try {
       //grab the session token cookie
       const token = req.cookies.session_token;
       if (!token) {
-        throw new ApiError(401, "Unauthorized: No session token provided.",null,req.path);
+        throw new ApiError(401, "Unauthorized: No session token provided.", null, req.path);
       }
 
       //check if user exists
       const result = await pool.query(
-        'SELECT * FROM employees WHERE session_token = $1 AND is_active = true', 
+        'SELECT * FROM employees WHERE session_token = $1 AND is_active = true',
         [token]
       );
-      
+
       if (result.rows.length === 0) {
-        throw new ApiError(401, "Unauthorized: Invalid or expired session.",null,req.path);
+        throw new ApiError(401, "Unauthorized: Invalid or expired session.", null, req.path);
       }
 
       const user = result.rows[0];
 
       //check manager role
       if (needsManager && !user.is_manager) {
-        throw new ApiError(403, "Forbidden: Manager access required.",null,req.path);
+        throw new ApiError(403, "Forbidden: Manager access required.", null, req.path);
       }
 
       //attach user to the request so the endpoint can use it
@@ -116,8 +116,8 @@ Menu Endpoints
 
 */
 
-app.get('/api/menu/all', async (req,res,next)=>{
-  try{
+app.get('/api/menu/all', async (req, res, next) => {
+  try {
     // #swagger.tags = ['Menu']
     // #swagger.summary = "Get all items in the menu (that are enabled)"
     /* #swagger.responses[200] = { 
@@ -135,13 +135,13 @@ app.get('/api/menu/all', async (req,res,next)=>{
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/drinks', async (req,res,next)=>{
-  try{
+app.get('/api/menu/drinks', async (req, res, next) => {
+  try {
     // #swagger.tags = ['Menu']
     // #swagger.summary = "Get all drinks in the menu"
     /* #swagger.responses[200] = { 
@@ -160,13 +160,13 @@ app.get('/api/menu/drinks', async (req,res,next)=>{
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/drinks/teas', async (req,res,next)=>{
-  try{
+app.get('/api/menu/drinks/teas', async (req, res, next) => {
+  try {
     // #swagger.tags = ['Menu']
     // #swagger.summary = "Get all Tea drinks in the menu"
     /* #swagger.responses[200] = { 
@@ -185,13 +185,13 @@ app.get('/api/menu/drinks/teas', async (req,res,next)=>{
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/drinks/refreshers', async (req,res,next)=>{
-  try{
+app.get('/api/menu/drinks/refreshers', async (req, res, next) => {
+  try {
     // #swagger.tags = ['Menu']
     // #swagger.summary = "Get all refresher drinks in the menu"
     /* #swagger.responses[200] = { 
@@ -210,13 +210,13 @@ app.get('/api/menu/drinks/refreshers', async (req,res,next)=>{
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/drinks/coffee-matcha', async (req,res,next)=>{
-  try{
+app.get('/api/menu/drinks/coffee-matcha', async (req, res, next) => {
+  try {
     // #swagger.tags = ['Menu']
     // #swagger.summary = "Get all Coffee/Matcha drinks in the menu"
     /* #swagger.responses[200] = { 
@@ -235,13 +235,13 @@ app.get('/api/menu/drinks/coffee-matcha', async (req,res,next)=>{
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/drinks/specials', async (req,res,next)=>{
-  try{
+app.get('/api/menu/drinks/specials', async (req, res, next) => {
+  try {
     // #swagger.tags = ['Menu']
     // #swagger.summary = "Get all Tea drinks in the menu"
     /* #swagger.responses[200] = { 
@@ -260,13 +260,13 @@ app.get('/api/menu/drinks/specials', async (req,res,next)=>{
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/drinks/seasonal', async (req,res,next)=>{
-  try{
+app.get('/api/menu/drinks/seasonal', async (req, res, next) => {
+  try {
     // #swagger.tags = ['Menu']
     // #swagger.summary = "Get all Tea drinks in the menu"
     /* #swagger.responses[200] = { 
@@ -285,108 +285,108 @@ app.get('/api/menu/drinks/seasonal', async (req,res,next)=>{
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/manager-all', requireAuth(true), async (req,res,next)=>{
+app.get('/api/menu/manager-all', requireAuth(true), async (req, res, next) => {
   // #swagger.tags = ['Menu']
-    // #swagger.summary = "Get all items in the menu for managers"
-    // #swagger.security = [{"cookieAuth": []}]
-    /* #swagger.responses[200] = { 
-            description: 'Successfully retrieved the menu list',
-            schema: [{ 
-                menu_id: 67, 
-                name: 'Fries', 
-                category: 'Food',
-                cost: 4.99,
-                is_active: true 
-            }]
-    } */
-  try{
+  // #swagger.summary = "Get all items in the menu for managers"
+  // #swagger.security = [{"cookieAuth": []}]
+  /* #swagger.responses[200] = { 
+          description: 'Successfully retrieved the menu list',
+          schema: [{ 
+              menu_id: 67, 
+              name: 'Fries', 
+              category: 'Food',
+              cost: 4.99,
+              is_active: true 
+          }]
+  } */
+  try {
     const result = await pool.query("SELECT * FROM menu ORDER BY menu_id");
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/toppings', async (req,res,next)=>{
+app.get('/api/menu/toppings', async (req, res, next) => {
   // #swagger.tags = ['Menu']
-    // #swagger.summary = "Get all toppings items in the menu (that are enabled)"
-    /* #swagger.responses[200] = { 
-            description: 'Successfully retrieved the topping menu list',
-            schema: [{ 
-                menu_id: 67, 
-                name: 'Boba Pearls', 
-                category: 'Topping',
-                cost: 4.99,
-                is_active: true 
-            }]
-    } */
-  try{
+  // #swagger.summary = "Get all toppings items in the menu (that are enabled)"
+  /* #swagger.responses[200] = { 
+          description: 'Successfully retrieved the topping menu list',
+          schema: [{ 
+              menu_id: 67, 
+              name: 'Boba Pearls', 
+              category: 'Topping',
+              cost: 4.99,
+              is_active: true 
+          }]
+  } */
+  try {
     const result = await pool.query("SELECT * FROM menu WHERE category = 'topping' AND is_active = true ORDER BY menu_id");
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/mods', async (req,res,next)=>{
+app.get('/api/menu/mods', async (req, res, next) => {
   // #swagger.tags = ['Menu']
-    // #swagger.summary = "Get all modification items in the menu (that are enabled)"
-    /* #swagger.responses[200] = { 
-            description: 'Successfully retrieved the modifications menu list',
-            schema: [{ 
-                menu_id: 67, 
-                name: 'Add Sugar', 
-                category: 'Modification',
-                cost: 4.99,
-                is_active: true 
-            }]
-    } */
-  try{
+  // #swagger.summary = "Get all modification items in the menu (that are enabled)"
+  /* #swagger.responses[200] = { 
+          description: 'Successfully retrieved the modifications menu list',
+          schema: [{ 
+              menu_id: 67, 
+              name: 'Add Sugar', 
+              category: 'Modification',
+              cost: 4.99,
+              is_active: true 
+          }]
+  } */
+  try {
     const result = await pool.query("SELECT * FROM menu WHERE category = 'modifications' AND is_active = true ORDER BY menu_id");
     const menuList = result.rows;
     res.json(menuList);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/menu/details', async (req,res,next)=>{
-    // #swagger.tags = ['Menu']
-    // #swagger.summary = "Get a specific menu item"
-    /* #swagger.responses[200] = { 
-            description: 'Successfully retrieved the menu item',
-            schema: { 
-                menu_id: 67, 
-                name: 'Add Sugar', 
-                category: 'Modification',
-                cost: 4.99,
-                is_active: true 
-            }
-    } */
-    /*#swagger.parameters['menuID'] = {
-      in: 'query',                        
-            description: 'The ID of the menu item',
-            required: true,                        
-            type: 'integer',                   
-            example: 0                    
-    }*/
-  try{
+app.get('/api/menu/details', async (req, res, next) => {
+  // #swagger.tags = ['Menu']
+  // #swagger.summary = "Get a specific menu item"
+  /* #swagger.responses[200] = { 
+          description: 'Successfully retrieved the menu item',
+          schema: { 
+              menu_id: 67, 
+              name: 'Add Sugar', 
+              category: 'Modification',
+              cost: 4.99,
+              is_active: true 
+          }
+  } */
+  /*#swagger.parameters['menuID'] = {
+    in: 'query',                        
+          description: 'The ID of the menu item',
+          required: true,                        
+          type: 'integer',                   
+          example: 0                    
+  }*/
+  try {
     const menuID = req.query.menuID;
-    if(!menuID) {
-       throw new ApiError(400, "Missing Menu ID",null,req.path);
+    if (!menuID) {
+      throw new ApiError(400, "Missing Menu ID", null, req.path);
     }
-    if(Number.isNaN(Number(menuID))) {
-       throw new ApiError(400, "Menu ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(menuID))) {
+      throw new ApiError(400, "Menu ID must be an integer", null, req.path);
     }
     const query = "SELECT * FROM menu WHERE menu_id = $1;"
     const insertValues = [menuID];
@@ -395,73 +395,73 @@ app.get('/api/menu/details', async (req,res,next)=>{
     const menuItem = result.rowCount != 0 ? result.rows[0] : {};
     res.json(menuItem);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.put('/api/menu/update', requireAuth(true), async (req,res,next)=>{
-    /* #swagger.tags = ['Menu']
-    #swagger.summary = "Update a specific menu item"
-    #swagger.security = [{"cookieAuth": []}]
-      #swagger.responses[200] = { 
-            description: 'Successfully updated the menu item',
-            schema: { 
-                menu_id: 67, 
-                name: 'Add Sugar', 
-                category: 'Modification',
-                cost: 4.99,
-                is_active: true 
-            }
-    } 
-    #swagger.parameters['menuID'] = {
-      in: 'query',                        
-            description: 'The ID of the menu item',
-            required: true,                        
-            type: 'integer',                   
-            example: 0                    
-    }
-    #swagger.parameters['item'] = {
-            in: 'body',
-            description: 'new Menu item data. Drinks required a \'subcategory\' ',
-            required: true,
-            schema: {
-                name: "example-food",
-                category: "food",
-                cost: "9.99"
-            }
-        }        
-    */
-  try{
+app.put('/api/menu/update', requireAuth(true), async (req, res, next) => {
+  /* #swagger.tags = ['Menu']
+  #swagger.summary = "Update a specific menu item"
+  #swagger.security = [{"cookieAuth": []}]
+    #swagger.responses[200] = { 
+          description: 'Successfully updated the menu item',
+          schema: { 
+              menu_id: 67, 
+              name: 'Add Sugar', 
+              category: 'Modification',
+              cost: 4.99,
+              is_active: true 
+          }
+  } 
+  #swagger.parameters['menuID'] = {
+    in: 'query',                        
+          description: 'The ID of the menu item',
+          required: true,                        
+          type: 'integer',                   
+          example: 0                    
+  }
+  #swagger.parameters['item'] = {
+          in: 'body',
+          description: 'new Menu item data. Drinks required a \'subcategory\' ',
+          required: true,
+          schema: {
+              name: "example-food",
+              category: "food",
+              cost: "9.99"
+          }
+      }        
+  */
+  try {
     const menuID = req.query.menuID;
-    if(!menuID) {
-       throw new ApiError(400, "Missing Menu ID",null,req.path);
+    if (!menuID) {
+      throw new ApiError(400, "Missing Menu ID", null, req.path);
     }
-    if(Number.isNaN(Number(menuID))) {
-       throw new ApiError(400, "Menu ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(menuID))) {
+      throw new ApiError(400, "Menu ID must be an integer", null, req.path);
     }
-    if(!req.body){
-      throw new ApiError(400, "Missing 'item'",null,req.path);
+    if (!req.body) {
+      throw new ApiError(400, "Missing 'item'", null, req.path);
     }
     const name = req.body.name;
     const category = req.body.category;
     const cost = req.body.cost;
     const subcategory = req.body.subcategory ? req.body.subcategory : "";
-    if(!name || !category || !cost){
-      throw new ApiError(400, "Missing fields in 'item'",null,req.path);
-    }
-    
-    if(Number.isNaN(parseFloat(cost))) {
-       throw new ApiError(400, "Item cost must be an floating point number.",null,req.path);
+    if (!name || !category || !cost) {
+      throw new ApiError(400, "Missing fields in 'item'", null, req.path);
     }
 
-    if(category === "drink" && !subcategory){
-      throw new ApiError(400, "Drinks must have a subcategory",null,req.path);
+    if (Number.isNaN(parseFloat(cost))) {
+      throw new ApiError(400, "Item cost must be an floating point number.", null, req.path);
     }
-    if(subcategory !== "Teas" && subcategory !== "Refreshers" && subcategory !== "Coffee/Matcha" &&
-      subcategory !== "Specials" && subcategory !== "Seasonal"){
-        throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, or Seasonal",null,req.path);
-      }
+
+    if (category === "drink" && !subcategory) {
+      throw new ApiError(400, "Drinks must have a subcategory", null, req.path);
+    }
+    if (subcategory !== "Teas" && subcategory !== "Refreshers" && subcategory !== "Coffee/Matcha" &&
+      subcategory !== "Specials" && subcategory !== "Seasonal") {
+      throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, or Seasonal", null, req.path);
+    }
 
     const query = "UPDATE menu SET name = $1, category = $2, cost = $3, subcategory = $4 WHERE menu_id = $5 RETURNING *;"
     const insertValues = [name, category, cost, subcategory, menuID];
@@ -469,13 +469,13 @@ app.put('/api/menu/update', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not find a menu item to update with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not find a menu item to update with this ID", null, req.path);
     }
     const updatedItem = result.rows[0];
     res.json(updatedItem);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
@@ -484,7 +484,7 @@ app.put('/api/menu/update', requireAuth(true), async (req,res,next)=>{
 // 1. will 100% always result in an error, because every menu item is (usually) associated with orders, recipes, etc, will throw a foreign key error
 // 2. can delete it with a cascade delete, but then all recipes, ingredients, and orders associated also get deleted.
 //Instead we will toggle a boolean.
-app.delete('/api/menu/disable', requireAuth(true), async (req,res,next)=>{
+app.delete('/api/menu/disable', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Menu']
     #swagger.summary = "Disable(Delete) a specific menu item"
     #swagger.security = [{"cookieAuth": []}]
@@ -506,13 +506,13 @@ app.delete('/api/menu/disable', requireAuth(true), async (req,res,next)=>{
             example: 0                    
     }      
     */
-  try{
+  try {
     const menuID = req.query.menuID;
-    if(!menuID) {
-       throw new ApiError(400, "Missing Menu ID",null,req.path);
+    if (!menuID) {
+      throw new ApiError(400, "Missing Menu ID", null, req.path);
     }
-    if(Number.isNaN(Number(menuID))) {
-       throw new ApiError(400, "Menu ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(menuID))) {
+      throw new ApiError(400, "Menu ID must be an integer", null, req.path);
     }
 
     const query = "UPDATE menu SET is_active = false WHERE menu_id = $1 RETURNING *;"
@@ -521,18 +521,18 @@ app.delete('/api/menu/disable', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not find a menu item to disable with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not find a menu item to disable with this ID", null, req.path);
     }
     const updatedItem = result.rows[0];
     res.json(updatedItem);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.patch('/api/menu/enable', requireAuth(true), async (req,res,next)=>{
+app.patch('/api/menu/enable', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Menu']
     #swagger.summary = "Re-enables a specific menu item. Can be used for stuff like seasonal items."
     #swagger.security = [{"cookieAuth": []}]
@@ -554,13 +554,13 @@ app.patch('/api/menu/enable', requireAuth(true), async (req,res,next)=>{
             example: 0                    
     }      
     */
-  try{
+  try {
     const menuID = req.query.menuID;
-    if(!menuID) {
-       throw new ApiError(400, "Missing Menu ID",null,req.path);
+    if (!menuID) {
+      throw new ApiError(400, "Missing Menu ID", null, req.path);
     }
-    if(Number.isNaN(Number(menuID))) {
-       throw new ApiError(400, "Menu ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(menuID))) {
+      throw new ApiError(400, "Menu ID must be an integer", null, req.path);
     }
 
     const query = "UPDATE menu SET is_active = true WHERE menu_id = $1 RETURNING *;"
@@ -569,67 +569,67 @@ app.patch('/api/menu/enable', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not find a menu item to enable with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not find a menu item to enable with this ID", null, req.path);
     }
     const updatedItem = result.rows[0];
     res.json(updatedItem);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.post('/api/menu/create', requireAuth(true), async (req,res,next)=>{
-   /* #swagger.tags = ['Menu']
-    #swagger.summary = "Creates a new menu item"
-    #swagger.security = [{"cookieAuth": []}]
-      #swagger.responses[200] = { 
-            description: 'Successfully created the menu item',
-            schema: { 
-                menu_id: 67, 
-                name: 'Add Sugar', 
-                category: 'Modification',
-                cost: 4.99,
-                is_active: true 
-            }
-    } 
-    #swagger.parameters['item'] = {
-            in: 'body',
-            description: 'new Menu item data. Drinks must have a \'subcategory\'',
-            required: true,
-            schema: {
-                name: "example-food",
-                category: "food",
-                cost: "9.99"
-            }
-        }        
-    */
-  try{
+app.post('/api/menu/create', requireAuth(true), async (req, res, next) => {
+  /* #swagger.tags = ['Menu']
+   #swagger.summary = "Creates a new menu item"
+   #swagger.security = [{"cookieAuth": []}]
+     #swagger.responses[200] = { 
+           description: 'Successfully created the menu item',
+           schema: { 
+               menu_id: 67, 
+               name: 'Add Sugar', 
+               category: 'Modification',
+               cost: 4.99,
+               is_active: true 
+           }
+   } 
+   #swagger.parameters['item'] = {
+           in: 'body',
+           description: 'new Menu item data. Drinks must have a \'subcategory\'',
+           required: true,
+           schema: {
+               name: "example-food",
+               category: "food",
+               cost: "9.99"
+           }
+       }        
+   */
+  try {
     console.log(req.body);
-    if(!req.body){
-      throw new ApiError(400, "Missing 'item'",null,req.path);
+    if (!req.body) {
+      throw new ApiError(400, "Missing 'item'", null, req.path);
     }
     const name = req.body.name;
     const category = req.body.category;
     const cost = req.body.cost;
     const subcategory = req.body.subcategory ? req.body.subcategory : "";
 
-    if(!name || !category || !cost){
-      throw new ApiError(400, "Missing fields in 'item'",null,req.path);
-    }
-    
-    if(Number.isNaN(parseFloat(cost))) {
-       throw new ApiError(400, "Item cost must be an floating point number.",null,req.path);
+    if (!name || !category || !cost) {
+      throw new ApiError(400, "Missing fields in 'item'", null, req.path);
     }
 
-    if(category === "drink" && !subcategory){
-      throw new ApiError(400, "Drinks must have a subcategory",null,req.path);
+    if (Number.isNaN(parseFloat(cost))) {
+      throw new ApiError(400, "Item cost must be an floating point number.", null, req.path);
     }
-    if(subcategory !== "Teas" && subcategory !== "Refreshers" && subcategory !== "Coffee/Matcha" &&
-      subcategory !== "Specials" && subcategory !== "Seasonal"){
-        throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, or Seasonal",null,req.path);
-      }
+
+    if (category === "drink" && !subcategory) {
+      throw new ApiError(400, "Drinks must have a subcategory", null, req.path);
+    }
+    if (subcategory !== "Teas" && subcategory !== "Refreshers" && subcategory !== "Coffee/Matcha" &&
+      subcategory !== "Specials" && subcategory !== "Seasonal") {
+      throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, or Seasonal", null, req.path);
+    }
 
     const query = "INSERT INTO menu (name, category, cost, subcategory) VALUES ($1, $2, $3, $4) RETURNING *;"
     const insertValues = [name, category, cost, subcategory];
@@ -637,13 +637,13 @@ app.post('/api/menu/create', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not create a menu item to update with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not create a menu item to update with this ID", null, req.path);
     }
     const updatedItem = result.rows[0];
     res.json(updatedItem);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
@@ -658,25 +658,25 @@ endpoint example: /api/update-employee?employeeID=1
 
 //employeeID not required
 app.get('/api/employee/all', requireAuth(false), async (req, res, next) => {
-    /* #swagger.tags = ['Employees']
-    #swagger.summary = "Get all employees (that are enabled)"
-    #swagger.security = [{"cookieAuth": []}]
-    #swagger.responses[200] = { 
-            description: 'Successfully retrieved the employees list',
-            schema: [{ 
-                employee_id: 0, 
-                name: 'John_Doe', 
-                password: 'Password123',
-                is_manager: true,
-                username: 'John_Doe@gmail.com',
-                is_active: true 
-            }]
-    } */
-  try{
+  /* #swagger.tags = ['Employees']
+  #swagger.summary = "Get all employees (that are enabled)"
+  #swagger.security = [{"cookieAuth": []}]
+  #swagger.responses[200] = { 
+          description: 'Successfully retrieved the employees list',
+          schema: [{ 
+              employee_id: 0, 
+              name: 'John_Doe', 
+              password: 'Password123',
+              is_manager: true,
+              username: 'John_Doe@gmail.com',
+              is_active: true 
+          }]
+  } */
+  try {
     const result = await pool.query('SELECT * FROM employees WHERE is_active = true ORDER BY employee_id');
     const employeeList = result.rows;
     res.json(employeeList);
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
@@ -687,7 +687,7 @@ app.get('/api/employee/all', requireAuth(false), async (req, res, next) => {
 /* 
 
 */
-app.put('/api/employee/update', requireAuth(true), async (req,res,next)=>{
+app.put('/api/employee/update', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Employees']
     #swagger.summary = "Updates an employee's attributes"
     #swagger.security = [{"cookieAuth": []}]
@@ -721,26 +721,26 @@ app.put('/api/employee/update', requireAuth(true), async (req,res,next)=>{
             }
         }        
     */
-  try{
+  try {
     const employeeID = req.query.employeeID;
-    if(!employeeID) {
-       throw new ApiError(400, "Missing Employee ID",null,req.path);
+    if (!employeeID) {
+      throw new ApiError(400, "Missing Employee ID", null, req.path);
     }
-    if(Number.isNaN(Number(employeeID))) {
-       throw new ApiError(400, "Employee ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(employeeID))) {
+      throw new ApiError(400, "Employee ID must be an integer", null, req.path);
     }
-    if(!req.body){
-      throw new ApiError(400, "Missing 'employee'",null,req.path);
+    if (!req.body) {
+      throw new ApiError(400, "Missing 'employee'", null, req.path);
     }
     const name = req.body.name;
     const plainPassword = req.body.password;
     const is_manager = req.body.is_manager;
     const username = req.body.username;
-    if(!name || !plainPassword || !is_manager || !username){
-      throw new ApiError(400, "Missing fields in 'employee'",null,req.path);
+    if (!name || !plainPassword || !is_manager || !username) {
+      throw new ApiError(400, "Missing fields in 'employee'", null, req.path);
     }
     const password = await bcrypt.hash(plainPassword, 10);
-    
+
 
     const query = "UPDATE employees SET name = $1, password = $2, is_manager = $3, username = $4 WHERE employee_id = $5 RETURNING *;"
     const insertValues = [name, password, is_manager, username, employeeID];
@@ -748,18 +748,18 @@ app.put('/api/employee/update', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not find a employee to update with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not find a employee to update with this ID", null, req.path);
     }
     const updatedEmployee = result.rows[0];
     res.json(updatedEmployee);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.post('/api/employee/create', requireAuth(true), async (req,res,next)=>{
+app.post('/api/employee/create', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Employees']
     #swagger.summary = "Creates an employee"
     #swagger.security = [{"cookieAuth": []}]
@@ -786,19 +786,19 @@ app.post('/api/employee/create', requireAuth(true), async (req,res,next)=>{
             }
         }        
     */
-  try{
-    if(!req.body){
-      throw new ApiError(400, "Missing 'employee'",null,req.path);
+  try {
+    if (!req.body) {
+      throw new ApiError(400, "Missing 'employee'", null, req.path);
     }
     const name = req.body.name;
     const plainPassword = req.body.password;
     const is_manager = req.body.is_manager;
     const username = req.body.username;
-    if(!name || !plainPassword || !is_manager || !username){
-      throw new ApiError(400, "Missing fields in 'employee'",null,req.path);
+    if (!name || !plainPassword || !is_manager || !username) {
+      throw new ApiError(400, "Missing fields in 'employee'", null, req.path);
     }
     const password = await bcrypt.hash(plainPassword, 10);
-    
+
 
     const query = "INSERT INTO employees (name, password, is_manager, username) VALUES ($1, $2, $3, $4) RETURNING *;"
     const insertValues = [name, password, is_manager, username];
@@ -806,18 +806,18 @@ app.post('/api/employee/create', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(500, "Could not create an employee", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(500, "Could not create an employee", null, req.path);
     }
     const newEmployee = result.rows[0];
     res.json(newEmployee);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.patch('/api/employee/enable', requireAuth(true), async (req,res,next)=>{
+app.patch('/api/employee/enable', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Employees']
     #swagger.summary = "Re-enables an employee"
     #swagger.security = [{"cookieAuth": []}]
@@ -840,15 +840,15 @@ app.patch('/api/employee/enable', requireAuth(true), async (req,res,next)=>{
             example: 0                    
     }     
     */
-  try{
+  try {
     const employeeID = req.query.employeeID;
-    if(!employeeID) {
-       throw new ApiError(400, "Missing Employee ID",null,req.path);
+    if (!employeeID) {
+      throw new ApiError(400, "Missing Employee ID", null, req.path);
     }
-    if(Number.isNaN(Number(employeeID))) {
-       throw new ApiError(400, "Employee ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(employeeID))) {
+      throw new ApiError(400, "Employee ID must be an integer", null, req.path);
     }
-    
+
 
     const query = "UPDATE employees SET is_active = true WHERE employee_id = $1 RETURNING *;"
     const insertValues = [employeeID];
@@ -856,18 +856,18 @@ app.patch('/api/employee/enable', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not enable an employee with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not enable an employee with this ID", null, req.path);
     }
     const updatedEmployee = result.rows[0];
     res.json(updatedEmployee);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.delete('/api/employee/disable', requireAuth(true), async (req,res,next)=>{
+app.delete('/api/employee/disable', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Employees']
     #swagger.summary = "Deletes (disables) an employee"
     #swagger.security = [{"cookieAuth": []}]
@@ -890,15 +890,15 @@ app.delete('/api/employee/disable', requireAuth(true), async (req,res,next)=>{
             example: 0                    
     }     
     */
-  try{
+  try {
     const employeeID = req.query.employeeID;
-    if(!employeeID) {
-       throw new ApiError(400, "Missing Employee ID",null,req.path);
+    if (!employeeID) {
+      throw new ApiError(400, "Missing Employee ID", null, req.path);
     }
-    if(Number.isNaN(Number(employeeID))) {
-       throw new ApiError(400, "Employee ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(employeeID))) {
+      throw new ApiError(400, "Employee ID must be an integer", null, req.path);
     }
-    
+
 
     const query = "UPDATE employees SET is_active = false WHERE employee_id = $1 RETURNING *;"
     const insertValues = [employeeID];
@@ -906,18 +906,18 @@ app.delete('/api/employee/disable', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not disable an employee with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not disable an employee with this ID", null, req.path);
     }
     const updatedEmployee = result.rows[0];
     res.json(updatedEmployee);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.post('/api/employee/login', async (req,res,next)=>{
+app.post('/api/employee/login', async (req, res, next) => {
   /* #swagger.tags = ['Employees']
       #swagger.summary = "Login via Username/Password OR Google OAuth"
       #swagger.parameters['loginData'] = {
@@ -943,10 +943,10 @@ app.post('/api/employee/login', async (req,res,next)=>{
       } 
       #swagger.responses[401] = { description: 'Invalid credentials' } 
   */
-  try{
-    const {username, password, googleToken } = req.body;
+  try {
+    const { username, password, googleToken } = req.body;
     let user = null;
-    if(googleToken){
+    if (googleToken) {
       const ticket = await googleClient.verifyIdToken({
         idToken: googleToken,
         audience: process.env.GOOGLE_CLIENT_ID
@@ -955,39 +955,39 @@ app.post('/api/employee/login', async (req,res,next)=>{
       const email = payload.email;
       const name = payload.name;
       const googleResult = await pool.query(
-          'SELECT * FROM employees WHERE username = $1 OR google_id = $2',
-          [email, payload.sub]
-        );
-      if(googleResult.rows.length === 0){ 
+        'SELECT * FROM employees WHERE username = $1 OR google_id = $2',
+        [email, payload.sub]
+      );
+      if (googleResult.rows.length === 0) {
 
         //create a new account for this gmail if it doesnt exist
         const queryG = "INSERT INTO employees (name, password, is_manager, username, google_id) VALUES ($1, $2, $3, $4, $5) RETURNING *;"
         const insertValuesG = [name, "Google", false, email, googleToken];
         const createResult = await pool.query(queryG, insertValuesG);
         user = createResult.rows[0];
-      }else{
+      } else {
         //if account exists, grab it and set user
         console.log(`logging ${name} in with google...`)
         user = googleResult.rows[0];
       }
       //if disabled, throw an error
-      if(user.is_active === false){
+      if (user.is_active === false) {
         throw new ApiError(403, "The employee found for this Google account has been deactivated.")
       }
     }
-    else if(username && password){
+    else if (username && password) {
       const query = "SELECT * FROM employees WHERE username = $1 AND is_active = true;"
       const insertValues = [username];
       const result = await pool.query(query, insertValues);
-      if(result.rows.length > 0){
+      if (result.rows.length > 0) {
         const goodPassword = await bcrypt.compare(password, result.rows[0].password);
-        if(goodPassword){
+        if (goodPassword) {
           user = result.rows[0];
         }
       }
     }
-    if(!user){
-      throw new ApiError(401,"Invalid credentials.");
+    if (!user) {
+      throw new ApiError(401, "Invalid credentials.");
     }
 
     //generate session cookie
@@ -1003,23 +1003,23 @@ app.post('/api/employee/login', async (req,res,next)=>{
 
 
     { //scope inside to avoid another named password variable
-      const {password, ...restOfUser} = user;
+      const { password, ...restOfUser } = user;
       res.json({
-      message: "login successful",
-      user: {
-        ...restOfUser,
-        session_token: sessionToken
-      }
+        message: "login successful",
+        user: {
+          ...restOfUser,
+          session_token: sessionToken
+        }
       });
       return;
     }
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.post('/api/employee/logout', async (req,res,next)=>{
+app.post('/api/employee/logout', async (req, res, next) => {
   /* #swagger.tags = ['Employees']
       #swagger.summary = "Logout as an employee/manager"
       #swagger.responses[200] = { 
@@ -1027,7 +1027,7 @@ app.post('/api/employee/logout', async (req,res,next)=>{
           schema: { message: "Logout successful" }
       } 
   */
-  try{
+  try {
     const sessionToken = req.cookies.session_token;
 
     if (sessionToken) {
@@ -1046,12 +1046,12 @@ app.post('/api/employee/logout', async (req,res,next)=>{
       message: "login successful"
     });
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.get('/api/employee/auth', requireAuth(false), async (req,res,next)=>{
+app.get('/api/employee/auth', requireAuth(false), async (req, res, next) => {
   /* #swagger.tags = ['Employees']
       #swagger.summary = "Authenticate an employee using their session_token cookie"
       #swagger.responses[200] = { 
@@ -1068,47 +1068,47 @@ app.get('/api/employee/auth', requireAuth(false), async (req,res,next)=>{
       } 
       #swagger.responses[401] = { description: 'Invalid cookie' } 
   */
-  try{
+  try {
     console.log(req.user);
-    const {password, session_token, google_id, is_active, ...restUser} = req.user;
+    const { password, session_token, google_id, is_active, ...restUser } = req.user;
     res.json({
       message: "Authentication successful",
       user: restUser
     });
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
 
 app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
-    /* #swagger.tags = ['Orders']
-    #swagger.summary = "Get's the most recent orders, and their items"
-    #swagger.security = [{"cookieAuth": []}]
-    #swagger.responses[200] = { 
-            description: 'Successfully retrieved recent orders',
-            schema: [{ 
-                orderId: 0, 
-                orderTotal: 67.00, 
-                timestamp: '2025-02-13 14:06:52+00',
-                employee_id: 3,
-                customer_name: 'Burt'
-            }]
-    } 
-    #swagger.parameters['numRecent'] = {
-      in: 'query',                        
-            description: 'The number of recent orders to get. Default is 10',
-            required: false,                        
-            type: 'integer',                   
-            example: 10                    
-    }        
-    */
-  try{
+  /* #swagger.tags = ['Orders']
+  #swagger.summary = "Get's the most recent orders, and their items"
+  #swagger.security = [{"cookieAuth": []}]
+  #swagger.responses[200] = { 
+          description: 'Successfully retrieved recent orders',
+          schema: [{ 
+              orderId: 0, 
+              orderTotal: 67.00, 
+              timestamp: '2025-02-13 14:06:52+00',
+              employee_id: 3,
+              customer_name: 'Burt'
+          }]
+  } 
+  #swagger.parameters['numRecent'] = {
+    in: 'query',                        
+          description: 'The number of recent orders to get. Default is 10',
+          required: false,                        
+          type: 'integer',                   
+          example: 10                    
+  }        
+  */
+  try {
     //default to 10 if not present
     const numRecent = req.query.numRecent ? req.query.numRecent : 10;
-    if(Number.isNaN(Number(numRecent))) {
-       throw new ApiError(400, "numResent must be an integer",null,req.path);
+    if (Number.isNaN(Number(numRecent))) {
+      throw new ApiError(400, "numResent must be an integer", null, req.path);
     }
 
     const query = `
@@ -1134,9 +1134,9 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
     const result = await pool.query(query, [numRecent]);
     const recentOrders = result.rows;
     //format them so orders have items nested inside
-    const formattedOrders = recentOrders.reduce((acc, row)=>{
+    const formattedOrders = recentOrders.reduce((acc, row) => {
       let order = acc.find(order => order.orderId === row.order_id);
-      if(!order){
+      if (!order) {
         //if the order is not already in the accumulated list, create it
         order = {
           orderId: row.order_id,
@@ -1155,80 +1155,80 @@ app.get('/api/orders/recent', requireAuth(true), async (req, res, next) => {
         cost: row.cost
       });
       return acc;
-    },[])
+    }, [])
 
     res.json(formattedOrders);
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
 //this is meant to take in a sanitized order object
-async function getOrderTotal(items){
-  const itemTotals = await Promise.all(items.map(async (item)=>{
-      const itemResult = await pool.query("SELECT * FROM menu WHERE menu_id = $1;", [item.menuId]);
-      if(itemResult.rowCount === 0){
-        throw new ApiError(404, "Could not find this item to get the cost of");
+async function getOrderTotal(items) {
+  const itemTotals = await Promise.all(items.map(async (item) => {
+    const itemResult = await pool.query("SELECT * FROM menu WHERE menu_id = $1;", [item.menuId]);
+    if (itemResult.rowCount === 0) {
+      throw new ApiError(404, "Could not find this item to get the cost of");
+    }
+    const itemCost = parseFloat(itemResult.rows[0].cost);
+    //now get the toppings cost
+    const toppingTotals = await Promise.all(item.toppings.map(async (topping) => {
+      const toppingResult = await pool.query("SELECT * FROM menu WHERE menu_id = $1;", [topping.id]);
+      if (toppingResult.rowCount === 0) {
+        throw new ApiError(404, "Could not find this topping to get the cost of");
       }
-      const itemCost = parseFloat(itemResult.rows[0].cost);
-      //now get the toppings cost
-      const toppingTotals = await Promise.all(item.toppings.map(async (topping)=>{
-        const toppingResult = await pool.query("SELECT * FROM menu WHERE menu_id = $1;", [topping.id]);
-        if(toppingResult.rowCount === 0){
-          throw new ApiError(404, "Could not find this topping to get the cost of");
-        }
-        const toppingCost = parseFloat(toppingResult.rows[0].cost) * parseInt(topping.quantity);
-        return toppingCost;
-      }));
-      
-      const totalToppingsCost = toppingTotals.reduce((acc,curCost)=> acc + curCost, 0);
-      const totalItemCost = (itemCost + totalToppingsCost) * parseInt(item.quantity);
-      return totalItemCost;
+      const toppingCost = parseFloat(toppingResult.rows[0].cost) * parseInt(topping.quantity);
+      return toppingCost;
+    }));
+
+    const totalToppingsCost = toppingTotals.reduce((acc, curCost) => acc + curCost, 0);
+    const totalItemCost = (itemCost + totalToppingsCost) * parseInt(item.quantity);
+    return totalItemCost;
   }));
-  const totalOrderCost = itemTotals.reduce((acc,curCost)=>acc+curCost, 0);
+  const totalOrderCost = itemTotals.reduce((acc, curCost) => acc + curCost, 0);
   return totalOrderCost;
 }
 
-app.post('/api/orders/create', async (req,res,next)=>{
-   /* #swagger.tags = ['Orders']
-    #swagger.summary = "Creates a new order, either from a customer or cashier"
-    #swagger.responses[200] = { 
-          description: 'Successfully created the order',
-          schema: { 
-              menu_id: 67, 
-              name: 'Add Sugar', 
-              category: 'Modification',
-              cost: 4.99,
-              is_active: true 
-          }
-    } 
-    #swagger.parameters['order'] = {
-          in: 'body',
-          description: 'Order object',
-          required: true,
-          schema: {
-            employeeId: 1,
-            customerName: 'Guest',
-            items: [
-              {
-                menuId: 41,
-                quantity: 1,
-                toppings: [
-                  { id: 61, quantity: 1 }
-                ]
-              }
-            ]
-          }
-      }      
-    */
+app.post('/api/orders/create', async (req, res, next) => {
+  /* #swagger.tags = ['Orders']
+   #swagger.summary = "Creates a new order, either from a customer or cashier"
+   #swagger.responses[200] = { 
+         description: 'Successfully created the order',
+         schema: { 
+             menu_id: 67, 
+             name: 'Add Sugar', 
+             category: 'Modification',
+             cost: 4.99,
+             is_active: true 
+         }
+   } 
+   #swagger.parameters['order'] = {
+         in: 'body',
+         description: 'Order object',
+         required: true,
+         schema: {
+           employeeId: 1,
+           customerName: 'Guest',
+           items: [
+             {
+               menuId: 41,
+               quantity: 1,
+               toppings: [
+                 { id: 61, quantity: 1 }
+               ]
+             }
+           ]
+         }
+     }      
+   */
 
-  
+
   const client = await pool.connect();
 
   try {
-    const { employeeId, customerName, items} = req.body || {};
+    const { employeeId, customerName, items } = req.body || {};
     console.log(req.body);
-    
+
     if (!Array.isArray(items) || items.length === 0) {
       throw new ApiError(400, 'order items array is required and must contain at least one item.', null, req.path);
     }
@@ -1284,7 +1284,7 @@ app.post('/api/orders/create', async (req,res,next)=>{
     });
 
     const orderTotal = await getOrderTotal(normalizedItems);
-    
+
     await client.query('BEGIN');
 
     //get the orderTotal from the database. We don't want to pass it in because it could be wrong/doctored
@@ -1426,32 +1426,32 @@ app.post('/api/orders/create', async (req,res,next)=>{
 
 
 app.get('/api/recipes/all', requireAuth(true), async (req, res, next) => {
-    /* #swagger.tags = ['Recipes']
-    #swagger.summary = "Get's the recipes for every (active) item on the menu"
-    #swagger.security = [{"cookieAuth": []}]
-    #swagger.responses[200] = { 
-            description: 'Successfully retrieved recipes',
-            schema: [{ 
-                menu_id: 0, 
-                category: 'Drink',
-                ingredients: [{
-                  ingredient_id: 0,
-                  name: 'Matcha',
-                  quantity: 1,
-                  unit: 'Cup',
-                  is_active: true
-                }], 
-            }]
-    }      
-    #swagger.parameters['showAll'] = {
-      in: 'query',                        
-            description: 'show all will also include inactive (deleted) items in the recipe',
-            required: false,                        
-            type: 'boolean',                   
-            example: false                 
-    }  
-    */
-  try{
+  /* #swagger.tags = ['Recipes']
+  #swagger.summary = "Get's the recipes for every (active) item on the menu"
+  #swagger.security = [{"cookieAuth": []}]
+  #swagger.responses[200] = { 
+          description: 'Successfully retrieved recipes',
+          schema: [{ 
+              menu_id: 0, 
+              category: 'Drink',
+              ingredients: [{
+                ingredient_id: 0,
+                name: 'Matcha',
+                quantity: 1,
+                unit: 'Cup',
+                is_active: true
+              }], 
+          }]
+  }      
+  #swagger.parameters['showAll'] = {
+    in: 'query',                        
+          description: 'show all will also include inactive (deleted) items in the recipe',
+          required: false,                        
+          type: 'boolean',                   
+          example: false                 
+  }  
+  */
+  try {
     //default to 10 if not present
     const showAll = (req.query.showAll && req.query.showAll == 'true') ? true : false;
     const query = `
@@ -1471,9 +1471,9 @@ app.get('/api/recipes/all', requireAuth(true), async (req, res, next) => {
     const result = await pool.query(query);
     const recipes = result.rows;
     //format them so recipes have ingredients nested inside
-    const formattedRecipes = recipes.reduce((acc, row)=>{
+    const formattedRecipes = recipes.reduce((acc, row) => {
       let recipe = acc.find(recipe => recipe.menu_id === row.menu_id);
-      if(!recipe){
+      if (!recipe) {
         //if the recipe is not already in the accumulated list, create it
         recipe = {
           menu_id: row.menu_id,
@@ -1493,56 +1493,56 @@ app.get('/api/recipes/all', requireAuth(true), async (req, res, next) => {
         is_active: row.is_active
       });
       return acc;
-    },[])
+    }, [])
 
     res.json(formattedRecipes);
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
 app.get('/api/recipes/details', requireAuth(true), async (req, res, next) => {
-    /* #swagger.tags = ['Recipes']
-    #swagger.summary = "Get a specific recipe based on the passed in menu ID"
-    #swagger.security = [{"cookieAuth": []}]
-    #swagger.responses[200] = { 
-            description: 'Successfully retrieved recipe',
-            schema: { 
-                menu_id: 0, 
-                category: 'Drink',
-                ingredients: [{
-                  ingredient_id: 0,
-                  name: 'Matcha',
-                  quantity: 1,
-                  unit: 'Cup',
-                  is_active: true
-              }], 
-            }
-    }      
-    #swagger.parameters['menuID'] = {
-      in: 'query',                        
-            description: 'menu ID to get the recipe for',
-            required: true,                        
-            type: 'integer',                   
-            example: 2                 
-    }  
-    #swagger.parameters['showAll'] = {
-      in: 'query',                        
-            description: 'show all will also include inactive (deleted) items in the recipe',
-            required: false,                        
-            type: 'boolean',                   
-            example: false                 
-    }  
-    */
-  try{
+  /* #swagger.tags = ['Recipes']
+  #swagger.summary = "Get a specific recipe based on the passed in menu ID"
+  #swagger.security = [{"cookieAuth": []}]
+  #swagger.responses[200] = { 
+          description: 'Successfully retrieved recipe',
+          schema: { 
+              menu_id: 0, 
+              category: 'Drink',
+              ingredients: [{
+                ingredient_id: 0,
+                name: 'Matcha',
+                quantity: 1,
+                unit: 'Cup',
+                is_active: true
+            }], 
+          }
+  }      
+  #swagger.parameters['menuID'] = {
+    in: 'query',                        
+          description: 'menu ID to get the recipe for',
+          required: true,                        
+          type: 'integer',                   
+          example: 2                 
+  }  
+  #swagger.parameters['showAll'] = {
+    in: 'query',                        
+          description: 'show all will also include inactive (deleted) items in the recipe',
+          required: false,                        
+          type: 'boolean',                   
+          example: false                 
+  }  
+  */
+  try {
     //default to 10 if not present
     const showAll = (req.query.showAll && req.query.showAll == 'true') ? true : false;
     const menuID = req.query.menuID;
-    if(!menuID){
+    if (!menuID) {
       throw new ApiError(401, "Missing menuID", null, req.path);
     }
-    if(Number.isNaN(Number(menuID))) {
-       throw new ApiError(400, "menuID must be an integer",null,req.path);
+    if (Number.isNaN(Number(menuID))) {
+      throw new ApiError(400, "menuID must be an integer", null, req.path);
     }
 
     const query = `
@@ -1560,14 +1560,14 @@ app.get('/api/recipes/details', requireAuth(true), async (req, res, next) => {
       JOIN ingredients i ON r.ingredient_id = i.ingredient_id AND r.menu_id = $1 ${showAll ? "" : "AND r.is_active = true"}
     `;
     const result = await pool.query(query, [menuID]);
-    if(result.rowCount === 0){
+    if (result.rowCount === 0) {
       throw new ApiError(404, "A recipe could not be found with this menu ID.", null, req.path);
     }
     const recipeItems = result.rows;
     //format them so recipes have ingredients nested inside
-    const formattedRecipe = recipeItems.reduce((acc, row)=>{
+    const formattedRecipe = recipeItems.reduce((acc, row) => {
       let recipe = acc.find(recipe => recipe.menu_id === row.menu_id);
-      if(!recipe){
+      if (!recipe) {
         //if the recipe is not already in the accumulated list, create it
         recipe = {
           menu_id: row.menu_id,
@@ -1587,64 +1587,64 @@ app.get('/api/recipes/details', requireAuth(true), async (req, res, next) => {
         is_active: row.is_active
       });
       return acc;
-    },[])
-    if(formattedRecipe.length === 0){
+    }, [])
+    if (formattedRecipe.length === 0) {
       throw new ApiError(500, "Something went wrong retrieving this recipe", null, req.path);
     }
     res.json(formattedRecipe[0]);
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
 app.post('/api/recipes/add-ingredient', requireAuth(true), async (req, res, next) => {
-    /* #swagger.tags = ['Recipes']
-    #swagger.summary = "Adds an ingredient to a recipe determined by a passed in menu item ID"
-    #swagger.security = [{"cookieAuth": []}]
-    #swagger.responses[200] = { 
-            description: 'Successfully updated recipe',
-            schema: [{ 
-                menu_id: 0, 
-                category: 'Drink',
-                ingredients: {
-                  ingredient_id: 0,
-                  name: 'Matcha',
-                  quantity: 1,
-                  unit: 'Cup',
-                  is_active: true
-                }, 
-            }]
-    }
-    #swagger.parameters['menuID'] = {
-      in: 'query',                        
-            description: 'The id of the menu item\'s recipe to be updated',
-            required: true,                        
-            type: 'integer',                   
-            example: 1                   
-    }     
-    #swagger.parameters['ingredient'] = {
-          in: 'body',
-          description: 'Ingredient ID and quantity to be added to the recipe',
-          required: true,
-          schema: {
-            ingredientID: 1,
-            quantity: 1
-          }
-      }                
-    */
-  try{
+  /* #swagger.tags = ['Recipes']
+  #swagger.summary = "Adds an ingredient to a recipe determined by a passed in menu item ID"
+  #swagger.security = [{"cookieAuth": []}]
+  #swagger.responses[200] = { 
+          description: 'Successfully updated recipe',
+          schema: [{ 
+              menu_id: 0, 
+              category: 'Drink',
+              ingredients: {
+                ingredient_id: 0,
+                name: 'Matcha',
+                quantity: 1,
+                unit: 'Cup',
+                is_active: true
+              }, 
+          }]
+  }
+  #swagger.parameters['menuID'] = {
+    in: 'query',                        
+          description: 'The id of the menu item\'s recipe to be updated',
+          required: true,                        
+          type: 'integer',                   
+          example: 1                   
+  }     
+  #swagger.parameters['ingredient'] = {
+        in: 'body',
+        description: 'Ingredient ID and quantity to be added to the recipe',
+        required: true,
+        schema: {
+          ingredientID: 1,
+          quantity: 1
+        }
+    }                
+  */
+  try {
     //default to 10 if not present
     const menuID = req.query.menuID;
     const ingredientID = req.body.ingredientID;
     const quantity = req.body.quantity;
-    if(!menuID || !ingredientID || !quantity){
+    if (!menuID || !ingredientID || !quantity) {
       throw new ApiError(401, "Missing menuID and/or ingredient ID and/or quantity", null, req.path);
     }
-    if(Number.isNaN(Number(menuID)) || Number.isNaN(Number(ingredientID)) || Number.isNaN(Number(quantity))) {
-       throw new ApiError(400, "menuID, ingredientID, and quantity must be an integer",null,req.path);
+    if (Number.isNaN(Number(menuID)) || Number.isNaN(Number(ingredientID)) || Number.isNaN(Number(quantity))) {
+      throw new ApiError(400, "menuID, ingredientID, and quantity must be an integer", null, req.path);
     }
 
-   const query = `
+    const query = `
             INSERT INTO recipes (menu_id, ingredient_id, quantity, is_active)
             VALUES ($1, $2, $3, true)
             ON CONFLICT (menu_id, ingredient_id) 
@@ -1654,16 +1654,16 @@ app.post('/api/recipes/add-ingredient', requireAuth(true), async (req, res, next
             WHERE recipes.is_active = false
             RETURNING *;
         `;
-    const result = await pool.query(query, [menuID,ingredientID,quantity]);
+    const result = await pool.query(query, [menuID, ingredientID, quantity]);
     //uniqueness violation, which means a duplicate ingredient was attempted
-    if(result.rowCount === 0){
+    if (result.rowCount === 0) {
       throw new ApiError(409, "This ingredient is already in the recipe.", null, req.path);
     }
     const recipe = result.rows[0];
     res.json(recipe);
-  }catch(err){
+  } catch (err) {
     //one of the IDs didnt exist
-    if(err.code === '23503'){
+    if (err.code === '23503') {
       const missingError = new ApiError(409, "Missing ingredient or menu ID.", null, req.path);
       next(missingError);
       return;
@@ -1673,57 +1673,57 @@ app.post('/api/recipes/add-ingredient', requireAuth(true), async (req, res, next
 });
 
 app.delete('/api/recipes/remove-ingredient', requireAuth(true), async (req, res, next) => {
-    /* #swagger.tags = ['Recipes']
-    #swagger.summary = "Removes an ingredient to a recipe determined by a passed in menu item ID"
-    #swagger.security = [{"cookieAuth": []}]
-    #swagger.responses[200] = { 
-            description: 'Successfully removed ingredient from recipe',
-            schema: [{ 
-                menu_id: 0, 
-                category: 'Drink',
-                ingredients: {
-                  ingredient_id: 0,
-                  name: 'Matcha',
-                  quantity: 1,
-                  unit: 'Cup',
-                  is_active: true
-                }, 
-            }]
-    }
-    #swagger.parameters['menuID'] = {
-      in: 'query',                        
-            description: 'The id of the menu item\'s recipe to be updated',
-            required: true,                        
-            type: 'integer',                   
-            example: 1                   
-    }     
-    #swagger.parameters['ingredient'] = {
-          in: 'body',
-          description: 'Ingredient ID to be removed from the recipe',
-          required: true,
-          schema: {
-            ingredientID: 1,
-          }
-      }                
-    */
-  try{
+  /* #swagger.tags = ['Recipes']
+  #swagger.summary = "Removes an ingredient to a recipe determined by a passed in menu item ID"
+  #swagger.security = [{"cookieAuth": []}]
+  #swagger.responses[200] = { 
+          description: 'Successfully removed ingredient from recipe',
+          schema: [{ 
+              menu_id: 0, 
+              category: 'Drink',
+              ingredients: {
+                ingredient_id: 0,
+                name: 'Matcha',
+                quantity: 1,
+                unit: 'Cup',
+                is_active: true
+              }, 
+          }]
+  }
+  #swagger.parameters['menuID'] = {
+    in: 'query',                        
+          description: 'The id of the menu item\'s recipe to be updated',
+          required: true,                        
+          type: 'integer',                   
+          example: 1                   
+  }     
+  #swagger.parameters['ingredient'] = {
+        in: 'body',
+        description: 'Ingredient ID to be removed from the recipe',
+        required: true,
+        schema: {
+          ingredientID: 1,
+        }
+    }                
+  */
+  try {
     //default to 10 if not present
     const menuID = req.query.menuID;
     const ingredientID = req.body.ingredientID;
-    if(!menuID || !ingredientID){
+    if (!menuID || !ingredientID) {
       throw new ApiError(401, "Missing menuID and/or ingredient ID", null, req.path);
     }
-    if(Number.isNaN(Number(menuID)) || Number.isNaN(Number(ingredientID))) {
-       throw new ApiError(400, "menuID and ingredientID must be an integer",null,req.path);
+    if (Number.isNaN(Number(menuID)) || Number.isNaN(Number(ingredientID))) {
+      throw new ApiError(400, "menuID and ingredientID must be an integer", null, req.path);
     }
     const query = "UPDATE recipes SET is_active = false WHERE menu_id = $1 AND ingredient_id = $2 RETURNING *;"
-  
-    const result = await pool.query(query, [menuID,ingredientID]);
+
+    const result = await pool.query(query, [menuID, ingredientID]);
     const recipe = result.rows[0];
     res.json(recipe);
-  }catch(err){
+  } catch (err) {
     //one of the IDs didnt exist
-    if(err.code === '23503'){
+    if (err.code === '23503') {
       const missingError = new ApiError(409, "Missing ingredient or menu ID.", null, req.path);
       next(missingError);
       return;
@@ -1738,7 +1738,7 @@ X report requires: nothing, just returns the last 24 hours of sales data broken 
 Z report requires: date query parameter in YYYY-MM-DD format
 Sales report requires: startDate, endDate query parameters in YYYY-MM-DD format
  */
-app.get('/api/reports/x', requireAuth(true), async (req, res, next) =>{
+app.get('/api/reports/x', requireAuth(true), async (req, res, next) => {
   /* Helper: This is the query we used from project 2:
   SELECT
                 EXTRACT(HOUR FROM t.timestamp)::int AS hour,
@@ -1777,7 +1777,7 @@ app.get('/api/reports/x', requireAuth(true), async (req, res, next) =>{
 });
 
 /*TODO */
-app.get('/api/reports/z', requireAuth(true), async (req, res, next) =>{
+app.get('/api/reports/z', requireAuth(true), async (req, res, next) => {
   //Can probably just use the x report query and here just send a query to say we have generated the report
   //for the day and have frontend call this endpoint once the report is done.
   //before query, check if the entry already existed in the z_report_log table for the current date, if it does, throw an error saying you can only generate one report per day. If not, insert a new entry with the current date and return success.
@@ -1787,29 +1787,29 @@ app.get('/api/reports/z', requireAuth(true), async (req, res, next) =>{
   if (checkResult.rows.length > 0) {
     return res.status(400).json({ message: 'Z report for today has already been generated.' });
   }
-  else{
+  else {
     const query = 'INSERT INTO z_report_log (report_date) VALUES (CURRENT_DATE)';
     await pool.query(query);
     res.json({ message: 'Z report generated successfully.' });
   }
-  
+
 });
 
 /*TODO */
-app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
+app.get('/api/reports/sales', requireAuth(true), async (req, res, next) => {
   try {
     const { startDate, endDate, startHour, endHour } = req.query;
-    
+
     if (!startDate || !endDate) {
       return res.status(400).json({ message: 'startDate and endDate are required' });
     }
-    
+
     const isSingleDay = startDate === endDate;
     const timezone = 'UTC';
-    
+
     let query;
     let params;
-    
+
     if (isSingleDay && startHour !== undefined && endHour !== undefined) {
       // Single day with hour filtering
       query = `
@@ -1860,9 +1860,9 @@ app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
       `;
       params = [startDate, endDate, timezone];
     }
-    
+
     const result = await pool.query(query, params);
-    
+
     // Format response for Chart.js bar chart
     const labels = result.rows.map(row => row.item_name);
     const quantities = result.rows.map(row => parseInt(row.quantity_sold) || 0);
@@ -1872,7 +1872,7 @@ app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
       const ingredientCost = parseFloat(row.total_ingredient_cost) || 0;
       return gross - ingredientCost;
     });
-    
+
     res.json({ labels, quantities, revenue, netRevenue });
   } catch (err) {
     next(err);
@@ -1880,30 +1880,30 @@ app.get('/api/reports/sales', requireAuth(true), async (req, res, next) =>{
 });
 
 app.get('/api/ingredients/all', async (req, res, next) => {
-    /* #swagger.tags = ['Ingredients']
-    #swagger.summary = "Get all Ingredients"
-    #swagger.security = [{"cookieAuth": []}]
-    #swagger.responses[200] = { 
-            description: 'Successfully retrieved the ingredients list',
-            schema: [{ 
-                ingredient_id: 0, 
-                name: 'Matcha Powder', 
-                cost: 12.00,
-                stock: 25500.00,
-                unit: 'Cup',
-                is_active: true
-            }]
-    } */
-  try{
+  /* #swagger.tags = ['Ingredients']
+  #swagger.summary = "Get all Ingredients"
+  #swagger.security = [{"cookieAuth": []}]
+  #swagger.responses[200] = { 
+          description: 'Successfully retrieved the ingredients list',
+          schema: [{ 
+              ingredient_id: 0, 
+              name: 'Matcha Powder', 
+              cost: 12.00,
+              stock: 25500.00,
+              unit: 'Cup',
+              is_active: true
+          }]
+  } */
+  try {
     const result = await pool.query('SELECT * FROM ingredients WHERE is_active = true ORDER BY ingredient_id');
     const ingredientList = result.rows;
     res.json(ingredientList);
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.put('/api/ingredients/update', requireAuth(true), async (req,res,next)=>{
+app.put('/api/ingredients/update', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Ingredients']
     #swagger.summary = "Updates an ingredient's attributes"
     #swagger.security = [{"cookieAuth": []}]
@@ -1936,22 +1936,22 @@ app.put('/api/ingredients/update', requireAuth(true), async (req,res,next)=>{
             }
         }        
     */
-  try{
+  try {
     const ingredientID = req.query.ingredientID;
-    if(!ingredientID) {
-       throw new ApiError(400, "Missing Ingredient ID",null,req.path);
+    if (!ingredientID) {
+      throw new ApiError(400, "Missing Ingredient ID", null, req.path);
     }
-    if(Number.isNaN(Number(ingredientID))) {
-       throw new ApiError(400, "Ingredient ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(ingredientID))) {
+      throw new ApiError(400, "Ingredient ID must be an integer", null, req.path);
     }
-    if(!req.body){
-      throw new ApiError(400, "Missing 'ingredient'",null,req.path);
+    if (!req.body) {
+      throw new ApiError(400, "Missing 'ingredient'", null, req.path);
     }
     const { name, cost, unit } = req.body
-    if(!name || !cost || !unit){
-      throw new ApiError(400, "Missing fields in 'ingredient'",null,req.path);
+    if (!name || !cost || !unit) {
+      throw new ApiError(400, "Missing fields in 'ingredient'", null, req.path);
     }
-    
+
 
     const query = "UPDATE ingredients SET name = $1, cost = $2, unit = $3 WHERE ingredient_id = $4 RETURNING *;"
     const insertValues = [name, cost, unit, ingredientID];
@@ -1959,18 +1959,18 @@ app.put('/api/ingredients/update', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not find a ingredient to update with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not find a ingredient to update with this ID", null, req.path);
     }
     const updatedIngredient = result.rows[0];
     res.json(updatedIngredient);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.patch('/api/ingredients/restock', requireAuth(true), async (req,res,next)=>{
+app.patch('/api/ingredients/restock', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Ingredients']
     #swagger.summary = "Adds to an ingredient's stock by a provided amount"
     #swagger.security = [{"cookieAuth": []}]
@@ -2001,22 +2001,22 @@ app.patch('/api/ingredients/restock', requireAuth(true), async (req,res,next)=>{
             }
         }        
     */
-  try{
+  try {
     const ingredientID = req.query.ingredientID;
-    if(!ingredientID) {
-       throw new ApiError(400, "Missing Ingredient ID",null,req.path);
+    if (!ingredientID) {
+      throw new ApiError(400, "Missing Ingredient ID", null, req.path);
     }
-    if(Number.isNaN(Number(ingredientID))) {
-       throw new ApiError(400, "Ingredient ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(ingredientID))) {
+      throw new ApiError(400, "Ingredient ID must be an integer", null, req.path);
     }
-    if(!req.body){
-      throw new ApiError(400, "Missing 'ingredient'",null,req.path);
+    if (!req.body) {
+      throw new ApiError(400, "Missing 'ingredient'", null, req.path);
     }
     const { stock } = req.body
-    if(!stock){
-      throw new ApiError(400, "Missing stock in body",null,req.path);
+    if (!stock) {
+      throw new ApiError(400, "Missing stock in body", null, req.path);
     }
-    
+
 
     const query = "UPDATE ingredients SET stock = stock + $1 WHERE ingredient_id = $2 RETURNING *;"
     const insertValues = [stock, ingredientID];
@@ -2024,18 +2024,18 @@ app.patch('/api/ingredients/restock', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not find a ingredient to update stock with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not find a ingredient to update stock with this ID", null, req.path);
     }
     const updatedIngredient = result.rows[0];
     res.json(updatedIngredient);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.patch('/api/ingredients/enable', requireAuth(true), async (req,res,next)=>{
+app.patch('/api/ingredients/enable', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Ingredients']
     #swagger.summary = "Re-enables an ingredient to be used again"
     #swagger.security = [{"cookieAuth": []}]
@@ -2058,15 +2058,15 @@ app.patch('/api/ingredients/enable', requireAuth(true), async (req,res,next)=>{
             example: 0                    
     }     
     */
-  try{
+  try {
     const ingredientID = req.query.ingredientID;
-    if(!ingredientID) {
-       throw new ApiError(400, "Missing Ingredient ID",null,req.path);
+    if (!ingredientID) {
+      throw new ApiError(400, "Missing Ingredient ID", null, req.path);
     }
-    if(Number.isNaN(Number(ingredientID))) {
-       throw new ApiError(400, "Ingredient ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(ingredientID))) {
+      throw new ApiError(400, "Ingredient ID must be an integer", null, req.path);
     }
-    
+
 
     const query = "UPDATE ingredients SET is_active = true WHERE ingredient_id = $1 RETURNING *;"
     const insertValues = [ingredientID];
@@ -2074,18 +2074,18 @@ app.patch('/api/ingredients/enable', requireAuth(true), async (req,res,next)=>{
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not find a ingredient to enable with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not find a ingredient to enable with this ID", null, req.path);
     }
     const updatedIngredient = result.rows[0];
     res.json(updatedIngredient);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.delete('/api/ingredients/disable', requireAuth(true), async (req,res,next)=>{
+app.delete('/api/ingredients/disable', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Ingredients']
     #swagger.summary = "Disables an ingredient"
     #swagger.security = [{"cookieAuth": []}]
@@ -2108,15 +2108,15 @@ app.delete('/api/ingredients/disable', requireAuth(true), async (req,res,next)=>
             example: 0                    
     }     
     */
-  try{
+  try {
     const ingredientID = req.query.ingredientID;
-    if(!ingredientID) {
-       throw new ApiError(400, "Missing Ingredient ID",null,req.path);
+    if (!ingredientID) {
+      throw new ApiError(400, "Missing Ingredient ID", null, req.path);
     }
-    if(Number.isNaN(Number(ingredientID))) {
-       throw new ApiError(400, "Ingredient ID must be an integer",null,req.path);
+    if (Number.isNaN(Number(ingredientID))) {
+      throw new ApiError(400, "Ingredient ID must be an integer", null, req.path);
     }
-    
+
 
     const query = "UPDATE ingredients SET is_active = false WHERE ingredient_id = $1 RETURNING *;"
     const insertValues = [ingredientID];
@@ -2124,18 +2124,18 @@ app.delete('/api/ingredients/disable', requireAuth(true), async (req,res,next)=>
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not find a ingredient to disable with this ID", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not find a ingredient to disable with this ID", null, req.path);
     }
     const updatedIngredient = result.rows[0];
     res.json(updatedIngredient);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
 
-app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
+app.post('/api/ingredients/create', requireAuth(true), async (req, res, next) => {
   /* #swagger.tags = ['Ingredients']
     #swagger.summary = "Creates a new ingredient"
     #swagger.security = [{"cookieAuth": []}]
@@ -2163,28 +2163,28 @@ app.post('/api/ingredients/create', requireAuth(true), async (req,res,next)=>{
             }
         }        
     */
-  try{
-    if(!req.body){
-      throw new ApiError(400, "Missing 'ingredient'",null,req.path);
+  try {
+    if (!req.body) {
+      throw new ApiError(400, "Missing 'ingredient'", null, req.path);
     }
     const { name, cost, unit, stock } = req.body
-    if(!name || !cost || !unit || !stock){
-      throw new ApiError(400, "Missing fields in 'ingredient'",null,req.path);
+    if (!name || !cost || !unit || !stock) {
+      throw new ApiError(400, "Missing fields in 'ingredient'", null, req.path);
     }
-    
+
     const query = "INSERT INTO ingredients (name, cost, stock, unit) VALUES ($1, $2, $3, $4) RETURNING *;"
     const insertValues = [name, cost, stock, unit];
 
     const result = await pool.query(query, insertValues);
 
     //throw an error if you cant find the item. Postgres doesn't update an item that doesnt exist, so its handled.
-    if(result.rowCount == 0){
-      throw new ApiError(404, "Could not create a new ingredient", null,req.path);
+    if (result.rowCount == 0) {
+      throw new ApiError(404, "Could not create a new ingredient", null, req.path);
     }
     const updatedIngredient = result.rows[0];
     res.json(updatedIngredient);
 
-  }catch(err){
+  } catch (err) {
     next(err);
   }
 });
@@ -2266,11 +2266,11 @@ app.post('/api/chat', async (req, res, next) => {
 
     // TAMU AI always returns SSE format (text/event-stream)
     const responseText = await response.text();
-    
+
     // Parse SSE format: each line is "data: {...}" or "data: [DONE]"
     let fullContent = '';
     const lines = responseText.split('\n');
-    
+
     for (const line of lines) {
       const trimmedLine = line.trim();
       if (trimmedLine.startsWith('data: ') && trimmedLine !== 'data: [DONE]') {
@@ -2335,38 +2335,38 @@ app.post('/api/chat', async (req, res, next) => {
 
         const normalizedOrderItems = ['add_to_order', 'remove_from_order'].includes(normalizedAction) && Array.isArray(parsed?.orderItems)
           ? parsed.orderItems
-              .map((item) => {
-                const menuId = Number(item?.menuId);
-                const normalizedMenuId = Number.isInteger(menuId) && menuId > 0 ? menuId : null;
+            .map((item) => {
+              const menuId = Number(item?.menuId);
+              const normalizedMenuId = Number.isInteger(menuId) && menuId > 0 ? menuId : null;
 
-                const modificationsArray = Array.isArray(item?.modifications_array)
-                  ? item.modifications_array
-                      .map((modification) => {
-                        const modificationMenuId = Number(modification?.menu_id);
-                        if (!Number.isInteger(modificationMenuId)) return null;
-                        return {
-                          category: String(modification?.category || '').trim().toLowerCase(),
-                          cost: Number(modification?.cost || 0),
-                          menu_id: modificationMenuId,
-                          name: String(modification?.name || '').trim(),
-                        };
-                      })
-                      .filter(Boolean)
-                  : [];
+              const modificationsArray = Array.isArray(item?.modifications_array)
+                ? item.modifications_array
+                  .map((modification) => {
+                    const modificationMenuId = Number(modification?.menu_id);
+                    if (!Number.isInteger(modificationMenuId)) return null;
+                    return {
+                      category: String(modification?.category || '').trim().toLowerCase(),
+                      cost: Number(modification?.cost || 0),
+                      menu_id: modificationMenuId,
+                      name: String(modification?.name || '').trim(),
+                    };
+                  })
+                  .filter(Boolean)
+                : [];
 
-                return {
-                  menuId: normalizedMenuId,
-                  cost: Number(item?.cost || 0),
-                  name: String(item?.name || '').trim(),
-                  modifications_array: modificationsArray,
-                };
-              })
-              .filter((item) => {
-                if (normalizedAction === 'remove_from_order') {
-                  return Number.isInteger(item.menuId) || item.name.length > 0;
-                }
-                return Number.isInteger(item.menuId);
-              })
+              return {
+                menuId: normalizedMenuId,
+                cost: Number(item?.cost || 0),
+                name: String(item?.name || '').trim(),
+                modifications_array: modificationsArray,
+              };
+            })
+            .filter((item) => {
+              if (normalizedAction === 'remove_from_order') {
+                return Number.isInteger(item.menuId) || item.name.length > 0;
+              }
+              return Number.isInteger(item.menuId);
+            })
           : [];
 
         structuredChatResponse = {
@@ -2437,14 +2437,14 @@ app.get('/api/weather', async (req, res, next) => {
     }
 
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=imperial&appid=${apiKey}`;
-    
+
     const response = await fetch(url);
     if (!response.ok) {
       throw new ApiError(response.status, `Weather API error: ${response.statusText}`, null, req.path);
     }
 
     const data = await response.json();
-    
+
     const weatherData = {
       humidity: data.main.humidity,
       windSpeed: data.wind.speed,
@@ -2478,14 +2478,164 @@ RETURNS: in res, an array that can be mapped that has all the orders. Attributes
 */
 /*TODO */
 //Reference Kitchen.jsx lines 59-114 and lines 10-14 for more
-app.get('/api/orders/fetch', async(req, res, next) => {
+app.get('/api/orders/fetch', async (req, res, next) => {
+  try {
+    const query = `
+      SELECT
+        t.order_id,
+        t.timestamp,
+        t.customer_name,
+        oh_agg.item_id,
+        oh_agg.total_quantity AS item_quantity,
+        m.name               AS item_name,
+        tp.topping_menu_id,
+        tp.quantity           AS topping_quantity,
+        tm.name              AS topping_name,
+        tp.topping_id
+      FROM transactions t
+      JOIN (
+        SELECT order_id, item_id, SUM(quantity) AS total_quantity
+        FROM order_history
+        GROUP BY order_id, item_id
+      ) oh_agg ON t.order_id = oh_agg.order_id
+      JOIN menu m            ON oh_agg.item_id = m.menu_id
+      LEFT JOIN toppings tp  ON tp.transaction_id = t.order_id
+                             AND tp.item_menu_id  = oh_agg.item_id
+      LEFT JOIN menu tm      ON tp.topping_menu_id = tm.menu_id
+      WHERE t.is_filled = false
+      ORDER BY t.timestamp ASC, t.order_id, oh_agg.item_id, tp.topping_id ASC;
+    `;
 
+    const result = await pool.query(query);
+
+    // Reshape the flat rows into the nested structure Kitchen.jsx expects:
+    // [ { transaction_id, id, timestamp, customerName, items: [ { quantity, name, modifications } ] } ]
+    const ordersMap = new Map();
+
+    for (const row of result.rows) {
+      // --- order level ---
+      if (!ordersMap.has(row.order_id)) {
+        ordersMap.set(row.order_id, {
+          transaction_id: row.order_id,
+          id: row.order_id,
+          timestamp: row.timestamp,
+          customerName: row.customer_name || 'Guest',
+          _itemsMap: new Map(),
+        });
+      }
+
+      const order = ordersMap.get(row.order_id);
+
+      // --- item level (keyed by item_id to avoid duplicates from topping joins) ---
+      if (!order._itemsMap.has(row.item_id)) {
+        order._itemsMap.set(row.item_id, {
+          quantity: row.item_quantity,
+          name: row.item_name,
+          toppingRows: [],
+        });
+      }
+
+      const item = order._itemsMap.get(row.item_id);
+
+      // --- modification (topping) level ---
+      if (row.topping_menu_id) {
+        item.toppingRows.push({
+          id: row.topping_menu_id,
+          name: row.topping_name,
+          ingredient_name: row.topping_name,
+          quantity: Number(row.topping_quantity),
+          action: 'add',
+          topping_id: row.topping_id
+        });
+      }
+    }
+
+    // Convert maps to plain arrays and strip internal helpers
+    const orders = [];
+    for (const order of ordersMap.values()) {
+      const items = [];
+      for (const itemData of order._itemsMap.values()) {
+        const N = Number(itemData.quantity);
+        const itemInstances = Array.from({ length: N }, () => ({
+          quantity: 1,
+          name: itemData.name,
+          modifications: []
+        }));
+        
+        // Assume toppingRows are ordered by topping_id (from SQL query)
+        // Check if current item already has this topping, move to next item
+        let currentItemIndex = 0;
+        for (const topping of itemData.toppingRows) {
+          const hasTopping = itemInstances[currentItemIndex].modifications.some(m => m.id === topping.id);
+          if (hasTopping && currentItemIndex < N - 1) {
+            currentItemIndex++;
+          }
+          
+          itemInstances[currentItemIndex].modifications.push({
+            id: topping.id,
+            name: topping.name,
+            ingredient_name: topping.ingredient_name,
+            quantity: topping.quantity,
+            action: topping.action
+          });
+        }
+        
+        // Group itemInstances by exact modification signature
+        const groupedInstances = new Map();
+        for (const instance of itemInstances) {
+          instance.modifications.sort((a, b) => a.id - b.id);
+          const sig = instance.modifications.map(m => `${m.id}_${m.quantity}`).join('|');
+          
+          if (!groupedInstances.has(sig)) {
+            groupedInstances.set(sig, { ...instance, quantity: 0 });
+          }
+          groupedInstances.get(sig).quantity += 1;
+        }
+        
+        for (const grouped of groupedInstances.values()) {
+          items.push(grouped);
+        }
+      }
+      
+      orders.push({
+        transaction_id: order.transaction_id,
+        id: order.id,
+        timestamp: order.timestamp,
+        customerName: order.customerName,
+        items,
+      });
+    }
+
+    res.json(orders);
+  } catch (err) {
+    next(err);
+  }
 });
-/*TODO*/
+
 //Passes in a transaction id to have status changed to: is_filled = true
 //Reference Kitchen.jsx lines 17-39
-app.put('/api/transactions/fill', async(req, res, next) => {
+app.put('/api/transactions/fill', async (req, res, next) => {
+  try {
+    const { transactionId } = req.body;
 
+    if (!transactionId) {
+      throw new ApiError(400, "Missing transactionId in request body", null, req.path);
+    }
+    if (Number.isNaN(Number(transactionId))) {
+      throw new ApiError(400, "transactionId must be an integer", null, req.path);
+    }
+
+    const query = 'UPDATE transactions SET is_filled = true WHERE order_id = $1 RETURNING *;';
+    const result = await pool.query(query, [transactionId]);
+
+    if (result.rowCount === 0) {
+      throw new ApiError(404, "Could not find a transaction with this ID", null, req.path);
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.use('/api', (req, res) => {
