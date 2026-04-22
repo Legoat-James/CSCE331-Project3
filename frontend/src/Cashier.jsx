@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Button, Form, Alert } from 'react-bootstrap';
 import './Cashier.css';
 import Menuitems from './components/cashier/MenuItems';
 import OrderSummary from './components/cashier/OrderSummary';
 import apiClient from './api/client_config.js';
 import ChatBot from './components/customer/Chatbot.jsx';
+import { ThemeContext } from './App';
 
 export default function Cashier() {
+    const { theme, setTheme } = useContext(ThemeContext);
+    useEffect(() => {
+    // This code runs once when the component mounts
+    console.log("Page loaded!");
+    setTheme('standard');
+    }, []);
+  
     const isLoggedIn = !!localStorage.getItem('authToken');
     const user = JSON.parse(localStorage.getItem('user'));
     const [isLoading, setLoading] = useState(false);

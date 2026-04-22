@@ -1,5 +1,5 @@
 import './Customer.css';
-import { useGet, useMutate } from './hooks/useApi';
+import { useGet, useMutate} from './hooks/useApi';
 import React, { useState, useEffect, useMemo, useCallback, useContext } from 'react';
 import { Navbar, Nav, Container, Spinner } from 'react-bootstrap';
 import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal, Chatbot, AccessibilityWidget } from './components/customer';
@@ -188,6 +188,7 @@ const parseDrinkVariant = (drinkName) => {
 };
 
 function Customer() {
+  const { contrastTheme, setTheme } = useContext(ThemeContext);
   const { translate } = useTranslate();
 
   // UI state
@@ -690,6 +691,8 @@ function Customer() {
   }, []);
 
   const handleFinishOrder = useCallback(() => {
+    setTheme('standard');
+
     if (orderItems.length === 0) return;
 
     setOrderSubmitMessage('');
