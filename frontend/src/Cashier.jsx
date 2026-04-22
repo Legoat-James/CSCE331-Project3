@@ -9,7 +9,7 @@ import ChatBot from './components/customer/Chatbot.jsx';
 export default function Cashier() {
     const isLoggedIn = !!localStorage.getItem('authToken');
     const user = JSON.parse(localStorage.getItem('user'));
-
+    const [isLoading, setLoading] = useState(false);
     const [total, setTotal] = useState(0.00);
     const [orderItems, setOrderItems] = useState([]); // this will hold the items in the current order, we can use this to display the order summary and calculate the total
     const [menuView, setMenuView] = useState(() =>{
@@ -137,15 +137,19 @@ export default function Cashier() {
         let sanatizedOrderItems = sanitizeOrderItems(orderItems);
         console.log("sanitized order items:", sanatizedOrderItems);
         try{
-            const response = await apiClient('/api/orders/create', { body: sanatizedOrderItems });
-            //the following line produces an error to test api errors and page alerts. 
-            // it should not be deleted or uncommented unless testing error handling
-            // const response = await apiClient('/api/orders/create', sanatizedOrderItems); 
-            console.log('order submission response:', response);
-            //reset order on successful submission
-            setOrderItems([]);
-            setTotal(0.00);
-            setError(null);
+            if(!isLoading){
+                setLoading(true);
+                const response = await apiClient('/api/orders/create', { body: sanatizedOrderItems });
+                //the following line produces an error to test api errors and page alerts. 
+                // it should not be deleted or uncommented unless testing error handling
+                // const response = await apiClient('/api/orders/create', sanatizedOrderItems); 
+                console.log('order submission response:', response);
+                //reset order on successful submission
+                setOrderItems([]);
+                setTotal(0.00);
+                setError(null);
+                setLoading(false);
+            }
 
         } catch (error) {
             console.error('error submitting order:', error);
