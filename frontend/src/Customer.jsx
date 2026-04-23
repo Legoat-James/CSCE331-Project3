@@ -192,7 +192,7 @@ function Customer() {
   const { translate } = useTranslate();
 
   // UI state
-  const [activeCategory, setActiveCategory] = useState('drink');
+  const [activeCategory, setActiveCategory] = useState('Teas');
   const [isToppingsOpen, setIsToppingsOpen] = useState(false);
   const [isFoodConfirmOpen, setIsFoodConfirmOpen] = useState(false);
 
@@ -270,6 +270,7 @@ function Customer() {
           name: item.name,
           price,
           category,
+          subcategory: item.subcategory || '',
           image: getMenuImage(item.name, category),
           description: getMenuDescription(item.name, category),
         };
@@ -289,6 +290,7 @@ function Customer() {
             id: item.id,
             name: baseName,
             category: 'drink',
+            subcategory: item.subcategory || '',
             image: getMenuImage(baseName, 'drink'),
             description: getMenuDescription(baseName, 'drink'),
             sizeOptions: {},
@@ -328,6 +330,25 @@ function Customer() {
     () => allMenuItems.filter((item) => item.category === 'food'),
     [allMenuItems]
   );
+
+  const SUBCATEGORY_ORDER = ['Teas', 'Refreshers', 'Coffee/Matcha', 'Specials', 'Seasonal'];
+
+  const drinkSubcategories = useMemo(() => {
+    const available = new Set(drinkItems.map((item) => item.subcategory).filter(Boolean));
+    const ordered = SUBCATEGORY_ORDER.filter((sub) => available.has(sub));
+    drinkItems.forEach((item) => {
+      if (item.subcategory && !SUBCATEGORY_ORDER.includes(item.subcategory)) {
+        ordered.push(item.subcategory);
+      }
+    });
+    return ordered;
+  }, [drinkItems]);
+
+  useEffect(() => {
+    if (drinkSubcategories.length > 0 && activeCategory !== 'food' && !drinkSubcategories.includes(activeCategory)) {
+      setActiveCategory(drinkSubcategories[0]);
+    }
+  }, [drinkSubcategories]);
 
   // Modification flags
   const hasSugarSlider = modificationItems.some((item) => item.name.toLowerCase() === 'sugar');
@@ -384,7 +405,9 @@ function Customer() {
   );
 
   // Computed values for current selection
-  const visibleItems = activeCategory === 'drink' ? drinkItems : foodItems;
+  const visibleItems = activeCategory === 'food'
+    ? foodItems
+    : drinkItems.filter((item) => item.subcategory === activeCategory);
   const selectedDrinkPrice = selectedDrink?.sizeOptions?.[selectedDrinkSize] ?? selectedDrink?.price;
   const selectedDrinkMenuId = selectedDrink?.sizeMenuIds?.[selectedDrinkSize] ?? selectedDrink?.id;
   const availableDrinkSizes = selectedDrink?.sizeOptions
@@ -907,23 +930,25 @@ function Customer() {
             <Navbar.Toggle aria-controls="customerCategoryNav" />
 
             <Navbar.Collapse id="customerCategoryNav">
-              <Nav className="me-auto tea-links">
-                <Nav.Item>
-                  <button
-                    type="button"
-                    className={`kiosk-category-btn ${activeCategory === 'drink' ? 'is-active' : ''}`}
-                    onClick={() => setActiveCategory('drink')}
-                  >
-                    <span className='me-2'>{translate('Drinks')}</span>
-                  </button>
-                </Nav.Item>
+              <Nav className="me-auto tea-links" style={{ '--tab-count': drinkSubcategories.length + 1 }}>
+                {drinkSubcategories.map((sub) => (
+                  <Nav.Item key={sub}>
+                    <button
+                      type="button"
+                      className={`kiosk-category-btn ${activeCategory === sub ? 'is-active' : ''}`}
+                      onClick={() => setActiveCategory(sub)}
+                    >
+                      {translate(sub)}
+                    </button>
+                  </Nav.Item>
+                ))}
                 <Nav.Item>
                   <button
                     type="button"
                     className={`kiosk-category-btn ${activeCategory === 'food' ? 'is-active' : ''}`}
                     onClick={() => setActiveCategory('food')}
                   >
-                    <span className='me-2'>{translate('Food')}</span>
+                    {translate('Food')}
                   </button>
                 </Nav.Item>
               </Nav>
