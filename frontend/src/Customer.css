@@ -64,6 +64,14 @@
 
 .tea-links {
   gap: 0.35rem;
+  flex: 1 1 0;
+  min-width: 0;
+  padding-right: 0.75rem;
+}
+
+.tea-links .nav-item {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .tea-link {
@@ -87,27 +95,31 @@
   color: #fff;
 }
 
-/* Big, chunky, touch-friendly buttons */
+/* Touch-friendly nav buttons — font and padding scale with --tab-count */
 .kiosk-category-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem 3rem; /* Huge tap target area */
-  font-size: 1.75rem; /* Very large text */
+  width: 100%;
+  padding: clamp(0.35rem, 0.6vw, 0.8rem)
+           clamp(0.25rem, calc(5vw / var(--tab-count, 6)), 1.2rem);
+  font-size: clamp(0.6rem, calc(9vw / var(--tab-count, 6)), 1.05rem);
   font-weight: 700;
-  border-radius: 50px; /* Pill shape naturally invites tapping */
-  
-  /* Styling to match your tea theme */
+  border-radius: 50px;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+  line-height: 1.2;
+
   background-color: var(--tea-modal-btn-bg);
   color: var(--tea-wood);
-  border: 3px solid var(--tea-wood);
-  
-  /* Snappy transitions */
-  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1), 
-              background-color 0.2s ease, 
+  border: 2px solid var(--tea-wood);
+
+  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1),
+              background-color 0.2s ease,
               color 0.2s ease,
               box-shadow 0.2s ease;
-              
+
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -284,6 +296,7 @@
   margin-bottom: 0.45rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: calc(1.3em * 2);
