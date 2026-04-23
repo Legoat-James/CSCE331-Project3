@@ -5,10 +5,7 @@
 
 /* CSS Custom Properties */
 
-
-/* Page Layout */
-.customer-page {
-  min-height: 100vh;
+/* .scroll-container{
   background-color: var(--tea-root-bg);
   background-image:
     linear-gradient(180deg, rgba(255, 248, 237, 0.28), rgba(122, 94, 76, 0.08)),
@@ -27,17 +24,58 @@
       rgba(0, 0, 0, 0) 18px
     );
   color: var(--tea-root-bg-line);
+} */
+/* Page Layout */
+.customer-page {
+  min-height: 100%;
+  background-color: var(--tea-root-bg);
+  background-image:
+    linear-gradient(180deg, rgba(255, 248, 237, 0.28), rgba(122, 94, 76, 0.08)),
+    repeating-linear-gradient(
+      8deg,
+      rgba(146, 108, 79, 0.16) 0px,
+      rgba(146, 108, 79, 0.16) 2px,
+      rgba(236, 217, 190, 0.08) 2px,
+      rgba(236, 217, 190, 0.08) 14px
+    ),
+    repeating-linear-gradient(
+      -6deg,
+      rgba(120, 82, 58, 0.08) 0px,
+      rgba(120, 82, 58, 0.08) 1px,
+      rgba(0, 0, 0, 0) 1px,
+      rgba(0, 0, 0, 0) 18px
+    );
+  color: var(--tea-root-bg-line);
+
+  width: 100%;
+  
+  transform-origin: top left;
+  transform: scale(1);
+  
+}
+
+.customer-page.zoomed{
+  transform: scale(1.5);
 }
 
 .customer-page-2 {
   min-height: 100vh;
   background-color: var(--tea-root-bg);
   color: var(--tea-root-bg-line);
+  width: 100%;
+  height: 100%;
+  transform-origin: top left;
+  transform: scale(1);
+}
+
+.customer-page-2.zoomed{
+  transform: scale(1.5);
 }
 
 .customer-shell {
   width: min(1200px, 100%);
   margin: 0 auto;
+  height: 100%;
 }
 
 /* Navigation */
@@ -100,10 +138,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  padding: clamp(0.35rem, 0.6vw, 0.8rem)
-           clamp(0.25rem, calc(5vw / var(--tab-count, 6)), 1.2rem);
-  font-size: clamp(0.6rem, calc(9vw / var(--tab-count, 6)), 1.05rem);
+  padding: 0.5rem 3rem; /* Huge tap target area */
+  font-size: 1.75rem; /* Very large text */
   font-weight: 700;
   border-radius: 50px;
   white-space: normal;
@@ -142,7 +178,7 @@
 .kiosk-layout {
   flex-grow: 1;
   max-height: 800px;
-  height: clamp(500px, calc(100vh - 140px), 800px);
+  height: clamp(450px, calc(100vh - 140px), 800px);
   display: flex;
   flex-direction: column;
   align-items: center;
