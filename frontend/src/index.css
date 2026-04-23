@@ -1,3 +1,18 @@
+html, body, #root{
+  font-size: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+html.text-large{
+  font-size: 125%;
+}
+html.text-xlarge{
+  font-size: 150%;
+}
+
 /* CSS class to rotate display by 90 degrees to emulate a vertical kiosk */
 .kiosk-mode-rotation {
   position: fixed;
