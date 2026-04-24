@@ -9,7 +9,7 @@ function AccessibilityWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState('menu'); // 'menu' | 'language' | 'dictation'
   const { language, setLanguage, translate } = useTranslate();
-  const { theme, setTheme } = useContext(ThemeContext);
+  const { theme, setTheme, textSize, setTextSize, magnifyScreen, setMagnifyScreen } = useContext(ThemeContext);
   const triggerCheckoutFromVoice = () => {
     const clickable = [
       ...document.querySelectorAll('button'),
@@ -186,6 +186,10 @@ function AccessibilityWidget() {
     setView('menu');
   };
 
+  function toggleMagnify(){
+    setMagnifyScreen((prev)=>!prev);
+  }
+
   const handleDictationToggle = () => {
     if (listening) {
       SpeechRecognition.stopListening();
@@ -200,6 +204,26 @@ function AccessibilityWidget() {
     setIsOpen(false);
     setView('menu');
   };
+
+  function swapTextSize(){
+    if(textSize === "normal"){
+      setTextSize("large");
+    }else if(textSize === "large"){
+      setTextSize("xlarge");
+    }else{
+      setTextSize("normal");
+    }
+  }
+
+  function displayTextSizeOption(){
+     if(textSize === "normal"){
+      return "Normal";
+    }else if(textSize === "large"){
+      return "Large"
+    }else{
+      return "X-Large"
+    }
+  }
 
   return (
     <div className="a11y-container">
@@ -248,7 +272,20 @@ function AccessibilityWidget() {
                 className="a11y-option-btn"
                 onClick={() => setTheme(prevTheme => prevTheme === 'standard' ? 'high-contrast' : 'standard')}
                 aria-label='Toggle High Contrast Button'
-              >High Contrast</button>
+              >{theme === "standard" ? "High Contrast" : "Normal Contrast"}</button>
+
+              <button
+                type="button"
+                className="a11y-option-btn"
+                onClick={swapTextSize}
+                aria-label='Toggle Through Text Sizes'
+              >Font Size: {displayTextSizeOption()}</button>
+              <button
+                type="button"
+                className="a11y-option-btn"
+                onClick={toggleMagnify}
+                aria-label='Toggle Screen Magnification'
+              >Zoom {!magnifyScreen ? "In" : "Out"}</button>
               <button
                 type="button"
                 className="a11y-option-btn"

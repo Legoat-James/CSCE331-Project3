@@ -157,6 +157,7 @@ export default function Cashier() {
                 setTotal(0.00);
                 setError(null);
                 setLoading(false);
+                setCustomerName('');
             }
 
         } catch (error) {
