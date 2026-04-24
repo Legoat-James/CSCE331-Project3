@@ -393,6 +393,28 @@ function AccessibilityWidget() {
                           Clear
                         </button>
                       </div>
+
+                      <div
+                        style={{
+                          marginTop: '0.2rem',
+                          padding: '0.55rem',
+                          borderRadius: '10px',
+                          border: '1px solid var(--tea-border)',
+                          background: '#fff8ef',
+                          color: 'var(--tea-wood-dark)',
+                        }}
+                      >
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
+                          Voice Commands
+                        </div>
+                        <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.76rem', lineHeight: 1.35 }}>
+                          <li>"Enter message" or "Send message": sends the current dictated text to chat.</li>
+                          <li>"Clear message": clears the chat input text.</li>
+                          <li>"Checkout order" or "Finish order": attempts to submit the current order.</li>
+                          <li>"Customer name [name]": sets the customer name.</li>
+                          <li>"End dictation": stops the microphone and clears this transcript box.</li>
+                        </ul>
+                      </div>
                     </>
                   )}
                 </div>
