@@ -241,6 +241,20 @@ function Customer() {
     console.log(`Current order items:`, orderItems);
   },[orderItems])
 
+  useEffect(() => {
+    const handleVoiceCustomerName = (event) => {
+      const nextName = String(event?.detail?.name || '').trim();
+      if (!nextName) return;
+      setCustomerName(nextName);
+    };
+
+    window.addEventListener('a11y-customer-name', handleVoiceCustomerName);
+
+    return () => {
+      window.removeEventListener('a11y-customer-name', handleVoiceCustomerName);
+    };
+  }, []);
+
   const getMenuDescription = useCallback((name, category) => {
     const normalizedName = normalizeItemName(name);
     const match = itemVisualsByName[normalizedName];
@@ -742,6 +756,18 @@ function Customer() {
       setOrderSubmitError(submitError.message || 'Unable to submit order. Please try again.');
     }
   }, [orderItems, orderSubtotal, orderMutation, customerName]);
+
+  useEffect(() => {
+    const handleVoiceCheckout = () => {
+      handleFinishOrder();
+    };
+
+    window.addEventListener('a11y-checkout-order', handleVoiceCheckout);
+
+    return () => {
+      window.removeEventListener('a11y-checkout-order', handleVoiceCheckout);
+    };
+  }, [handleFinishOrder]);
 
   const handleChatAction = useCallback((chatAction) => {
     const action = normalizeChatText(chatAction?.action);

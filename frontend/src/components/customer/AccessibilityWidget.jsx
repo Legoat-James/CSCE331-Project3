@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { useTranslate, SUPPORTED_LANGUAGES } from '../../contexts/TranslationContext';
 import { ThemeContext } from '../../App';
@@ -10,13 +10,149 @@ function AccessibilityWidget() {
   const [view, setView] = useState('menu'); // 'menu' | 'language' | 'dictation'
   const { language, setLanguage, translate } = useTranslate();
   const { theme, setTheme } = useContext(ThemeContext);
+  const triggerCheckoutFromVoice = () => {
+    const clickable = [
+      ...document.querySelectorAll('button'),
+      ...document.querySelectorAll('input[type="submit"], input[type="button"]'),
+    ];
+
+    const checkoutTarget = clickable.find((element) => {
+      const text = (
+        element.tagName.toLowerCase() === 'input'
+          ? element.value
+          : element.textContent
+      )
+        ?.toLowerCase()
+        .trim();
+
+      return text?.includes('finish order') || text?.includes('checkout');
+    });
+
+    if (checkoutTarget) {
+      checkoutTarget.click();
+    }
+  };
+
+  const voiceCommands = [
+    {
+      command: ['end dictation', 'and dictation'],
+      callback: () => {
+        SpeechRecognition.abortListening();
+        SpeechRecognition.stopListening();
+        resetTranscript();
+      },
+    },
+    {
+      command: ['enter message', 'send message'],
+      callback: () => {
+        window.dispatchEvent(new CustomEvent('a11y-chatbot-send'));
+        resetTranscript();
+      },
+    },
+    {
+      command: ['clear message', 'clear the message'],
+      callback: () => {
+        window.dispatchEvent(new CustomEvent('a11y-chatbot-clear'));
+        resetTranscript();
+      },
+    },
+    {
+      command: ['checkout order', 'check out order', 'finish order'],
+      callback: () => {
+        window.dispatchEvent(new CustomEvent('a11y-checkout-order'));
+        triggerCheckoutFromVoice();
+        resetTranscript();
+      },
+    },
+    {
+      command: ['customer name *', 'set customer name *', 'customer name is *'],
+      callback: (nameValue) => {
+        const resolvedName = String(nameValue || '').trim();
+        if (!resolvedName) {
+          resetTranscript();
+          return;
+        }
+
+        window.dispatchEvent(
+          new CustomEvent('a11y-customer-name', {
+            detail: { name: resolvedName },
+          })
+        );
+        resetTranscript();
+      },
+    },
+  ];
+
   const {
     transcript,
     resetTranscript,
     browserSupportsSpeechRecognition,
     isMicrophoneAvailable,
     listening,
-  } = useSpeechRecognition();
+  } = useSpeechRecognition({ commands: voiceCommands });
+
+  useEffect(() => {
+    if (view !== 'dictation') {
+      return;
+    }
+
+    const rawTranscript = String(transcript || '');
+    const shouldEndDictation = /\b(end dictation|and dictation)\b/i.test(rawTranscript);
+    const shouldEnterMessage = /\b(enter message|send message)\b/i.test(rawTranscript);
+    const shouldClearMessage = /\b(clear message|clear the message)\b/i.test(rawTranscript);
+    const shouldCheckoutOrder = /\b(checkout order|check out order|finish order)\b/i.test(rawTranscript);
+    const customerNameMatch = rawTranscript.match(/(?:^|\b)(?:set\s+)?customer\s+name(?:\s+is)?\s+(.+)$/i);
+
+    if (listening && shouldEndDictation) {
+      SpeechRecognition.abortListening();
+      SpeechRecognition.stopListening();
+      resetTranscript();
+      return;
+    }
+
+    if (shouldClearMessage) {
+      window.dispatchEvent(new CustomEvent('a11y-chatbot-clear'));
+      resetTranscript();
+      return;
+    }
+
+    if (shouldEnterMessage) {
+      window.dispatchEvent(new CustomEvent('a11y-chatbot-send'));
+      resetTranscript();
+      return;
+    }
+
+    if (shouldCheckoutOrder) {
+      window.dispatchEvent(new CustomEvent('a11y-checkout-order'));
+      triggerCheckoutFromVoice();
+      resetTranscript();
+      return;
+    }
+
+    if (customerNameMatch?.[1]) {
+      const resolvedName = String(customerNameMatch[1]).trim();
+      if (resolvedName) {
+        window.dispatchEvent(
+          new CustomEvent('a11y-customer-name', {
+            detail: { name: resolvedName },
+          })
+        );
+      }
+      resetTranscript();
+      return;
+    }
+
+    const cleanedTranscript = rawTranscript
+      .replace(/\b(end dictation|and dictation|enter message|send message|clear message|clear the message|checkout order|check out order|finish order|customer name|customer name is|set customer name)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    window.dispatchEvent(
+      new CustomEvent('a11y-chatbot-input', {
+        detail: { text: cleanedTranscript },
+      })
+    );
+  }, [transcript, view, listening]);
 
   const handleToggle = () => {
     if (isOpen) {
