@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Card,
   Button,
@@ -40,10 +40,12 @@ export default function MenuEditor() {
 
   const [newItemName, setNewItemName] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('food');
+  const [newItemSubcategory, setNewItemSubcategory] = useState('');
   const [newItemCost, setNewItemCost] = useState('');
 
   const [updateItemName, setUpdateItemName] = useState('');
   const [updateItemCategory, setUpdateItemCategory] = useState('food');
+  const [updateItemSubcategory, setUpdateItemSubcategory] = useState('');
   const [updateItemCost, setUpdateItemCost] = useState('');
 
   const {
@@ -107,6 +109,31 @@ export default function MenuEditor() {
     () => disabledItems.filter((item) => !isDrinkSizeVariant(item)),
     [disabledItems]
   );
+
+  const existingSubcategories = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          menuItems
+            .map((item) => String(item.subcategory || '').trim())
+            .filter((subcategory) => subcategory.length > 0)
+        )
+      ).sort((a, b) => a.localeCompare(b)),
+    [menuItems]
+  );
+
+  useEffect(() => {
+    if (newItemCategory !== 'drink') {
+      if (newItemSubcategory) {
+        setNewItemSubcategory('');
+      }
+      return;
+    }
+
+    if (!newItemSubcategory && existingSubcategories.length > 0) {
+      setNewItemSubcategory(existingSubcategories[0]);
+    }
+  }, [existingSubcategories, newItemCategory, newItemSubcategory]);
 
   const findDrinkFamily = (rawName) => {
     const baseName = stripDrinkSizeSuffix(rawName);
@@ -204,6 +231,7 @@ export default function MenuEditor() {
     setShowAddModal(false);
     setNewItemName('');
     setNewItemCategory('food');
+    setNewItemSubcategory('');
     setNewItemCost('');
   };
 
@@ -211,8 +239,14 @@ export default function MenuEditor() {
     event.preventDefault();
 
     const trimmedName = newItemName.trim();
+    const trimmedSubcategory = String(newItemSubcategory || '').trim();
+    const payloadSubcategory = newItemCategory === 'drink' ? trimmedSubcategory : '';
     const parsedCost = Number(newItemCost);
     if (!trimmedName || !Number.isFinite(parsedCost)) {
+      return;
+    }
+
+    if (newItemCategory === 'drink' && !payloadSubcategory) {
       return;
     }
 
@@ -224,24 +258,28 @@ export default function MenuEditor() {
         await createMenuItemMutation.mutateAsync({
           name: baseName,
           category: 'drink',
+          subcategory: payloadSubcategory,
           cost: baseCost,
         });
 
         await createMenuItemMutation.mutateAsync({
           name: `${baseName} small`,
           category: 'drink',
+          subcategory: payloadSubcategory,
           cost: roundMoney(baseCost * 0.7),
         });
 
         await createMenuItemMutation.mutateAsync({
           name: `${baseName} large`,
           category: 'drink',
+          subcategory: payloadSubcategory,
           cost: roundMoney(baseCost * 1.5),
         });
       } else {
         await createMenuItemMutation.mutateAsync({
           name: trimmedName,
           category: newItemCategory,
+          subcategory: '',
           cost: roundMoney(parsedCost),
         });
       }
@@ -292,7 +330,11 @@ export default function MenuEditor() {
     setMenuItemToUpdate(updateTarget);
     setRelatedUpdateItemIds({ smallId: relatedSmallId, largeId: relatedLargeId });
     setUpdateItemName(updateName);
-    setUpdateItemCategory((selectedItem.category || 'food').toLowerCase());
+    const normalizedCategory = (selectedItem.category || 'food').toLowerCase();
+    setUpdateItemCategory(normalizedCategory);
+    setUpdateItemSubcategory(
+      normalizedCategory === 'drink' ? String(updateTarget.subcategory || '').trim() : ''
+    );
     setUpdateItemCost(Number.isFinite(updateCost) ? String(roundMoney(updateCost)) : String(selectedItem.cost ?? ''));
     setShowUpdateModal(true);
   };
@@ -303,6 +345,7 @@ export default function MenuEditor() {
     setRelatedUpdateItemIds({ smallId: null, largeId: null });
     setUpdateItemName('');
     setUpdateItemCategory('food');
+    setUpdateItemSubcategory('');
     setUpdateItemCost('');
   };
 
@@ -314,7 +357,13 @@ export default function MenuEditor() {
     }
 
     const parsedCost = Number(updateItemCost);
+    const trimmedSubcategory = String(updateItemSubcategory || '').trim();
+    const payloadSubcategory = updateItemCategory === 'drink' ? trimmedSubcategory : '';
     if (!Number.isFinite(parsedCost)) {
+      return;
+    }
+
+    if (updateItemCategory === 'drink' && !payloadSubcategory) {
       return;
     }
 
@@ -326,6 +375,7 @@ export default function MenuEditor() {
         await updateMenuItemMutation.mutateAsync({
           name: baseName,
           category: 'drink',
+          subcategory: payloadSubcategory,
           cost: baseCost,
         });
 
@@ -333,6 +383,7 @@ export default function MenuEditor() {
           await updateSmallDrinkMutation.mutateAsync({
             name: `${baseName} small`,
             category: 'drink',
+            subcategory: payloadSubcategory,
             cost: roundMoney(baseCost * 0.7),
           });
         }
@@ -341,6 +392,7 @@ export default function MenuEditor() {
           await updateLargeDrinkMutation.mutateAsync({
             name: `${baseName} large`,
             category: 'drink',
+            subcategory: payloadSubcategory,
             cost: roundMoney(baseCost * 1.5),
           });
         }
@@ -348,6 +400,7 @@ export default function MenuEditor() {
         await updateMenuItemMutation.mutateAsync({
           name: updateItemName.trim(),
           category: updateItemCategory,
+          subcategory: '',
           cost: roundMoney(parsedCost),
         });
       }
@@ -656,12 +709,39 @@ export default function MenuEditor() {
               <Form.Label>Category</Form.Label>
               <Form.Select
                 value={newItemCategory}
-                onChange={(event) => setNewItemCategory(event.target.value)}
+                onChange={(event) => {
+                  const selectedCategory = event.target.value;
+                  setNewItemCategory(selectedCategory);
+                  if (selectedCategory !== 'drink') {
+                    setNewItemSubcategory('');
+                  } else if (!newItemSubcategory && existingSubcategories.length > 0) {
+                    setNewItemSubcategory(existingSubcategories[0]);
+                  }
+                }}
                 required
               >
                 {MENU_CATEGORIES.map((category) => (
                   <option key={category} value={category}>
                     {category}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="newMenuItemSubcategory">
+              <Form.Label>Subcategory</Form.Label>
+              <Form.Select
+                value={newItemSubcategory}
+                onChange={(event) => setNewItemSubcategory(event.target.value)}
+                required={newItemCategory === 'drink'}
+                disabled={newItemCategory !== 'drink'}
+              >
+                <option value="" disabled>
+                  Select a subcategory
+                </option>
+                {existingSubcategories.map((subcategory) => (
+                  <option key={subcategory} value={subcategory}>
+                    {subcategory}
                   </option>
                 ))}
               </Form.Select>
@@ -716,6 +796,25 @@ export default function MenuEditor() {
                 className="text-capitalize text-muted"
                 style={{ backgroundColor: '#e9ecef', cursor: 'not-allowed' }}
               />
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="updateMenuItemSubcategory">
+              <Form.Label>Subcategory</Form.Label>
+              <Form.Select
+                value={updateItemSubcategory}
+                onChange={(event) => setUpdateItemSubcategory(event.target.value)}
+                required={updateItemCategory === 'drink'}
+                disabled={updateItemCategory !== 'drink'}
+              >
+                <option value="" disabled>
+                  Select a subcategory
+                </option>
+                {existingSubcategories.map((subcategory) => (
+                  <option key={subcategory} value={subcategory}>
+                    {subcategory}
+                  </option>
+                ))}
+              </Form.Select>
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="updateMenuItemCost">
