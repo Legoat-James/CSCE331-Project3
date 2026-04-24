@@ -8,6 +8,7 @@ import 'regenerator-runtime/runtime';
 function AccessibilityWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState('menu'); // 'menu' | 'language' | 'dictation'
+  const [backgroundDictationEnabled, setBackgroundDictationEnabled] = useState(true);
   const { language, setLanguage, translate } = useTranslate();
   const { theme, setTheme, textSize, setTextSize, magnifyScreen, setMagnifyScreen } = useContext(ThemeContext);
   const triggerCheckoutFromVoice = () => {
@@ -92,7 +93,8 @@ function AccessibilityWidget() {
   } = useSpeechRecognition({ commands: voiceCommands });
 
   useEffect(() => {
-    if (view !== 'dictation') {
+    const canProcessTranscript = view === 'dictation' || backgroundDictationEnabled;
+    if (!canProcessTranscript) {
       return;
     }
 
@@ -147,16 +149,20 @@ function AccessibilityWidget() {
       .replace(/\s+/g, ' ')
       .trim();
 
-    window.dispatchEvent(
-      new CustomEvent('a11y-chatbot-input', {
-        detail: { text: cleanedTranscript },
-      })
-    );
-  }, [transcript, view, listening]);
+    if (cleanedTranscript) {
+      window.dispatchEvent(
+        new CustomEvent('a11y-chatbot-input', {
+          detail: { text: cleanedTranscript },
+        })
+      );
+    }
+  }, [transcript, view, listening, backgroundDictationEnabled]);
 
   const handleToggle = () => {
     if (isOpen) {
-      SpeechRecognition.stopListening();
+      if (!backgroundDictationEnabled) {
+        SpeechRecognition.stopListening();
+      }
       setView('menu');
       setIsOpen(false);
       return;
@@ -167,7 +173,9 @@ function AccessibilityWidget() {
   };
 
   const handleClose = () => {
-    SpeechRecognition.stopListening();
+    if (!backgroundDictationEnabled) {
+      SpeechRecognition.stopListening();
+    }
     setIsOpen(false);
     setView('menu');
   };
@@ -182,7 +190,9 @@ function AccessibilityWidget() {
   };
 
   const handleBackToMenu = () => {
-    SpeechRecognition.stopListening();
+    if (!backgroundDictationEnabled) {
+      SpeechRecognition.stopListening();
+    }
     setView('menu');
   };
 
@@ -294,6 +304,14 @@ function AccessibilityWidget() {
               >
                 Dictation
               </button>
+              <button
+                type="button"
+                className="a11y-option-btn"
+                onClick={() => setBackgroundDictationEnabled((prev) => !prev)}
+                aria-label="Toggle background dictation"
+              >
+                Background Dictation: {backgroundDictationEnabled ? 'On' : 'Off'}
+              </button>
               </>
             )}
 
@@ -341,6 +359,10 @@ function AccessibilityWidget() {
 
                   <div style={{ fontSize: '0.78rem', color: 'var(--tea-wood-dark)' }}>
                     Status: {listening ? 'Listening' : 'Idle'}
+                  </div>
+
+                  <div style={{ fontSize: '0.74rem', color: 'var(--tea-wood-dark)' }}>
+                    Background Mode: {backgroundDictationEnabled ? 'On (commands still work when closed)' : 'Off'}
                   </div>
 
                   {!browserSupportsSpeechRecognition ? (
@@ -437,6 +459,11 @@ function AccessibilityWidget() {
           <path d="M12 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm8 5H4a1 1 0 0 0 0 2h3.5l-1 5.5-2 5a1 1 0 1 0 1.86.74L8 16.5h8l1.64 3.74a1 1 0 0 0 1.86-.74l-2-5-1-5.5H20a1 1 0 0 0 0-2z"/>
         </svg>
       </button>
+      {listening && !isOpen && (
+        <div className="a11y-mic-indicator" aria-live="polite">
+          Mic On
+        </div>
+      )}
     </div>
   );
 }
