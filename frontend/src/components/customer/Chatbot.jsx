@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import './Chatbot.css';
 import apiClient from '../../api/client_config.js';
 import { useTranslate } from '../../contexts/TranslationContext';
@@ -185,12 +185,13 @@ name: string //the name of the modification or topping (for ice or sugar level m
     }
   };
 
-  // Send a message to the AI via backend proxy
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || isLoading) return;
+  const sendCurrentMessage = useCallback(async (overrideMessage) => {
+    const userMessage = String(
+      typeof overrideMessage === 'string' ? overrideMessage : inputMessage
+    ).trim();
 
-    const userMessage = inputMessage.trim();
+    if (!userMessage || isLoading) return;
+
     setInputMessage('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
@@ -259,7 +260,38 @@ name: string //the name of the modification or topping (for ice or sugar level m
     } finally {
       setIsLoading(false);
     }
+  }, [inputMessage, isLoading, messages, onChatAction, buildSystemPrompt]);
+
+  // Send a message to the AI via backend proxy
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    await sendCurrentMessage();
   };
+
+  useEffect(() => {
+    const handleDictationInput = (event) => {
+      const nextValue = String(event?.detail?.text ?? '');
+      setInputMessage(nextValue);
+    };
+
+    const handleDictationSend = () => {
+      void sendCurrentMessage();
+    };
+
+    const handleDictationClear = () => {
+      setInputMessage('');
+    };
+
+    window.addEventListener('a11y-chatbot-input', handleDictationInput);
+    window.addEventListener('a11y-chatbot-send', handleDictationSend);
+    window.addEventListener('a11y-chatbot-clear', handleDictationClear);
+
+    return () => {
+      window.removeEventListener('a11y-chatbot-input', handleDictationInput);
+      window.removeEventListener('a11y-chatbot-send', handleDictationSend);
+      window.removeEventListener('a11y-chatbot-clear', handleDictationClear);
+    };
+  }, [sendCurrentMessage]);
 
   // Clear chat history
   const clearChat = () => {
