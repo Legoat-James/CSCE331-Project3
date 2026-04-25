@@ -1,12 +1,13 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 
-// MyMemory uses different language codes for a few locales
+// Google Translate uses slightly different codes for a few locales
 const LANG_CODE_MAP = {
   zh: 'zh-CN',
 };
 
 const STORAGE_KEY_LANG = 'i18n-lang';
-const STORAGE_PREFIX = 'tl_';
+// v2 prefix invalidates MyMemory cache entries; Google Translate results are stored here
+const STORAGE_PREFIX = 'tl_v2_';
 
 function loadStoredTranslations(lang) {
   try {
@@ -27,15 +28,6 @@ function persistTranslation(lang, original, translated) {
 }
 
 const TranslationContext = createContext(null);
-
-export const SUPPORTED_LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'es', label: 'Español' },
-  { code: 'zh', label: '中文' },
-  { code: 'fr', label: 'Français' },
-  { code: 'vi', label: 'Tiếng Việt' },
-  { code: 'ko', label: '한국어' },
-];
 
 export function TranslationProvider({ children }) {
   const [language, setLanguageState] = useState(
@@ -84,16 +76,18 @@ export function TranslationProvider({ children }) {
     // Kick off async fetch if nothing is already in-flight
     if (!pendingRef.current.has(cacheKey)) {
       pendingRef.current.add(cacheKey);
-      const apiLang = LANG_CODE_MAP[language] || language;
+      const target = LANG_CODE_MAP[language] || language;
 
-      fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${apiLang}`
-      )
+      fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, target }),
+      })
         .then(r => r.json())
         .then(data => {
-          const translated = data?.responseData?.translatedText;
-          // MyMemory returns the original on error or quota exceeded
+          const translated = data?.translated;
           if (!translated || translated === text) {
+            console.warn('[translate] no translation returned:', data);
             pendingRef.current.delete(cacheKey);
             return;
           }
@@ -101,7 +95,10 @@ export function TranslationProvider({ children }) {
           setTranslations(prev => ({ ...prev, [cacheKey]: translated }));
           pendingRef.current.delete(cacheKey);
         })
-        .catch(() => pendingRef.current.delete(cacheKey));
+        .catch((err) => {
+          console.error('[translate] fetch error:', err);
+          pendingRef.current.delete(cacheKey);
+        });
     }
 
     // Return original while the translation is loading

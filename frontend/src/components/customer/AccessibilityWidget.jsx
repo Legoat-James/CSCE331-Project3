@@ -1,7 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { useTranslate, SUPPORTED_LANGUAGES } from '../../contexts/TranslationContext';
-import { ThemeContext } from '../../App';
+import { useTranslate } from '../../contexts/TranslationContext';
+import { SUPPORTED_LANGUAGES } from '../../contexts/languages';
+import { ThemeContext } from '../../contexts/ThemeContext';
 import './AccessibilityWidget.css';
 import 'regenerator-runtime/runtime';
 

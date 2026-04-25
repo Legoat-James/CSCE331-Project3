@@ -1,11 +1,12 @@
 import { ErrorBoundary } from 'react-error-boundary';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Routes, Route, useLocation } from 'react-router';
-import { useState, useEffect, createContext, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navbar } from 'react-bootstrap';
 import Portal from './Portal';
 import Customer from './Customer';
 import { TranslationProvider } from './contexts/TranslationContext';
+import { ThemeContext } from './contexts/ThemeContext';
 import NotFound from './NotFound';
 import Cashier from './Cashier';
 import Manager from './Manager';
@@ -13,11 +14,8 @@ import Login from './Login';
 import MenuBoard from './MenuBoard';
 import Kitchen from './Kitchen';
 import AuthRoute from './components/AuthRoute';
-//create a client for react query
+
 const queryClient = new QueryClient();
-//create a theme context
-// eslint-disable-next-line react-refresh/only-export-components
-export const ThemeContext = createContext();
 
 
 function ErrorFallback({ error, resetErrorBoundary }) { 
