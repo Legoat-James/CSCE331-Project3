@@ -5,7 +5,7 @@ import Menuitems from './components/cashier/MenuItems';
 import OrderSummary from './components/cashier/OrderSummary';
 import apiClient from './api/client_config.js';
 import ChatBot from './components/customer/Chatbot.jsx';
-import { ThemeContext } from './App';
+import { ThemeContext } from './contexts/ThemeContext';
 
 export default function Cashier() {
     const { theme, setTheme } = useContext(ThemeContext);

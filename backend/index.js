@@ -2638,6 +2638,46 @@ app.put('/api/transactions/fill', async (req, res, next) => {
   }
 });
 
+app.post('/api/translate', async (req, res, next) => {
+  try {
+    const { text, target } = req.body;
+    if (!text || !target) {
+      throw new ApiError(400, 'Missing required fields: text, target');
+    }
+
+    const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
+    console.log('[translate] key loaded:', apiKey ? `${apiKey.slice(0, 8)}...` : 'MISSING');
+    if (!apiKey) {
+      throw new ApiError(500, 'Translation service is not configured.');
+    }
+
+    const response = await fetch(
+      `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: text, source: 'en', target, format: 'text' }),
+      }
+    );
+
+    const data = await response.json();
+    console.log('[translate] Google response status:', response.status, JSON.stringify(data).slice(0, 200));
+
+    if (!response.ok) {
+      throw new ApiError(response.status, data?.error?.message || 'Translation request failed.');
+    }
+
+    const translated = data?.data?.translations?.[0]?.translatedText;
+    if (!translated) {
+      throw new ApiError(502, 'Unexpected response from translation service.');
+    }
+
+    res.json({ translated });
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use('/api', (req, res) => {
   res.status(404).json({
     status: 404,

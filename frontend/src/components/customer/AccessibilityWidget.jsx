@@ -1,6 +1,7 @@
 import { useState, useContext } from 'react';
-import { useTranslate, SUPPORTED_LANGUAGES } from '../../contexts/TranslationContext';
-import { ThemeContext } from '../../App';
+import { useTranslate } from '../../contexts/TranslationContext';
+import { SUPPORTED_LANGUAGES } from '../../contexts/languages';
+import { ThemeContext } from '../../contexts/ThemeContext';
 import './AccessibilityWidget.css';
 
 function AccessibilityWidget() {

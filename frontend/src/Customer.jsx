@@ -1,10 +1,10 @@
 import './Customer.css';
 import { useGet, useMutate} from './hooks/useApi';
 import React, { useState, useEffect, useMemo, useCallback, useContext } from 'react';
-import { Navbar, Nav, Container, Spinner } from 'react-bootstrap';
+import { Navbar, Nav, NavDropdown, Container, Spinner } from 'react-bootstrap';
 import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal, Chatbot, AccessibilityWidget } from './components/customer';
 import { useTranslate } from './contexts/TranslationContext';
-import { ThemeContext } from './App';
+import { ThemeContext } from './contexts/ThemeContext';
 
 // Import images from assets
 import blackTeaImg from './assets/Black-tea.jpg';
@@ -331,6 +331,7 @@ function Customer() {
     [allMenuItems]
   );
 
+  const ALL_DRINKS = 'All Drinks';
   const SUBCATEGORY_ORDER = ['Teas', 'Refreshers', 'Coffee/Matcha', 'Specials', 'Seasonal'];
 
   const drinkSubcategories = useMemo(() => {
@@ -345,7 +346,7 @@ function Customer() {
   }, [drinkItems]);
 
   useEffect(() => {
-    if (drinkSubcategories.length > 0 && activeCategory !== 'food' && !drinkSubcategories.includes(activeCategory)) {
+    if (drinkSubcategories.length > 0 && activeCategory !== 'food' && activeCategory !== ALL_DRINKS && !drinkSubcategories.includes(activeCategory)) {
       setActiveCategory(drinkSubcategories[0]);
     }
   }, [drinkSubcategories]);
@@ -407,7 +408,9 @@ function Customer() {
   // Computed values for current selection
   const visibleItems = activeCategory === 'food'
     ? foodItems
-    : drinkItems.filter((item) => item.subcategory === activeCategory);
+    : activeCategory === ALL_DRINKS
+      ? drinkItems
+      : drinkItems.filter((item) => item.subcategory === activeCategory);
   const selectedDrinkPrice = selectedDrink?.sizeOptions?.[selectedDrinkSize] ?? selectedDrink?.price;
   const selectedDrinkMenuId = selectedDrink?.sizeMenuIds?.[selectedDrinkSize] ?? selectedDrink?.id;
   const availableDrinkSizes = selectedDrink?.sizeOptions
@@ -930,18 +933,29 @@ function Customer() {
             <Navbar.Toggle aria-controls="customerCategoryNav" />
 
             <Navbar.Collapse id="customerCategoryNav">
-              <Nav className="me-auto tea-links" style={{ '--tab-count': drinkSubcategories.length + 1 }}>
-                {drinkSubcategories.map((sub) => (
-                  <Nav.Item key={sub}>
-                    <button
-                      type="button"
-                      className={`kiosk-category-btn ${activeCategory === sub ? 'is-active' : ''}`}
+              <Nav className="me-auto tea-links" style={{ '--tab-count': 2 }}>
+                <NavDropdown
+                  title={activeCategory !== 'food' ? translate(activeCategory) : translate('Drinks')}
+                  id="drink-category-dropdown"
+                  className={`kiosk-dropdown ${activeCategory !== 'food' ? 'is-active' : ''}`}
+                >
+                  <NavDropdown.Item
+                    key={ALL_DRINKS}
+                    onClick={() => setActiveCategory(ALL_DRINKS)}
+                    className={`kiosk-dropdown-item ${activeCategory === ALL_DRINKS ? 'is-active' : ''}`}
+                  >
+                    {translate(ALL_DRINKS)}
+                  </NavDropdown.Item>
+                  {drinkSubcategories.map((sub) => (
+                    <NavDropdown.Item
+                      key={sub}
                       onClick={() => setActiveCategory(sub)}
+                      className={`kiosk-dropdown-item ${activeCategory === sub ? 'is-active' : ''}`}
                     >
                       {translate(sub)}
-                    </button>
-                  </Nav.Item>
-                ))}
+                    </NavDropdown.Item>
+                  ))}
+                </NavDropdown>
                 <Nav.Item>
                   <button
                     type="button"
@@ -1035,29 +1049,27 @@ function Customer() {
         {/* --- NEW: Floating Chatbot Widget --- */}
         <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1050 }}>
           
-          {/* The Chat Window (Only renders if isChatOpen is true) */}
-          {isChatOpen && (
-            <Card 
-              className="mb-3 shadow-lg border-0" 
-              style={{ width: '350px', height: '500px', borderRadius: '16px', overflow: 'hidden' }}
+          {/* The Chat Window — always mounted so translate() calls pre-fetch when language changes */}
+          <Card
+            className="mb-3 shadow-lg border-0"
+            style={{ width: '350px', height: '500px', borderRadius: '16px', overflow: 'hidden', display: isChatOpen ? undefined : 'none' }}
+          >
+            <Card.Header
+              className="d-flex justify-content-between align-items-center text-white"
+              style={{ backgroundColor: 'var(--tea-wood)' }}
             >
-              <Card.Header 
-                className="d-flex justify-content-between align-items-center text-white"
-                style={{ backgroundColor: 'var(--tea-wood)' }}
-              >
-                <h6 className="mb-0 fw-bold">{translate('AI Assistant')}</h6>
-                <button 
-                  type="button" 
-                  className="btn-close btn-close-white" 
-                  aria-label="Close"
-                  onClick={() => setIsChatOpen(false)}
-                ></button>
-              </Card.Header>
-              <Card.Body className="p-0 overflow-auto bg-light">
-                <Chatbot onChatAction={handleChatAction} />
-              </Card.Body>
-            </Card>
-          )}
+              <h6 className="mb-0 fw-bold">{translate('AI Assistant')}</h6>
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                aria-label="Close"
+                onClick={() => setIsChatOpen(false)}
+              ></button>
+            </Card.Header>
+            <Card.Body className="p-0 overflow-auto bg-light">
+              <Chatbot onChatAction={handleChatAction} />
+            </Card.Body>
+          </Card>
           {/* The Chat Bubble Button */}
           <div className="d-flex justify-content-end">
             <Button

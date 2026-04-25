@@ -69,7 +69,8 @@
   padding-right: 0.75rem;
 }
 
-.tea-links .nav-item {
+.tea-links .nav-item,
+.tea-links .nav-item.dropdown {
   flex: 1 1 0;
   min-width: 0;
 }
@@ -93,6 +94,94 @@
 .tea-link.is-active {
   background: var(--tea-wood);
   color: #fff;
+}
+
+/* Drinks dropdown toggle */
+.kiosk-dropdown > .dropdown-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: clamp(0.35rem, 0.6vw, 0.8rem) clamp(0.5rem, 1.5vw, 1.2rem);
+  font-size: clamp(0.7rem, calc(9vw / var(--tab-count, 2)), 1.05rem);
+  font-weight: 700;
+  border-radius: 50px;
+  background-color: var(--tea-modal-btn-bg);
+  color: var(--tea-wood) !important;
+  border: 2px solid var(--tea-wood);
+  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1),
+              background-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kiosk-dropdown > .dropdown-toggle:hover,
+.kiosk-dropdown > .dropdown-toggle:focus {
+  background-color: var(--tea-accent-soft) !important;
+  color: var(--tea-wood-dark) !important;
+  border-color: var(--tea-wood);
+  box-shadow: none;
+}
+
+.kiosk-dropdown.is-active > .dropdown-toggle {
+  background-color: var(--tea-wood) !important;
+  color: #ffffff !important;
+  border-color: var(--tea-wood-dark);
+  box-shadow: 0 8px 16px rgba(111, 76, 54, 0.25);
+}
+
+.kiosk-dropdown.is-active > .dropdown-toggle:hover,
+.kiosk-dropdown.is-active > .dropdown-toggle:focus {
+  background-color: var(--tea-wood-dark) !important;
+  color: #ffffff !important;
+}
+
+.kiosk-dropdown > .dropdown-toggle:active {
+  transform: scale(0.94);
+  box-shadow: 0 2px 4px rgba(111, 76, 54, 0.15);
+}
+
+.kiosk-dropdown > .dropdown-toggle::after {
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Dropdown menu panel */
+.kiosk-dropdown .dropdown-menu {
+  border: 2px solid var(--tea-wood-dark);
+  border-radius: 14px;
+  background: var(--tea-bg-soft);
+  box-shadow: 0 8px 24px rgba(80, 57, 37, 0.18);
+  padding: 0.4rem;
+  min-width: 160px;
+}
+
+/* Individual dropdown items */
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item {
+  border-radius: 10px;
+  font-weight: 600;
+  color: var(--tea-wood-dark);
+  padding: 0.45rem 0.85rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item:hover,
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item:focus {
+  background-color: var(--tea-accent-soft);
+  color: var(--tea-wood-dark);
+}
+
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item.is-active {
+  background-color: var(--tea-wood);
+  color: #ffffff;
+}
+
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item.is-active:hover,
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item.is-active:focus {
+  background-color: var(--tea-wood-dark);
+  color: #ffffff;
 }
 
 /* Touch-friendly nav buttons — font and padding scale with --tab-count */
