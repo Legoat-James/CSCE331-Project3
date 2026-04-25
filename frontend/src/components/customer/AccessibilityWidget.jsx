@@ -4,7 +4,6 @@ import { useTranslate } from '../../contexts/TranslationContext';
 import { SUPPORTED_LANGUAGES } from '../../contexts/languages';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import './AccessibilityWidget.css';
-import 'regenerator-runtime/runtime';
 
 function AccessibilityWidget() {
   const [isOpen, setIsOpen] = useState(false);
