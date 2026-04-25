@@ -13,9 +13,9 @@ const isDevelopmentRotation = false; //set to true to rotate the app. FOR TESTIN
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <div className={isDevelopmentRotation ? "kiosk-mode-rotation" : ""}>
+      
         <App />
-      </div>
+    
     </BrowserRouter>
   </StrictMode>,
 )

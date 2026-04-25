@@ -188,7 +188,7 @@ const parseDrinkVariant = (drinkName) => {
 };
 
 function Customer() {
-  const { contrastTheme, setTheme } = useContext(ThemeContext);
+  const { contrastTheme, setTheme, magnifyScreen, setMagnifyScreen } = useContext(ThemeContext);
   const { translate } = useTranslate();
 
   // UI state
@@ -921,8 +921,8 @@ function Customer() {
   }
 
   return (
-    <div className={`${theme === "high-contrast" ? "customer-page-2" : "customer-page"}`}>
-      <div className="customer-shell pt-2">
+    <div className={`${theme === "high-contrast" ? "customer-page-2" : "customer-page"} ${magnifyScreen ? "zoomed" : ""}`}>
+      <div className={`customer-shell pt-2`}>
         {/* Category Navigation */}
         <Navbar expand="lg" className="tea-nav container mb-3" aria-label="Category navigation">
           <Container fluid className="p-0 align-items-center">
