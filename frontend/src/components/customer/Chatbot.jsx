@@ -87,7 +87,7 @@ You help customers with:
 - Drink sizes: Small, Medium, Large ()
 - Sugar levels: 50%, 75%, 100%, 125%, 150% (this is represented as)
 - Ice levels: 50%, 75%, 100%, 125%, 150%
-- Milk alternatives: Oat milk available (+$0.75)
+- Milk alternatives: Oat milk available
 - Sugar alternatives: Sugar substitute available
 ${menuSection}
 
