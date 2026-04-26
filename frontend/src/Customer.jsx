@@ -1088,6 +1088,7 @@ function Customer() {
               <button
                 type="button"
                 className="btn-close btn-close-white"
+                style={{ transform: 'scale(1.5)', marginRight: '0.25rem' }}
                 aria-label="Close"
                 onClick={() => setIsChatOpen(false)}
               ></button>
@@ -1101,8 +1102,8 @@ function Customer() {
             <Button
               className="rounded-circle shadow-lg d-flex justify-content-center align-items-center border-0"
               style={{ 
-                width: '65px', 
-                height: '65px', 
+                width: '6rem', 
+                height: '6rem', 
                 backgroundColor: 'var(--tea-wood)',
                 transition: 'transform 0.2s'
               }}
@@ -1111,7 +1112,7 @@ function Customer() {
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-              <span style={{ fontSize: '1.5rem' }}>
+              <span style={{ fontSize: '2.25rem' }}>
                 {isChatOpen ? '✖️' : '💬'}
               </span>
             </Button>

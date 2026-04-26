@@ -209,7 +209,7 @@ function AccessibilityWidget() {
       {isOpen && (
         <div
           className="a11y-panel"
-          style={view === 'dictation' ? { width: '280px' } : undefined}
+          style={view === 'dictation' ? { width: '420px' } : undefined}
           role="dialog"
           aria-modal="false"
           aria-label={translate('Accessibility')}
@@ -237,7 +237,7 @@ function AccessibilityWidget() {
                 aria-label='Set Language Button'
               >
                 {/* Globe icon */}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
                   <ellipse cx="12" cy="12" rx="4" ry="10" stroke="currentColor" strokeWidth="2"/>
                   <line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" strokeWidth="2"/>
@@ -321,25 +321,25 @@ function AccessibilityWidget() {
                   ← {translate('Back')}
                 </button>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--tea-wood-dark)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.675rem' }}>
+                  <div style={{ fontSize: '1.23rem', fontWeight: 700, color: 'var(--tea-wood-dark)' }}>
                     Dictation Test
                   </div>
 
-                  <div style={{ fontSize: '0.78rem', color: 'var(--tea-wood-dark)' }}>
+                  <div style={{ fontSize: '1.17rem', color: 'var(--tea-wood-dark)' }}>
                     Status: {listening ? 'Listening' : 'Idle'}
                   </div>
 
-                  <div style={{ fontSize: '0.74rem', color: 'var(--tea-wood-dark)' }}>
+                  <div style={{ fontSize: '1.11rem', color: 'var(--tea-wood-dark)' }}>
                     Background Mode: {backgroundDictationEnabled ? 'On (commands still work when closed)' : 'Off'}
                   </div>
 
                   {!browserSupportsSpeechRecognition ? (
-                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--tea-wood-dark)' }}>
+                    <p style={{ margin: 0, fontSize: '1.23rem', color: 'var(--tea-wood-dark)' }}>
                       Speech recognition is not supported in this browser.
                     </p>
                   ) : isMicrophoneAvailable === false ? (
-                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--tea-wood-dark)' }}>
+                    <p style={{ margin: 0, fontSize: '1.23rem', color: 'var(--tea-wood-dark)' }}>
                       Microphone access is needed for dictation.
                     </p>
                   ) : (
@@ -347,13 +347,13 @@ function AccessibilityWidget() {
                       <div
                         aria-live="polite"
                         style={{
-                          minHeight: '88px',
-                          padding: '0.55rem',
+                          minHeight: '132px',
+                          padding: '0.825rem',
                           borderRadius: '10px',
                           border: '1px solid var(--tea-border)',
                           background: '#fff8ef',
                           color: 'var(--tea-wood-dark)',
-                          fontSize: '0.82rem',
+                          fontSize: '1.23rem',
                           lineHeight: 1.35,
                           overflowY: 'auto',
                           whiteSpace: 'pre-wrap',
@@ -362,7 +362,7 @@ function AccessibilityWidget() {
                         {transcript || 'Speak here and your words will appear in this box.'}
                       </div>
 
-                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <div style={{ display: 'flex', gap: '0.525rem' }}>
                         <button
                           type="button"
                           className="a11y-option-btn"
@@ -387,18 +387,18 @@ function AccessibilityWidget() {
 
                       <div
                         style={{
-                          marginTop: '0.2rem',
-                          padding: '0.55rem',
+                          marginTop: '0.3rem',
+                          padding: '0.825rem',
                           borderRadius: '10px',
                           border: '1px solid var(--tea-border)',
                           background: '#fff8ef',
                           color: 'var(--tea-wood-dark)',
                         }}
                       >
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.45rem' }}>
                           Voice Commands
                         </div>
-                        <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.76rem', lineHeight: 1.35 }}>
+                        <ul style={{ margin: 0, paddingLeft: '1.5rem', fontSize: '1.14rem', lineHeight: 1.35 }}>
                           <li>"Enter message" or "Send message": sends the current dictated text to chat.</li>
                           <li>"Clear message": clears the chat input text.</li>
                           <li>"Checkout order" or "Finish order": attempts to submit the current order.</li>
@@ -424,7 +424,7 @@ function AccessibilityWidget() {
         aria-haspopup="dialog"
       >
         {/* Universal Access icon (SVG for cross-platform consistency) */}
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+        <svg width="39" height="39" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
           <path d="M12 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm8 5H4a1 1 0 0 0 0 2h3.5l-1 5.5-2 5a1 1 0 1 0 1.86.74L8 16.5h8l1.64 3.74a1 1 0 0 0 1.86-.74l-2-5-1-5.5H20a1 1 0 0 0 0-2z"/>
         </svg>
       </button>
