@@ -11,28 +11,6 @@ function AccessibilityWidget() {
   const [backgroundDictationEnabled, setBackgroundDictationEnabled] = useState(true);
   const { language, setLanguage, translate } = useTranslate();
   const { theme, setTheme, textSize, setTextSize, magnifyScreen, setMagnifyScreen } = useContext(ThemeContext);
-  const triggerCheckoutFromVoice = () => {
-    const clickable = [
-      ...document.querySelectorAll('button'),
-      ...document.querySelectorAll('input[type="submit"], input[type="button"]'),
-    ];
-
-    const checkoutTarget = clickable.find((element) => {
-      const text = (
-        element.tagName.toLowerCase() === 'input'
-          ? element.value
-          : element.textContent
-      )
-        ?.toLowerCase()
-        .trim();
-
-      return text?.includes('finish order') || text?.includes('checkout');
-    });
-
-    if (checkoutTarget) {
-      checkoutTarget.click();
-    }
-  };
 
   const voiceCommands = [
     {
@@ -54,14 +32,6 @@ function AccessibilityWidget() {
       command: ['clear message', 'clear the message'],
       callback: () => {
         window.dispatchEvent(new CustomEvent('a11y-chatbot-clear'));
-        resetTranscript();
-      },
-    },
-    {
-      command: ['checkout order', 'check out order', 'finish order'],
-      callback: () => {
-        window.dispatchEvent(new CustomEvent('a11y-checkout-order'));
-        triggerCheckoutFromVoice();
         resetTranscript();
       },
     },
@@ -126,7 +96,6 @@ function AccessibilityWidget() {
 
     if (shouldCheckoutOrder) {
       window.dispatchEvent(new CustomEvent('a11y-checkout-order'));
-      triggerCheckoutFromVoice();
       resetTranscript();
       return;
     }
