@@ -539,7 +539,7 @@ export default function Manager() {
       {/* Analytics, Controls, and Reports Row */}
       <Row className="g-3 mb-4">
         {/* Sales Analytics - Sets the height standard for this row */}
-        <Col lg={6}>
+        <Col lg={9}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h5 className="mb-0">Sales Analytics</h5>
@@ -551,7 +551,7 @@ export default function Manager() {
         </Col>
 
         {/* Date Range Controls */}
-        <Col lg={2}>
+        <Col lg={3}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h6 className="mb-0">Sales Report Date Range</h6>
@@ -644,68 +644,58 @@ export default function Manager() {
               </Form.Group>
               <Button
                 variant="primary"
-                className="w-100 dashboard-btn mt-3"
+                className="w-100 dashboard-btn mt-3 mb-3"
                 onClick={() => generateReport('Sales', { startDate, endDate, startHour, endHour })}
                 disabled={!startDate || !endDate}
               >
-                Generate
+                Generate Sales Report
               </Button>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        {/* X/Z Reports Buttons */}
-        <Col lg={2}>
-          <Card className="dashboard-card h-100">
-            <Card.Header className="dashboard-card-header">
-              <h6 className="mb-0">Reports</h6>
-            </Card.Header>
-            <Card.Body className="dashboard-card-body d-flex flex-column">
-              <ButtonGroup vertical className="w-100">
+              <hr className="my-2" />
+              <ButtonGroup vertical className="w-100 mt-2">
                 <Button
                   variant="outline-success"
-                  className="mb-3 dashboard-btn"
+                  className="mb-2 dashboard-btn"
                   onClick={() => generateReport('X')}
                 >
-                  X Report
+                  Generate X Report
                 </Button>
                 <Button
                   variant="outline-success"
                   className="dashboard-btn"
                   onClick={() => generateReport('Z')}
                 >
-                  Z Report
+                  Generate Z Report
                 </Button>
               </ButtonGroup>
             </Card.Body>
           </Card>
         </Col>
-
-        {/* Report Data Output */}
-        <Col lg={2}>
-          <Card className="dashboard-card h-100">
-            <Card.Header className="dashboard-card-header">
-              <h6 className="mb-0">Report Data</h6>
-            </Card.Header>
-            <Card.Body className="dashboard-card-body" style={{ overflowY: 'auto', maxHeight: '50vh' }}>
-              {renderReportData()}
-            </Card.Body>
-          </Card>
-        </Col>
       </Row>
 
-      {/* Secondary Row for Recent Orders */}
+      {/* Secondary Row for Recent Orders and Report Data */}
       <Row className="g-3 mb-4">
-        {/* Recent Orders - Matches width of Sales Analytics */}
-        <Col lg={6} className="d-flex">
+        {/* Recent Orders - Takes 30% */}
+        <Col style={{ flex: '0 0 30%' }} className="d-flex">
           <Card className="dashboard-card h-100 w-100 d-flex flex-column">
             <Card.Header className="dashboard-card-header flex-shrink-0">
               <h5 className="mb-0">Recent Orders</h5>
             </Card.Header>
-            <Card.Body className="dashboard-card-body flex-grow-1" style={{ overflowY: 'auto', minHeight: 0, paddingBottom: '1rem' }}>
+            <Card.Body className="dashboard-card-body flex-grow-1" style={{ overflowY: 'auto', maxHeight: '50vh', minHeight: 0, paddingBottom: '1rem' }}>
               <ListGroup variant="flush" className="dashboard-list h-100">
                 {renderRecentOrders(recentOrders || [])}
               </ListGroup>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        {/* Report Data Output - Takes 70% */}
+        <Col style={{ flex: '0 0 70%' }}>
+          <Card className="dashboard-card h-100">
+            <Card.Header className="dashboard-card-header flex-shrink-0">
+              <h5 className="mb-0">Report Data</h5>
+            </Card.Header>
+            <Card.Body className="dashboard-card-body flex-grow-1" style={{ overflowY: 'auto', maxHeight: '50vh', minHeight: 0 }}>
+              {renderReportData()}
             </Card.Body>
           </Card>
         </Col>
@@ -734,7 +724,7 @@ export default function Manager() {
   return (
     <>
       <NavBar />
-      <Container fluid className="manager-view p-4">
+      <Container fluid className="manager-view py-4 px-md-5">
         {renderActiveView()}
       </Container>
     </>
