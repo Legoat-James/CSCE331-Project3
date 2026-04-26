@@ -539,7 +539,7 @@ export default function Manager() {
       {/* Analytics, Controls, and Reports Row */}
       <Row className="g-3 mb-4">
         {/* Sales Analytics - Sets the height standard for this row */}
-        <Col lg={6}>
+        <Col lg={8}>
           <Card className="dashboard-card h-100">
             <Card.Header className="dashboard-card-header">
               <h5 className="mb-0">Sales Analytics</h5>
@@ -680,24 +680,12 @@ export default function Manager() {
             </Card.Body>
           </Card>
         </Col>
-
-        {/* Report Data Output */}
-        <Col lg={2}>
-          <Card className="dashboard-card h-100">
-            <Card.Header className="dashboard-card-header">
-              <h6 className="mb-0">Report Data</h6>
-            </Card.Header>
-            <Card.Body className="dashboard-card-body" style={{ overflowY: 'auto', maxHeight: '50vh' }}>
-              {renderReportData()}
-            </Card.Body>
-          </Card>
-        </Col>
       </Row>
 
-      {/* Secondary Row for Recent Orders */}
+      {/* Secondary Row for Recent Orders and Report Data */}
       <Row className="g-3 mb-4">
-        {/* Recent Orders - Matches width of Sales Analytics */}
-        <Col lg={6} className="d-flex">
+        {/* Recent Orders - Takes 30% */}
+        <Col style={{ flex: '0 0 30%' }} className="d-flex">
           <Card className="dashboard-card h-100 w-100 d-flex flex-column">
             <Card.Header className="dashboard-card-header flex-shrink-0">
               <h5 className="mb-0">Recent Orders</h5>
@@ -706,6 +694,18 @@ export default function Manager() {
               <ListGroup variant="flush" className="dashboard-list h-100">
                 {renderRecentOrders(recentOrders || [])}
               </ListGroup>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        {/* Report Data Output - Takes 70% */}
+        <Col style={{ flex: '0 0 70%' }}>
+          <Card className="dashboard-card h-100">
+            <Card.Header className="dashboard-card-header">
+              <h5 className="mb-0">Report Data</h5>
+            </Card.Header>
+            <Card.Body className="dashboard-card-body" style={{ overflowY: 'auto', maxHeight: '50vh' }}>
+              {renderReportData()}
             </Card.Body>
           </Card>
         </Col>
