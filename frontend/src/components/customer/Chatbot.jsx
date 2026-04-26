@@ -44,7 +44,7 @@ export default function Chatbot({ onChatAction }) {
     }, []);
 
   // Build system prompt with menu information
-  const buildSystemPrompt = () => {
+  const buildSystemPrompt = useCallback(() => {
     let menuSection = '';
     
     // Add drinks
@@ -141,7 +141,7 @@ name: string //the name of the modification or topping (for ice or sugar level m
 }]
 }
 `;
-  };
+  }, [menuData]);
 
   // Test the API connection via backend proxy
   const testConnection = async () => {
