@@ -5,10 +5,7 @@
 
 /* CSS Custom Properties */
 
-
-/* Page Layout */
-.customer-page {
-  min-height: 100vh;
+/* .scroll-container{
   background-color: var(--tea-root-bg);
   background-image:
     linear-gradient(180deg, rgba(255, 248, 237, 0.28), rgba(122, 94, 76, 0.08)),
@@ -27,17 +24,58 @@
       rgba(0, 0, 0, 0) 18px
     );
   color: var(--tea-root-bg-line);
+} */
+/* Page Layout */
+.customer-page {
+  min-height: 100%;
+  background-color: var(--tea-root-bg);
+  background-image:
+    linear-gradient(180deg, rgba(255, 248, 237, 0.28), rgba(122, 94, 76, 0.08)),
+    repeating-linear-gradient(
+      8deg,
+      rgba(146, 108, 79, 0.16) 0px,
+      rgba(146, 108, 79, 0.16) 2px,
+      rgba(236, 217, 190, 0.08) 2px,
+      rgba(236, 217, 190, 0.08) 14px
+    ),
+    repeating-linear-gradient(
+      -6deg,
+      rgba(120, 82, 58, 0.08) 0px,
+      rgba(120, 82, 58, 0.08) 1px,
+      rgba(0, 0, 0, 0) 1px,
+      rgba(0, 0, 0, 0) 18px
+    );
+  color: var(--tea-root-bg-line);
+
+  width: 100%;
+  
+  transform-origin: top left;
+  transform: scale(1);
+  
+}
+
+.customer-page.zoomed{
+  transform: scale(1.5);
 }
 
 .customer-page-2 {
   min-height: 100vh;
   background-color: var(--tea-root-bg);
   color: var(--tea-root-bg-line);
+  width: 100%;
+  height: 100%;
+  transform-origin: top left;
+  transform: scale(1);
+}
+
+.customer-page-2.zoomed{
+  transform: scale(1.5);
 }
 
 .customer-shell {
   width: min(1200px, 100%);
   margin: 0 auto;
+  height: 100%;
 }
 
 /* Navigation */
@@ -64,6 +102,15 @@
 
 .tea-links {
   gap: 0.35rem;
+  flex: 1 1 0;
+  min-width: 0;
+  padding-right: 0.75rem;
+}
+
+.tea-links .nav-item,
+.tea-links .nav-item.dropdown {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .tea-link {
@@ -87,27 +134,117 @@
   color: #fff;
 }
 
-/* Big, chunky, touch-friendly buttons */
+/* Drinks dropdown toggle */
+.kiosk-dropdown > .dropdown-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: clamp(0.35rem, 0.6vw, 0.8rem) clamp(0.5rem, 1.5vw, 1.2rem);
+  font-size: clamp(0.7rem, calc(9vw / var(--tab-count, 2)), 1.05rem);
+  font-weight: 700;
+  border-radius: 50px;
+  background-color: var(--tea-modal-btn-bg);
+  color: var(--tea-wood) !important;
+  border: 2px solid var(--tea-wood);
+  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1),
+              background-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kiosk-dropdown > .dropdown-toggle:hover,
+.kiosk-dropdown > .dropdown-toggle:focus {
+  background-color: var(--tea-accent-soft) !important;
+  color: var(--tea-wood-dark) !important;
+  border-color: var(--tea-wood);
+  box-shadow: none;
+}
+
+.kiosk-dropdown.is-active > .dropdown-toggle {
+  background-color: var(--tea-wood) !important;
+  color: #ffffff !important;
+  border-color: var(--tea-wood-dark);
+  box-shadow: 0 8px 16px rgba(111, 76, 54, 0.25);
+}
+
+.kiosk-dropdown.is-active > .dropdown-toggle:hover,
+.kiosk-dropdown.is-active > .dropdown-toggle:focus {
+  background-color: var(--tea-wood-dark) !important;
+  color: #ffffff !important;
+}
+
+.kiosk-dropdown > .dropdown-toggle:active {
+  transform: scale(0.94);
+  box-shadow: 0 2px 4px rgba(111, 76, 54, 0.15);
+}
+
+.kiosk-dropdown > .dropdown-toggle::after {
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Dropdown menu panel */
+.kiosk-dropdown .dropdown-menu {
+  border: 2px solid var(--tea-wood-dark);
+  border-radius: 14px;
+  background: var(--tea-bg-soft);
+  box-shadow: 0 8px 24px rgba(80, 57, 37, 0.18);
+  padding: 0.4rem;
+  min-width: 160px;
+}
+
+/* Individual dropdown items */
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item {
+  border-radius: 10px;
+  font-weight: 600;
+  color: var(--tea-wood-dark);
+  padding: 0.45rem 0.85rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item:hover,
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item:focus {
+  background-color: var(--tea-accent-soft);
+  color: var(--tea-wood-dark);
+}
+
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item.is-active {
+  background-color: var(--tea-wood);
+  color: #ffffff;
+}
+
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item.is-active:hover,
+.kiosk-dropdown .dropdown-item.kiosk-dropdown-item.is-active:focus {
+  background-color: var(--tea-wood-dark);
+  color: #ffffff;
+}
+
+/* Touch-friendly nav buttons — font and padding scale with --tab-count */
 .kiosk-category-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem 3rem; /* Huge tap target area */
+  padding: 0.5rem 3rem; /* Huge tap target area */
   font-size: 1.75rem; /* Very large text */
   font-weight: 700;
-  border-radius: 50px; /* Pill shape naturally invites tapping */
-  
-  /* Styling to match your tea theme */
+  border-radius: 50px;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+  line-height: 1.2;
+
   background-color: var(--tea-modal-btn-bg);
   color: var(--tea-wood);
-  border: 3px solid var(--tea-wood);
-  
-  /* Snappy transitions */
-  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1), 
-              background-color 0.2s ease, 
+  border: 2px solid var(--tea-wood);
+
+  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1),
+              background-color 0.2s ease,
               color 0.2s ease,
               box-shadow 0.2s ease;
-              
+
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -130,7 +267,7 @@
 .kiosk-layout {
   flex-grow: 1;
   max-height: 800px;
-  height: clamp(500px, calc(100vh - 140px), 800px);
+  height: clamp(450px, calc(100vh - 140px), 800px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -284,6 +421,7 @@
   margin-bottom: 0.45rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: calc(1.3em * 2);

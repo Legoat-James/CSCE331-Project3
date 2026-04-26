@@ -1,10 +1,10 @@
 import './Customer.css';
 import { useGet, useMutate} from './hooks/useApi';
 import React, { useState, useEffect, useMemo, useCallback, useContext } from 'react';
-import { Navbar, Nav, Container, Spinner } from 'react-bootstrap';
+import { Navbar, Nav, NavDropdown, Container, Spinner } from 'react-bootstrap';
 import { Menu, OrderSummary, DrinkCustomizer, FoodConfirmModal, Chatbot, AccessibilityWidget } from './components/customer';
 import { useTranslate } from './contexts/TranslationContext';
-import { ThemeContext } from './App';
+import { ThemeContext } from './contexts/ThemeContext';
 
 // Import images from assets
 import blackTeaImg from './assets/Black-tea.jpg';
@@ -188,11 +188,11 @@ const parseDrinkVariant = (drinkName) => {
 };
 
 function Customer() {
-  const { contrastTheme, setTheme } = useContext(ThemeContext);
+  const { contrastTheme, setTheme, magnifyScreen, setMagnifyScreen } = useContext(ThemeContext);
   const { translate } = useTranslate();
 
   // UI state
-  const [activeCategory, setActiveCategory] = useState('drink');
+  const [activeCategory, setActiveCategory] = useState('Teas');
   const [isToppingsOpen, setIsToppingsOpen] = useState(false);
   const [isFoodConfirmOpen, setIsFoodConfirmOpen] = useState(false);
 
@@ -241,6 +241,20 @@ function Customer() {
     console.log(`Current order items:`, orderItems);
   },[orderItems])
 
+  useEffect(() => {
+    const handleVoiceCustomerName = (event) => {
+      const nextName = String(event?.detail?.name || '').trim();
+      if (!nextName) return;
+      setCustomerName(nextName);
+    };
+
+    window.addEventListener('a11y-customer-name', handleVoiceCustomerName);
+
+    return () => {
+      window.removeEventListener('a11y-customer-name', handleVoiceCustomerName);
+    };
+  }, []);
+
   const getMenuDescription = useCallback((name, category) => {
     const normalizedName = normalizeItemName(name);
     const match = itemVisualsByName[normalizedName];
@@ -270,6 +284,7 @@ function Customer() {
           name: item.name,
           price,
           category,
+          subcategory: item.subcategory || '',
           image: getMenuImage(item.name, category),
           description: getMenuDescription(item.name, category),
         };
@@ -289,6 +304,7 @@ function Customer() {
             id: item.id,
             name: baseName,
             category: 'drink',
+            subcategory: item.subcategory || '',
             image: getMenuImage(baseName, 'drink'),
             description: getMenuDescription(baseName, 'drink'),
             sizeOptions: {},
@@ -328,6 +344,26 @@ function Customer() {
     () => allMenuItems.filter((item) => item.category === 'food'),
     [allMenuItems]
   );
+
+  const ALL_DRINKS = 'All Drinks';
+  const SUBCATEGORY_ORDER = ['Teas', 'Refreshers', 'Coffee/Matcha', 'Specials', 'Seasonal'];
+
+  const drinkSubcategories = useMemo(() => {
+    const available = new Set(drinkItems.map((item) => item.subcategory).filter(Boolean));
+    const ordered = SUBCATEGORY_ORDER.filter((sub) => available.has(sub));
+    drinkItems.forEach((item) => {
+      if (item.subcategory && !SUBCATEGORY_ORDER.includes(item.subcategory)) {
+        ordered.push(item.subcategory);
+      }
+    });
+    return ordered;
+  }, [drinkItems]);
+
+  useEffect(() => {
+    if (drinkSubcategories.length > 0 && activeCategory !== 'food' && activeCategory !== ALL_DRINKS && !drinkSubcategories.includes(activeCategory)) {
+      setActiveCategory(drinkSubcategories[0]);
+    }
+  }, [drinkSubcategories]);
 
   // Modification flags
   const hasSugarSlider = modificationItems.some((item) => item.name.toLowerCase() === 'sugar');
@@ -384,7 +420,11 @@ function Customer() {
   );
 
   // Computed values for current selection
-  const visibleItems = activeCategory === 'drink' ? drinkItems : foodItems;
+  const visibleItems = activeCategory === 'food'
+    ? foodItems
+    : activeCategory === ALL_DRINKS
+      ? drinkItems
+      : drinkItems.filter((item) => item.subcategory === activeCategory);
   const selectedDrinkPrice = selectedDrink?.sizeOptions?.[selectedDrinkSize] ?? selectedDrink?.price;
   const selectedDrinkMenuId = selectedDrink?.sizeMenuIds?.[selectedDrinkSize] ?? selectedDrink?.id;
   const availableDrinkSizes = selectedDrink?.sizeOptions
@@ -745,6 +785,18 @@ function Customer() {
     }
   }, [orderItems, orderSubtotal, orderMutation, customerName]);
 
+  useEffect(() => {
+    const handleVoiceCheckout = () => {
+      handleFinishOrder();
+    };
+
+    window.addEventListener('a11y-checkout-order', handleVoiceCheckout);
+
+    return () => {
+      window.removeEventListener('a11y-checkout-order', handleVoiceCheckout);
+    };
+  }, [handleFinishOrder]);
+
   const handleChatAction = useCallback((chatAction) => {
     const action = normalizeChatText(chatAction?.action);
     const incomingItems = Array.isArray(chatAction?.orderItems) ? chatAction.orderItems : [];
@@ -895,8 +947,8 @@ function Customer() {
   }
 
   return (
-    <div className={`${theme === "high-contrast" ? "customer-page-2" : "customer-page"}`}>
-      <div className="customer-shell pt-2">
+    <div className={`${theme === "high-contrast" ? "customer-page-2" : "customer-page"} ${magnifyScreen ? "zoomed" : ""}`}>
+      <div className={`customer-shell pt-2`}>
         {/* Category Navigation */}
         <Navbar expand="lg" className="tea-nav container mb-3" aria-label="Category navigation">
           <Container fluid className="p-0 align-items-center">
@@ -907,23 +959,36 @@ function Customer() {
             <Navbar.Toggle aria-controls="customerCategoryNav" />
 
             <Navbar.Collapse id="customerCategoryNav">
-              <Nav className="me-auto tea-links">
-                <Nav.Item>
-                  <button
-                    type="button"
-                    className={`kiosk-category-btn ${activeCategory === 'drink' ? 'is-active' : ''}`}
-                    onClick={() => setActiveCategory('drink')}
+              <Nav className="me-auto tea-links" style={{ '--tab-count': 2 }}>
+                <NavDropdown
+                  title={activeCategory !== 'food' ? translate(activeCategory) : translate('Drinks')}
+                  id="drink-category-dropdown"
+                  className={`kiosk-dropdown ${activeCategory !== 'food' ? 'is-active' : ''}`}
+                >
+                  <NavDropdown.Item
+                    key={ALL_DRINKS}
+                    onClick={() => setActiveCategory(ALL_DRINKS)}
+                    className={`kiosk-dropdown-item ${activeCategory === ALL_DRINKS ? 'is-active' : ''}`}
                   >
-                    <span className='me-2'>{translate('Drinks')}</span>
-                  </button>
-                </Nav.Item>
+                    {translate(ALL_DRINKS)}
+                  </NavDropdown.Item>
+                  {drinkSubcategories.map((sub) => (
+                    <NavDropdown.Item
+                      key={sub}
+                      onClick={() => setActiveCategory(sub)}
+                      className={`kiosk-dropdown-item ${activeCategory === sub ? 'is-active' : ''}`}
+                    >
+                      {translate(sub)}
+                    </NavDropdown.Item>
+                  ))}
+                </NavDropdown>
                 <Nav.Item>
                   <button
                     type="button"
                     className={`kiosk-category-btn ${activeCategory === 'food' ? 'is-active' : ''}`}
                     onClick={() => setActiveCategory('food')}
                   >
-                    <span className='me-2'>{translate('Food')}</span>
+                    {translate('Food')}
                   </button>
                 </Nav.Item>
               </Nav>
@@ -1010,29 +1075,27 @@ function Customer() {
         {/* --- NEW: Floating Chatbot Widget --- */}
         <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1050 }}>
           
-          {/* The Chat Window (Only renders if isChatOpen is true) */}
-          {isChatOpen && (
-            <Card 
-              className="mb-3 shadow-lg border-0" 
-              style={{ width: '350px', height: '500px', borderRadius: '16px', overflow: 'hidden' }}
+          {/* The Chat Window — always mounted so translate() calls pre-fetch when language changes */}
+          <Card
+            className="mb-3 shadow-lg border-0"
+            style={{ width: '350px', height: '500px', borderRadius: '16px', overflow: 'hidden', display: isChatOpen ? undefined : 'none' }}
+          >
+            <Card.Header
+              className="d-flex justify-content-between align-items-center text-white"
+              style={{ backgroundColor: 'var(--tea-wood)' }}
             >
-              <Card.Header 
-                className="d-flex justify-content-between align-items-center text-white"
-                style={{ backgroundColor: 'var(--tea-wood)' }}
-              >
-                <h6 className="mb-0 fw-bold">{translate('AI Assistant')}</h6>
-                <button 
-                  type="button" 
-                  className="btn-close btn-close-white" 
-                  aria-label="Close"
-                  onClick={() => setIsChatOpen(false)}
-                ></button>
-              </Card.Header>
-              <Card.Body className="p-0 overflow-auto bg-light">
-                <Chatbot onChatAction={handleChatAction} />
-              </Card.Body>
-            </Card>
-          )}
+              <h6 className="mb-0 fw-bold">{translate('AI Assistant')}</h6>
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                aria-label="Close"
+                onClick={() => setIsChatOpen(false)}
+              ></button>
+            </Card.Header>
+            <Card.Body className="p-0 overflow-auto bg-light">
+              <Chatbot onChatAction={handleChatAction} />
+            </Card.Body>
+          </Card>
           {/* The Chat Bubble Button */}
           <div className="d-flex justify-content-end">
             <Button

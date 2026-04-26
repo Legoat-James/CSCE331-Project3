@@ -1,11 +1,12 @@
 import { ErrorBoundary } from 'react-error-boundary';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Routes, Route, useLocation } from 'react-router';
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navbar } from 'react-bootstrap';
 import Portal from './Portal';
 import Customer from './Customer';
 import { TranslationProvider } from './contexts/TranslationContext';
+import { ThemeContext } from './contexts/ThemeContext';
 import NotFound from './NotFound';
 import Cashier from './Cashier';
 import Manager from './Manager';
@@ -13,11 +14,8 @@ import Login from './Login';
 import MenuBoard from './MenuBoard';
 import Kitchen from './Kitchen';
 import AuthRoute from './components/AuthRoute';
-//create a client for react query
+
 const queryClient = new QueryClient();
-//create a theme context
-// eslint-disable-next-line react-refresh/only-export-components
-export const ThemeContext = createContext();
 
 
 function ErrorFallback({ error, resetErrorBoundary }) { 
@@ -34,9 +32,13 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 export default function App(){
     //themes will be used for accessiblity (ex: light, dark, high contrast)
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'standard');
+    const [textSize, setTextSize] = useState('normal'); // 'normal', 'large', 'xlarge'
+    const [magnifyScreen, setMagnifyScreen] = useState(false); //true or false
     //added line to track if signed in yet.
     const [signedIn, setSignedIn] = useState(false);
     const location = useLocation();
+
+    const scrollZoomContainer = useRef(null);
     
     // Check if we're on the portal page
     const isPortalPage = location.pathname === '/';
@@ -49,10 +51,27 @@ export default function App(){
           document.body.classList.remove('theme-high-contrast');
         }
         localStorage.setItem('theme', theme);
-  }, [theme]);
+
+        //handle text resizing
+        const htmlElement = document.documentElement;
+        htmlElement.classList.remove('text-large', 'text-xlarge');
+        if(textSize === "large"){
+          htmlElement.classList.add("text-large");
+        }
+        if(textSize === "xlarge"){
+          htmlElement.classList.add("text-xlarge")
+        }
+
+      
+
+  }, [theme, textSize]);
+
+  useEffect(()=>{
+    scrollZoomContainer.current.scrollTop = scrollZoomContainer.current.scrollHeight;
+  }, [magnifyScreen])
 
     return (
-      <ThemeContext.Provider value={{ theme, setTheme }}>
+      <ThemeContext.Provider value={{ theme, setTheme, textSize, setTextSize, magnifyScreen, setMagnifyScreen }}>
         <QueryClientProvider client={queryClient}>
           {/* Only show full nav on portal}
           {/* <nav>
@@ -60,7 +79,7 @@ export default function App(){
               <button onClick={() => window.location.href = '/'} className='btn btn-primary'> Home </button>
             )}
           </nav> */}
-          <div className="min-vh-100 transition-all">
+          <div className="h-100 transition-all scroll-container" style={{overflow: "auto"}} ref={scrollZoomContainer}>
             <ErrorBoundary FallbackComponent={ErrorFallback}>
               <Routes>
                 <Route path="/" index element={<Portal />} />

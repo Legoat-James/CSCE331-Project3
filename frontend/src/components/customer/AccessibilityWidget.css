@@ -173,6 +173,18 @@
   transform: scale(0.94);
 }
 
+.a11y-mic-indicator {
+  margin-top: 0.45rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--tea-wood-dark);
+  background: #fff8ef;
+  color: var(--tea-wood-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 /* ── Animation ──────────────────────────────────────── */
 @keyframes a11y-panel-in {
   from {
