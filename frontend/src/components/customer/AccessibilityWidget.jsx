@@ -209,7 +209,7 @@ function AccessibilityWidget() {
       {isOpen && (
         <div
           className="a11y-panel"
-          style={view === 'dictation' ? { width: '420px' } : undefined}
+          style={view === 'dictation' ? { width: '390px' } : undefined}
           role="dialog"
           aria-modal="false"
           aria-label={translate('Accessibility')}
@@ -321,25 +321,21 @@ function AccessibilityWidget() {
                   ← {translate('Back')}
                 </button>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.675rem' }}>
-                  <div style={{ fontSize: '1.23rem', fontWeight: 700, color: 'var(--tea-wood-dark)' }}>
-                    Dictation Test
-                  </div>
-
-                  <div style={{ fontSize: '1.17rem', color: 'var(--tea-wood-dark)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                  <div style={{ fontSize: '1.02rem', color: 'var(--tea-wood-dark)' }}>
                     Status: {listening ? 'Listening' : 'Idle'}
                   </div>
 
-                  <div style={{ fontSize: '1.11rem', color: 'var(--tea-wood-dark)' }}>
+                  <div style={{ fontSize: '0.98rem', color: 'var(--tea-wood-dark)' }}>
                     Background Mode: {backgroundDictationEnabled ? 'On (commands still work when closed)' : 'Off'}
                   </div>
 
                   {!browserSupportsSpeechRecognition ? (
-                    <p style={{ margin: 0, fontSize: '1.23rem', color: 'var(--tea-wood-dark)' }}>
+                    <p style={{ margin: 0, fontSize: '1.05rem', color: 'var(--tea-wood-dark)' }}>
                       Speech recognition is not supported in this browser.
                     </p>
                   ) : isMicrophoneAvailable === false ? (
-                    <p style={{ margin: 0, fontSize: '1.23rem', color: 'var(--tea-wood-dark)' }}>
+                    <p style={{ margin: 0, fontSize: '1.05rem', color: 'var(--tea-wood-dark)' }}>
                       Microphone access is needed for dictation.
                     </p>
                   ) : (
@@ -347,22 +343,30 @@ function AccessibilityWidget() {
                       <div
                         aria-live="polite"
                         style={{
-                          minHeight: '132px',
-                          padding: '0.825rem',
+                          minHeight: '78px',
+                          padding: '0.42rem',
+                          width: '84%',
+                          alignSelf: 'center',
                           borderRadius: '10px',
                           border: '1px solid var(--tea-border)',
                           background: '#fff8ef',
                           color: 'var(--tea-wood-dark)',
-                          fontSize: '1.23rem',
-                          lineHeight: 1.35,
+                          fontSize: '0.95rem',
+                          lineHeight: 1.3,
                           overflowY: 'auto',
                           whiteSpace: 'pre-wrap',
                         }}
                       >
-                        {transcript || 'Speak here and your words will appear in this box.'}
+                        {transcript ? (
+                          transcript
+                        ) : (
+                          <span style={{ fontSize: '0.8rem' }}>
+                            Speak here and your words will appear in this box.
+                          </span>
+                        )}
                       </div>
 
-                      <div style={{ display: 'flex', gap: '0.525rem' }}>
+                      <div style={{ display: 'flex', gap: '0.45rem' }}>
                         <button
                           type="button"
                           className="a11y-option-btn"
@@ -370,7 +374,12 @@ function AccessibilityWidget() {
                             handleDictationToggle();
                           }}
                           aria-label={listening ? 'Stop dictation' : 'Start dictation'}
-                          style={{ justifyContent: 'center', flex: '1 1 0' }}
+                          style={{
+                            justifyContent: 'center',
+                            flex: '1 1 0',
+                            fontSize: '0.9rem',
+                            padding: '0.4rem 0.6rem',
+                          }}
                         >
                           {listening ? 'Stop' : 'Start'}
                         </button>
@@ -379,7 +388,12 @@ function AccessibilityWidget() {
                           className="a11y-option-btn"
                           onClick={resetTranscript}
                           aria-label="Clear dictation transcript"
-                          style={{ justifyContent: 'center', flex: '1 1 0' }}
+                          style={{
+                            justifyContent: 'center',
+                            flex: '1 1 0',
+                            fontSize: '0.9rem',
+                            padding: '0.4rem 0.6rem',
+                          }}
                         >
                           Clear
                         </button>
@@ -387,18 +401,18 @@ function AccessibilityWidget() {
 
                       <div
                         style={{
-                          marginTop: '0.3rem',
-                          padding: '0.825rem',
+                          marginTop: '0.2rem',
+                          padding: '0.65rem',
                           borderRadius: '10px',
                           border: '1px solid var(--tea-border)',
                           background: '#fff8ef',
                           color: 'var(--tea-wood-dark)',
                         }}
                       >
-                        <div style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.45rem' }}>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.35rem' }}>
                           Voice Commands
                         </div>
-                        <ul style={{ margin: 0, paddingLeft: '1.5rem', fontSize: '1.14rem', lineHeight: 1.35 }}>
+                        <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.92rem', lineHeight: 1.25 }}>
                           <li>"Enter message" or "Send message": sends the current dictated text to chat.</li>
                           <li>"Clear message": clears the chat input text.</li>
                           <li>"Checkout order" or "Finish order": attempts to submit the current order.</li>
