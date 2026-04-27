@@ -362,9 +362,13 @@ export default function RecipeBuilder() {
       });
     }
 
+    const family = getIngredientFamily(ingredient.name);
+    const isSizeSpecific = family && SIZE_SPECIFIC_INGREDIENT_FAMILIES.includes(family);
+    const qty = isSizeSpecific ? 1 : getScaledQuantity(ingredientQuantity, size);
+
     await mutationAdd.mutateAsync({
       ingredientID: Number(targetIngredient.ingredient_id),
-      quantity: getScaledQuantity(ingredientQuantity, size),
+      quantity: qty,
     });
   };
 
