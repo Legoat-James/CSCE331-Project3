@@ -31,8 +31,8 @@ import Weather from './components/customer/Weather';
 import { Button, Card } from 'react-bootstrap';
 
 const fallbackCardImage = '/teashopLogo.png';
-const iceLevelOptions = ['50%', '75%', '100%', '125%', '150%'];
-const iceLevelMultipliers = [0.5, 0.75, 1, 1.25, 1.5];
+const iceLevelOptions = ['0%', '50%', '75%', '100%', '125%', '150%'];
+const iceLevelMultipliers = [0, 0.5, 0.75, 1, 1.25, 1.5];
 
 const formatMultiplier = (value) => {
   const numeric = Number(value);
@@ -202,7 +202,7 @@ function Customer() {
   const [selectedFood, setSelectedFood] = useState(null);
   const [selectedToppings, setSelectedToppings] = useState({});
   const [sugarMultiplier, setSugarMultiplier] = useState(1);
-  const [iceLevelIndex, setIceLevelIndex] = useState(2);
+  const [iceLevelIndex, setIceLevelIndex] = useState(3);
   const [swapSugar, setSwapSugar] = useState(false);
   const [useOatMilk, setUseOatMilk] = useState(false);
 
@@ -469,7 +469,7 @@ function Customer() {
       setSelectedDrinkSize(defaultSize);
       setSelectedToppings({});
       setSugarMultiplier(1);
-      setIceLevelIndex(2);
+      setIceLevelIndex(3);
       setSwapSugar(false);
       setUseOatMilk(false);
       setIsToppingsOpen(true);
@@ -490,7 +490,7 @@ function Customer() {
     setSelectedDrinkSize('medium');
     setSelectedToppings({});
     setSugarMultiplier(1);
-    setIceLevelIndex(2);
+    setIceLevelIndex(3);
     setSwapSugar(false);
     setUseOatMilk(false);
     setEditingOrderItemId(null);
@@ -720,7 +720,7 @@ function Customer() {
     setSelectedDrinkSize(selectedSize);
     setSelectedToppings(toppingsMap);
     setSugarMultiplier(resolvedSugar);
-    setIceLevelIndex(iceIndex >= 0 ? iceIndex : 2);
+    setIceLevelIndex(iceIndex >= 0 ? iceIndex : 3);
     setSwapSugar(hasSwapSugarMod);
     setUseOatMilk(hasOatMilkMod);
     setIsToppingsOpen(true);
@@ -774,7 +774,7 @@ function Customer() {
             id: Number(id),
             quantity,
           }))
-          .filter((entry) => Number.isInteger(entry.id) && Number.isFinite(entry.quantity) && entry.quantity > 0);
+          .filter((entry) => Number.isInteger(entry.id) && Number.isFinite(entry.quantity) && entry.quantity >= 0);
         
 
         return {

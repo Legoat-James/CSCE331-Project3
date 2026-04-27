@@ -2,7 +2,7 @@ import React from 'react';
 import { Button, Form } from 'react-bootstrap';
 import { useTranslate } from '../../contexts/TranslationContext';
 
-const iceLevelOptions = ['50%', '75%', '100%', '125%', '150%'];
+const iceLevelOptions = ['0%', '50%', '75%', '100%', '125%', '150%'];
 
 function DrinkCustomizer({
   show = false,
@@ -14,7 +14,7 @@ function DrinkCustomizer({
   toppingItems = [],
   selectedToppings = {},
   sugarMultiplier = 1,
-  iceLevelIndex = 2,
+  iceLevelIndex = 3,
   swapSugar = false,
   useOatMilk = false,
   hasSugarSlider = false,
@@ -124,7 +124,7 @@ function DrinkCustomizer({
                 {translate('Sugar Multiplier:')} <strong>{sugarMultiplier.toFixed(2)}x</strong>
               </p>
               <div className="tea-size-options">
-                {[0.5, 0.75, 1, 1.25, 1.5].map((level) => (
+                {[0.0, 0.5, 0.75, 1, 1.25, 1.5].map((level) => (
                   <Button
                     key={level}
                     type="button"
