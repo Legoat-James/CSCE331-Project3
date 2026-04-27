@@ -211,6 +211,7 @@ function Customer() {
   const [editingOrderItemId, setEditingOrderItemId] = useState(null);
   const [orderSubmitMessage, setOrderSubmitMessage] = useState('');
   const [orderSubmitError, setOrderSubmitError] = useState('');
+  const [drinkQuantity, setDrinkQuantity] = useState(1);
 
   //chatbot
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -612,21 +613,30 @@ function Customer() {
     });
 
     const selectedDrinkMenuItem = allMenuItems.find((menuItem) => menuItem.id === selectedDrinkMenuId);
-    const orderEntry = buildOrderEntry({
-      entryId: editingOrderItemId || `drink-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      menuId: selectedDrinkMenuId,
-      name: selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`,
-      baseCost: selectedDrinkPrice,
-      modificationsArray,
-    });
+    
+    const newEntries = Array.from({ length: drinkQuantity }, (_, i) => 
+      buildOrderEntry({
+        entryId: (editingOrderItemId && i === 0) ? editingOrderItemId : `drink-${Date.now()}-${Math.floor(Math.random() * 10000) + i}`,
+        menuId: selectedDrinkMenuId,
+        name: selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`,
+        baseCost: selectedDrinkPrice,
+        modificationsArray,
+      })
+    );
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
-
+    
     if (editingOrderItemId) {
-      setOrderItems((prev) => prev.map((item) => (item.id === editingOrderItemId ? orderEntry : item)));
+      setOrderItems((prev) => {
+        const index = prev.findIndex((item) => item.id === editingOrderItemId);
+        if (index === -1) return [...prev, ...newEntries];
+        const copy = [...prev];
+        copy.splice(index, 1, ...newEntries);
+        return copy;
+      });
     } else {
-      setOrderItems((prev) => [...prev, orderEntry]);
+      setOrderItems((prev) => [...prev, ...newEntries]);
     }
 
     closeToppingsScreen();
@@ -650,6 +660,7 @@ function Customer() {
     modificationItems,
     buildOrderEntry,
     allMenuItems,
+    drinkQuantity,
   ]);
 
   const editOrderItem = useCallback((item) => {
@@ -1063,6 +1074,8 @@ function Customer() {
           onIceChange={setIceLevelIndex}
           onSwapSugarChange={setSwapSugar}
           onOatMilkChange={setUseOatMilk}
+          drinkQuantity={drinkQuantity}
+          setDrinkQuantity={setDrinkQuantity}
         />
 
         {/* Food Confirmation Modal */}

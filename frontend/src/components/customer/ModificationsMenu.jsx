@@ -29,7 +29,9 @@ function DrinkCustomizer({
   onSugarChange,
   onIceChange,
   onSwapSugarChange,
-  onOatMilkChange
+  onOatMilkChange,
+  drinkQuantity,
+  setDrinkQuantity
 }) {
   const { translate } = useTranslate();
 
@@ -185,6 +187,24 @@ function DrinkCustomizer({
           </p>
 
           <p className="tea-modal-total">{translate('Current drink total:')} ${selectedDrinkTotal.toFixed(2)}</p>
+          <div>
+            <b>Quantity </b>
+            <Button
+              type="button"
+              className="tea-qty-btn"
+              onClick={() => setDrinkQuantity(Math.max(1, drinkQuantity - 1))}
+            >
+              −
+            </Button>
+            <span className="tea-qty-value">{drinkQuantity}</span>
+            <Button
+              type="button"
+              className="tea-qty-btn"
+              onClick={() => setDrinkQuantity(drinkQuantity + 1)}
+            >
+              +
+            </Button>
+          </div>
         </div>
 
         <div className="tea-modal-actions">
