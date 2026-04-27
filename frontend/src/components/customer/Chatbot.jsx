@@ -52,7 +52,7 @@ export default function Chatbot({ onChatAction }) {
       menuSection += '\n\n## DRINKS MENU\n';
       menuData.drinks.forEach(item => {
         item.cost = parseFloat(item.cost); // this casts the cost to a float
-        menuSection += `Id: ${item.menu_id}, price:${item.cost.toFixed(2)}, name: ${item.name} \n`;
+        menuSection += `Id: ${item.menu_id}, price:${item.cost.toFixed(2)}, name: ${item.name}, subcategory: ${item.subcategory}\n`;
       });
     }
     
