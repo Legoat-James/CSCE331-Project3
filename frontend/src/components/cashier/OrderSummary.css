@@ -49,6 +49,25 @@
   flex-shrink: 0;
 }
 
+.order-edit-btn {
+  background: none;
+  border: none;
+  color: #4a90e2; /* base blue color for edit */
+  cursor: pointer;
+  font-size: 1.2em;
+  padding: 0 4px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, transform 0.1s;
+}
+
+.order-edit-btn:hover {
+  color: #357abd;
+  transform: scale(1.1);
+}
+
 .order-line-price {
   font-weight: 700;
   color: var(--tea-wood-dark, #6f4c36);

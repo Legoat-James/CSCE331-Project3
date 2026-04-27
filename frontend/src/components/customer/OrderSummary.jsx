@@ -62,7 +62,7 @@ function OrderSummary({
           return (
           <div key={item.id} className="order-line-item">
             <div className="order-line-header">
-              <span className="order-line-name">{translate(item.name)}</span>
+              <span className="order-line-name">{(item.quantity || 1) > 1 ? `${item.quantity}x ` : ''}{translate(item.name)}</span>
               <div className="order-line-actions">
                 <span className="order-line-price">${item.totalPrice.toFixed(2)}</span>
                 {hasDrinkCoreMods && (
