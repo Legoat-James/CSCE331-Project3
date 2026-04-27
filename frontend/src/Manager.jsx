@@ -2,6 +2,7 @@ import { useGet } from './hooks/useApi.js';
 import { useMutate } from './hooks/useApi';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useIsAuthenticated, logoutUser } from './api/authAPI.js';
 
 import apiClient from './api/client_config.js';
 
@@ -59,8 +60,8 @@ ChartJS.register(
 */
 
 export default function Manager() {
-  const isLoggedIn = !!localStorage.getItem('authToken');
-  const user = JSON.parse(localStorage.getItem('user'));
+  const { user, isSuccess: authSuccess, isPending: authPending } = useIsAuthenticated();
+  const isLoggedIn = authSuccess && !!user;
 
   // State management for different sections
   const [activeView, setActiveView] = useState('dashboard');
@@ -141,9 +142,8 @@ export default function Manager() {
             <Button
               variant="outline-danger"
               size="sm"
-              onClick={() => {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('user');
+              onClick={async () => {
+                try{ await logoutUser(); } catch(e){}
                 window.location.href = '/';
               }}
             >

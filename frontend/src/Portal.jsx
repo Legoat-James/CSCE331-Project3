@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Container, Row, Col, Card, Alert } from 'react-bootstrap';
 import './Portal.css';
+import { useIsAuthenticated } from './api/authAPI.js';
 
 export default function Portal() {
   const [errorMsg, setErrorMsg] = useState('');
-  const user = JSON.parse(localStorage.getItem('user'));
-  const isLoggedIn = !!localStorage.getItem('authToken');
+  const { user, isSuccess: authSuccess } = useIsAuthenticated();
+  const isLoggedIn = authSuccess && !!user;
 
   const sections = [
     {

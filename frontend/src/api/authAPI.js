@@ -18,7 +18,11 @@ export const logoutUser = async () => {
     //Clear any stored tokens/session data
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
-    return Promise.resolve();
+    
+    // Call the backend to actually kill the session cookie
+    return await apiClient('/api/employee/logout', {
+        method: 'POST'
+    }).catch(err => console.error("Logout failed on server:", err));
 };
 
 //check if user is authenticated
@@ -28,7 +32,13 @@ export const useIsAuthenticated = () => {
        staleTime: 0, //do not cache your auth
        refetchOnWindowFocus: false,
      });
-   return {role: data?.user?.is_manager, isPending, isSuccess, isError};
+   return {
+       role: data?.user?.is_manager, 
+       user: data?.user, // Also return the full user object to the frontend if we need it
+       isPending, 
+       isSuccess, 
+       isError
+   };
 };
 
 //get current user info
