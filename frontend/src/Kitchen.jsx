@@ -100,11 +100,36 @@ export default function Kitchen() {
                                             {/* Render item modifications if any */}
                                             {item.modifications && item.modifications.length > 0 && (
                                                 <ul className="text-danger small mb-1 list-unstyled ms-3">
-                                                    {item.modifications.map((mod, modIndex) => (
-                                                        <li key={modIndex}>
-                                                            - {mod.action === 'remove' ? 'NO' : 'ADD'} {`${mod.quantity}x `}{mod.ingredient_name || mod.name}
-                                                        </li>
-                                                    ))}
+                                                    {item.modifications
+                                                        .filter(mod => {
+                                                            const modName = (mod.ingredient_name || mod.name || '').toLowerCase();
+                                                            const isSugarOrIce = modName === 'sugar' || modName === 'ice';
+                                                            const qty = parseFloat(mod.quantity);
+                                                            // Hide if it's sugar or ice and quantity is 1 (default amount)
+                                                            if (isSugarOrIce && qty === 1) return false;
+                                                            return true;
+                                                        })
+                                                        .map((mod, modIndex) => {
+                                                            const modName = mod.ingredient_name || mod.name;
+                                                            const nameLower = (modName || '').toLowerCase();
+                                                            const isSugarOrIce = nameLower === 'sugar' || nameLower === 'ice';
+                                                            const qty = parseFloat(mod.quantity);
+
+                                                            // If sugar/ice quantity is 0, display "No sugar"/"No ice"
+                                                            if (isSugarOrIce && qty === 0) {
+                                                                return (
+                                                                    <li key={modIndex}>
+                                                                        - No {modName}
+                                                                    </li>
+                                                                );
+                                                            }
+
+                                                            return (
+                                                                <li key={modIndex}>
+                                                                    - {mod.action === 'remove' ? 'NO' : 'ADD'} {`${mod.quantity}x `}{modName}
+                                                                </li>
+                                                            );
+                                                        })}
                                                 </ul>
                                             )}
                                         </div>
