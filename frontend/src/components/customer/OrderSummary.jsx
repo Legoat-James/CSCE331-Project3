@@ -41,7 +41,7 @@ function OrderSummary({
       )} */}
       {isError && <div className="backend-status error">{errorMessage}</div>}
 
-      <div className="order-list brown-scroll">
+      <div className="order-list brown-scroll" tabindex="0" >
         {orderItems.length === 0 && (
           <p className="order-empty">{translate('No items in order yet.')}</p>
         )}
