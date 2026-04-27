@@ -4,6 +4,8 @@ import './Portal.css';
 
 export default function Portal() {
   const [errorMsg, setErrorMsg] = useState('');
+  
+  // Use localStorage for a quick check so the Portal doesn't hit the auth API every load
   const user = JSON.parse(localStorage.getItem('user'));
   const isLoggedIn = !!localStorage.getItem('authToken');
 

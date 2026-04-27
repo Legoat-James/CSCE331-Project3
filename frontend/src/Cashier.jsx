@@ -3,20 +3,24 @@ import { Button, Form, Alert } from 'react-bootstrap';
 import './Cashier.css';
 import Menuitems from './components/cashier/MenuItems';
 import OrderSummary from './components/cashier/OrderSummary';
+import { useIsAuthenticated, logoutUser } from './api/authAPI.js';
 import apiClient from './api/client_config.js';
+
 import ChatBot from './components/customer/Chatbot.jsx';
 import { ThemeContext } from './contexts/ThemeContext';
 
 export default function Cashier() {
     const { theme, setTheme } = useContext(ThemeContext);
+    
     useEffect(() => {
     // This code runs once when the component mounts
     console.log("Page loaded!");
     setTheme('standard');
     }, []);
   
-    const isLoggedIn = !!localStorage.getItem('authToken');
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user, isSuccess: authSuccess, isPending: authPending } = useIsAuthenticated();
+    const isLoggedIn = authSuccess && !!user;
+    
     const [isLoading, setLoading] = useState(false);
     const [total, setTotal] = useState(0.00);
     const [orderItems, setOrderItems] = useState([]); // this will hold the items in the current order, we can use this to display the order summary and calculate the total
@@ -99,7 +103,6 @@ export default function Cashier() {
     const sanitizeOrderItems = (orderItems) => {
         //for now we do not have an epmployee ID so we will assume the employee ID is 1, and customer name is "guest"
         // const employeeId = 1;
-        const user = JSON.parse(localStorage.getItem('user'));
         const employeeId = user ? user.employee_id : null;
 
         return {

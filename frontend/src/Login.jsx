@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Alert, Container, Card} from 'react-bootstrap';
-import { loginUser } from './api/authAPI.js';
+import { loginUser, useIsAuthenticated, logoutUser } from './api/authAPI.js';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useMutate } from './hooks/useApi.js';
 import { useNavigate } from 'react-router';
@@ -12,44 +12,37 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    
+    // Check if user is currently logged in via server session
+    const { user: authUser, role: isManager, isSuccess: authSuccess, isPending: authPending } = useIsAuthenticated();
+    
     const [displayNavOptions, setDisplayNavOptions] = useState(false);
-    const loginMutation = useMutate('/api/employee/login', 'POST', []);
+    const loginMutation = useMutate('/api/employee/login', 'POST', ['auth']);
 
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
     const navigate = useNavigate();
-
-    useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            setIsLoggedIn(true);
-        }
-    }, []);
 
     async function googleLogin(credentialResponse){
         const googleToken = credentialResponse.credential;
         try{
             loginMutation.mutate({
                 googleToken: googleToken
-            })
+            });
         }catch(err){
             console.error("Error during login:", err);
         }
     }
+    
     useEffect(()=>{
         if(loginMutation.isSuccess){
-            if (loginMutation.data) {
-                localStorage.setItem('authToken', loginMutation.data.token);
-                localStorage.setItem('user', JSON.stringify(loginMutation.data.user));
-            }
-            const user = loginMutation.data?.user || JSON.parse(localStorage.getItem('user'));
+            const user = loginMutation.data?.user;
             
-            if(!user.is_manager){
-                setSuccess('Google Login successful! Redirecting...');
+            if(!user?.is_manager){
+                setSuccess('Login successful! Redirecting...');
                 setTimeout(() => {
                     navigate("/cashier");
-            }, 1500);
+                }, 1500);
                 return;
             }
             setSuccess('Welcome Manager! Choose a view.');
@@ -57,7 +50,7 @@ export default function Login() {
         }else if(loginMutation.isError){
             setError(loginMutation.error.message);
         }
-    },[loginMutation.data, loginMutation.isSuccess, loginMutation.isError])
+    }, [loginMutation.data, loginMutation.isSuccess, loginMutation.isError, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -66,49 +59,31 @@ export default function Login() {
         setSuccess('');
         setLoading(true);
         try {
-            // Debug logging
-            console.log('Login form submission:');
-            console.log('Username type:', typeof username, 'Value:', username);
-            console.log('Password type:', typeof password, 'Value:', password ? '[HIDDEN]' : password);
-
             //Call the api
             const response = await loginUser(username, password);
 
-            //store auth info in localStorage
-            localStorage.setItem('authToken', response.token);
-            localStorage.setItem('user', JSON.stringify(response.user));
             if(!response.user.is_manager){
                 setSuccess('Login successful! Redirecting...');
                 setTimeout(() => {
                     navigate("/cashier");
-            }, 1500);
+                }, 1500);
                 return;
             }
             setSuccess('Welcome Manager! Choose a view.');
             setDisplayNavOptions(true);
 
-
         } catch (err){
-            //Handle error
             setError(err.message || 'Login failed. Please try again.');
-
         } finally {
             setLoading(false);
-            console.log('Login process completed. isLoggedIn:', isLoggedIn);
         }
     };
-    if(isLoggedIn){
-        const userStr = localStorage.getItem('user');
-        let isManager = false;
-        if (userStr) {
-            try {
-                const user = JSON.parse(userStr);
-                isManager = user?.is_manager;
-            } catch (e) {
-                console.error("Error parsing user from localStorage", e);
-            }
-        }
+    
+    if(authPending){
+        return <div>Loading authentication status...</div>;
+    }
 
+    if(authSuccess && authUser){
         return (
         <div className="login-page">
             <Container>
@@ -119,7 +94,7 @@ export default function Login() {
                                 <Card.Title className="login-title">
                                     <h2>Account Access</h2>
                                 </Card.Title>
-                                <p>You are already logged in to the system.</p>
+                                <p>You are already logged in to the system as {authUser.username || 'Employee'}.</p>
                                 <div className="d-flex flex-column align-items-center gap-3 mt-3 w-100">
                                     {isManager && (
                                         <>
@@ -131,10 +106,8 @@ export default function Login() {
                                             </button>
                                         </>
                                     )}
-                                    <button className="logout-btn" style={{width: '100%'}} onClick={()=>{
-                                        localStorage.removeItem('authToken');
-                                        localStorage.removeItem('user');
-                                        setIsLoggedIn(false);
+                                    <button className="logout-btn" style={{width: '100%'}} onClick={async ()=>{
+                                        await logoutUser();
                                         window.location.href = '/';
                                     }}>
                                         Sign Out

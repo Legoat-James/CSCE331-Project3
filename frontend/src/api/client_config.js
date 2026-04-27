@@ -4,6 +4,7 @@ async function apiClient(endpoint, { body, ...customConfig } = {}) {
   
   const config = {
     method: body ? 'POST' : 'GET',
+    credentials: 'include', // Allows cookies to be sent with requests automatically
     ...customConfig,
     headers: {
       ...headers,

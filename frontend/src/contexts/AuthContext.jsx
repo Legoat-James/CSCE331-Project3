@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getCurrentUser, isAuthenticated } from '../api/authAPI.js';
+import apiClient from '../api/client_config.js';
 
 const AuthContext = createContext();
 
@@ -30,9 +31,19 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   };
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    
+    // Call the backend to actually kill the session cookie
+    try {
+        await apiClient('/api/employee/logout', {
+            method: 'POST'
+        });
+    } catch (err) {
+        console.error('Logout error:', err);
+    }
+    
     setUser(null);
     window.location.href = '/login';
   };
