@@ -484,6 +484,38 @@ export default function Manager() {
                   <Card.Text>
                     Total: ${parseFloat(order.orderTotal).toFixed(2)}
                   </Card.Text>
+                  <details>
+                    <summary className="fw-semibold">View Items</summary>
+                    <div className="mt-2">
+                      {(order.items || []).length === 0 && (
+                        <div className="text-muted small">No item details available.</div>
+                      )}
+                      {(order.items || []).map((item, itemIndex) => {
+                        const itemName = item.item || item.name || `Item ${itemIndex + 1}`;
+                        const itemQty = item.quantity || 1;
+                        const toppings = item.toppings || [];
+
+                        return (
+                          <div key={`${order.orderId}-${item.menuId || itemIndex}`} className="mb-2">
+                            <div>{itemQty}x {itemName}</div>
+                            {toppings.length > 0 && (
+                              <ul className="mb-0 small text-muted">
+                                {toppings.map((topping, toppingIndex) => {
+                                  const toppingName = topping.topping || topping.name || topping.item || `Topping ${toppingIndex + 1}`;
+                                  const toppingQty = topping.quantity;
+                                  return (
+                                    <li key={`${order.orderId}-${item.menuId || itemIndex}-topping-${topping.id || toppingIndex}`}>
+                                      {toppingQty ? `${toppingQty}x ` : ''}{toppingName}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </details>
                 </Card.Body>
               </Card>
             </Col>
@@ -674,8 +706,8 @@ export default function Manager() {
 
       {/* Secondary Row for Recent Orders and Report Data */}
       <Row className="g-3 mb-4">
-        {/* Recent Orders - Takes 30% */}
-        <Col style={{ flex: '0 0 30%' }} className="d-flex">
+        {/* Recent Orders - Takes 50% */}
+        <Col lg={6} className="d-flex" style={{ flex: '0 0 50%', maxWidth: '50%' }}>
           <Card className="dashboard-card h-100 w-100 d-flex flex-column">
             <Card.Header className="dashboard-card-header flex-shrink-0">
               <h5 className="mb-0">Recent Orders</h5>
@@ -688,9 +720,9 @@ export default function Manager() {
           </Card>
         </Col>
 
-        {/* Report Data Output - Takes 70% */}
-        <Col style={{ flex: '0 0 70%' }}>
-          <Card className="dashboard-card h-100">
+        {/* Report Data Output - Takes 50% */}
+        <Col lg={6} className="d-flex" style={{ flex: '0 0 50%', maxWidth: '50%' }}>
+          <Card className="dashboard-card h-100 w-100 d-flex flex-column">
             <Card.Header className="dashboard-card-header flex-shrink-0">
               <h5 className="mb-0">Report Data</h5>
             </Card.Header>

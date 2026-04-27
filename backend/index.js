@@ -1638,7 +1638,9 @@ app.post('/api/recipes/add-ingredient', requireAuth(true), async (req, res, next
     const menuID = req.query.menuID;
     const ingredientID = req.body.ingredientID;
     const quantity = req.body.quantity;
-    if (!menuID || !ingredientID || !quantity) {
+    const isMissing = (value) => value === undefined || value === null || value === '';
+
+    if (isMissing(menuID) || isMissing(ingredientID) || isMissing(quantity)) {
       throw new ApiError(401, "Missing menuID and/or ingredient ID and/or quantity", null, req.path);
     }
     if (Number.isNaN(Number(menuID)) || Number.isNaN(Number(ingredientID)) || Number.isNaN(Number(quantity))) {
@@ -1711,7 +1713,9 @@ app.delete('/api/recipes/remove-ingredient', requireAuth(true), async (req, res,
     //default to 10 if not present
     const menuID = req.query.menuID;
     const ingredientID = req.body.ingredientID;
-    if (!menuID || !ingredientID) {
+    const isMissing = (value) => value === undefined || value === null || value === '';
+
+    if (isMissing(menuID) || isMissing(ingredientID)) {
       throw new ApiError(401, "Missing menuID and/or ingredient ID", null, req.path);
     }
     if (Number.isNaN(Number(menuID)) || Number.isNaN(Number(ingredientID))) {
