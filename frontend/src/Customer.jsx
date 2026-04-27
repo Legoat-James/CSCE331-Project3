@@ -498,6 +498,7 @@ function Customer() {
     setUseOatMilk(false);
     setIsHot(false);
     setEditingOrderItemId(null);
+    setDrinkQuantity(1);
   }, []);
 
   const closeFoodConfirm = useCallback(() => {
