@@ -112,6 +112,7 @@ export default function Menuitems({ onAddItem, menuView, editingItem, onEditComp
                 onAddItem={handleModWindowSubmit}
                 ingredients={ingredients}
                 initialMods={editingItem ? editingItem.modifications_array : null}
+                initialQuantity={editingItem ? (editingItem.quantity || 1) : 1}
             />
         </div>
     );

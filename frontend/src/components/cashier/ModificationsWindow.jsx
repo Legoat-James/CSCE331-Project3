@@ -3,7 +3,7 @@ import { Button } from 'react-bootstrap';
 // import './Cashier.css';
 import './ModificationsWindow.css';
 
-export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems, ingredients, initialMods }) {
+export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems, ingredients, initialMods, initialQuantity }) {
     useEffect(() => {
         console.log('ingredients received by modifications window:', ingredients);
     }, [ingredients]);
@@ -43,7 +43,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
                 setSugarLevel(newSugarLevel);
                 setHotSelected(newHotSelected);
                 setSelectedMods(newSelectedMods);
-                setDrinkQuantity(1); // Default to 1 for editing
+                setDrinkQuantity(initialQuantity || 1); // Use the actual quantity from the editing item
                 
                 // Decode size from name if possible
                 if (item && item.name) {
