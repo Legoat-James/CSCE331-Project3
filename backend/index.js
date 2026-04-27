@@ -459,8 +459,8 @@ app.put('/api/menu/update', requireAuth(true), async (req, res, next) => {
       throw new ApiError(400, "Drinks must have a subcategory", null, req.path);
     }
     if (subcategory !== "Teas" && subcategory !== "Refreshers" && subcategory !== "Coffee/Matcha" &&
-      subcategory !== "Specials" && subcategory !== "Seasonal") {
-      throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, or Seasonal", null, req.path);
+      subcategory !== "Specials" && subcategory !== "Seasonal" && subcategory !== "Slushies") {
+      throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, Slushies, or Seasonal", null, req.path);
     }
 
     const query = "UPDATE menu SET name = $1, category = $2, cost = $3, subcategory = $4 WHERE menu_id = $5 RETURNING *;"
@@ -627,8 +627,8 @@ app.post('/api/menu/create', requireAuth(true), async (req, res, next) => {
       throw new ApiError(400, "Drinks must have a subcategory", null, req.path);
     }
     if (subcategory !== "Teas" && subcategory !== "Refreshers" && subcategory !== "Coffee/Matcha" &&
-      subcategory !== "Specials" && subcategory !== "Seasonal") {
-      throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, or Seasonal", null, req.path);
+      subcategory !== "Specials" && subcategory !== "Seasonal" && subcategory !== "Slushies") {
+      throw new ApiError(400, "Drink Subcategory must be a valid option: Teas, Refreshers, Coffee/Matcha, Specials, Slushies, or Seasonal", null, req.path);
     }
 
     const query = "INSERT INTO menu (name, category, cost, subcategory) VALUES ($1, $2, $3, $4) RETURNING *;"

@@ -991,11 +991,11 @@ function Customer() {
             <Navbar.Toggle aria-controls="customerCategoryNav" />
 
             <Navbar.Collapse id="customerCategoryNav">
-              <Nav className="me-auto tea-links" style={{ '--tab-count': 2 }}>
+              <Nav className="me-auto tea-links align-items-center" style={{ '--tab-count': 2 }}>
                 <NavDropdown
                   title={activeCategory !== 'food' ? translate(activeCategory) : translate('Drinks')}
                   id="drink-category-dropdown"
-                  className={`kiosk-dropdown ${activeCategory !== 'food' ? 'is-active' : ''}`}
+                  className={`kiosk-dropdown p-0 h-100 ${activeCategory !== 'food' ? 'is-active' : ''}`}
                 >
                   <NavDropdown.Item
                     key={ALL_DRINKS}
