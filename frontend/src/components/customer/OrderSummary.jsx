@@ -28,7 +28,10 @@ function OrderSummary({
 
   return (
     <aside className="order-panel" aria-label="Current order">
-      <h4 className="panel-title">{translate('Current Order')}</h4>
+      <h1 
+      font-size="1.0rem"
+      className="panel-title"
+      >{translate('Current Order')}</h1>
       <p className="order-subtitle">{translate('Your selected drinks and snacks will appear here.')}</p>
 
       {/* {!isError && (
