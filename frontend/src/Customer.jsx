@@ -205,6 +205,7 @@ function Customer() {
   const [iceLevelIndex, setIceLevelIndex] = useState(3);
   const [swapSugar, setSwapSugar] = useState(false);
   const [useOatMilk, setUseOatMilk] = useState(false);
+  const [isHot, setIsHot] = useState(false);
 
   // Order state
   const [orderItems, setOrderItems] = useState([]);
@@ -374,6 +375,7 @@ function Customer() {
     const normalized = item.name.toLowerCase();
     return normalized === 'oak milk' || normalized === 'oat milk';
   });
+  const hasHotToggle = modificationItems.some((item) => item.name.toLowerCase() === 'hot');
 
   const modificationByName = useMemo(() => {
     return modificationItems.reduce((lookup, item) => {
@@ -386,6 +388,7 @@ function Customer() {
   const sugarMenuId = modificationByName.sugar?.id;
   const swapSugarMenuId = modificationByName['swap sugar']?.id;
   const oatMilkMenuId = (modificationByName['oat milk'] || modificationByName['oak milk'])?.id;
+  const hotMenuId = modificationByName.hot?.id;
 
   const buildOrderEntry = useCallback(
     ({
@@ -493,6 +496,7 @@ function Customer() {
     setIceLevelIndex(3);
     setSwapSugar(false);
     setUseOatMilk(false);
+    setIsHot(false);
     setEditingOrderItemId(null);
   }, []);
 
@@ -600,6 +604,16 @@ function Customer() {
       });
     }
 
+    if (isHot && Number.isInteger(hotMenuId)) {
+      const hotMod = modificationItems.find((mod) => mod.id === hotMenuId);
+      modificationsArray.push({
+        category: hotMod?.category || 'modifications',
+        cost: hotMod?.price || 0,
+        menu_id: hotMenuId,
+        name: hotMod?.name || 'Hot',
+      });
+    }
+
     selectedToppingEntries.forEach((topping) => {
       const qty = Number.isInteger(topping.quantity) && topping.quantity > 0 ? topping.quantity : 0;
       for (let i = 0; i < qty; i += 1) {
@@ -650,6 +664,7 @@ function Customer() {
     iceLevelIndex,
     swapSugar,
     useOatMilk,
+    isHot,
     selectedToppingEntries,
     editingOrderItemId,
     closeToppingsScreen,
@@ -657,6 +672,7 @@ function Customer() {
     iceMenuId,
     swapSugarMenuId,
     oatMilkMenuId,
+    hotMenuId,
     modificationItems,
     buildOrderEntry,
     allMenuItems,
@@ -715,6 +731,9 @@ function Customer() {
     const hasOatMilkMod = Number.isInteger(oatMilkMenuId)
       && (item.modifications_array || []).some((modification) => modification.menu_id === oatMilkMenuId);
 
+    const hasHotMod = Number.isInteger(hotMenuId)
+      && (item.modifications_array || []).some((modification) => modification.menu_id === hotMenuId);
+
     setEditingOrderItemId(item.id);
     setSelectedDrink(sourceDrink);
     setSelectedDrinkSize(selectedSize);
@@ -723,6 +742,7 @@ function Customer() {
     setIceLevelIndex(iceIndex >= 0 ? iceIndex : 3);
     setSwapSugar(hasSwapSugarMod);
     setUseOatMilk(hasOatMilkMod);
+    setIsHot(hasHotMod);
     setIsToppingsOpen(true);
   }, [
     allMenuItems,
@@ -733,6 +753,7 @@ function Customer() {
     iceMenuId,
     swapSugarMenuId,
     oatMilkMenuId,
+    hotMenuId,
   ]);
 
   const removeOrderItem = useCallback((itemId) => {
@@ -1061,10 +1082,12 @@ function Customer() {
           iceLevelIndex={iceLevelIndex}
           swapSugar={swapSugar}
           useOatMilk={useOatMilk}
+          isHot={isHot}
           hasSugarSlider={hasSugarSlider}
           hasIceControl={hasIceControl}
           hasSwapSugar={hasSwapSugar}
           hasOatMilkToggle={hasOatMilkToggle}
+          hasHotToggle={hasHotToggle}
           editingOrderItemId={editingOrderItemId}
           onClose={closeToppingsScreen}
           onSave={saveDrinkSelection}
@@ -1074,6 +1097,7 @@ function Customer() {
           onIceChange={setIceLevelIndex}
           onSwapSugarChange={setSwapSugar}
           onOatMilkChange={setUseOatMilk}
+          onHotChange={setIsHot}
           drinkQuantity={drinkQuantity}
           setDrinkQuantity={setDrinkQuantity}
     

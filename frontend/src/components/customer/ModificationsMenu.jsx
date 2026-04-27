@@ -17,10 +17,12 @@ function DrinkCustomizer({
   iceLevelIndex = 3,
   swapSugar = false,
   useOatMilk = false,
+  isHot = false,
   hasSugarSlider = false,
   hasIceControl = false,
   hasSwapSugar = false,
   hasOatMilkToggle = false,
+  hasHotToggle = false,
   editingOrderItemId = null,
   onClose,
   onSave,
@@ -30,6 +32,7 @@ function DrinkCustomizer({
   onIceChange,
   onSwapSugarChange,
   onOatMilkChange,
+  onHotChange,
   drinkQuantity,
   setDrinkQuantity
 }) {
@@ -181,18 +184,20 @@ function DrinkCustomizer({
               />
             )}
 
-            <Form.Check
+            {hasHotToggle && (
+              <Form.Check
                 type="checkbox"
-                id="hot-sugar-check"
+                id="hot-check"
                 label={translate('Hot')}
-                checked={swapSugar}
-                onChange={(e) => onSwapSugarChange(e.target.checked)}
+                checked={isHot}
+                onChange={(e) => onHotChange(e.target.checked)}
                 className="tea-toggle-item"
               />
+            )}
           </div>
 
           <p className="tea-modal-note">
-            {translate('Toppings can be added in any quantity. Swap sugar and oat milk are included in order submission when selected.')}
+            {translate('Toppings can be added in any quantity. Swap sugar, oat milk, and hot options are included in order submission when selected.')}
           </p>
 
           <p className="tea-modal-total">{translate('Current drink total:')} ${selectedDrinkTotal.toFixed(2)}</p>
