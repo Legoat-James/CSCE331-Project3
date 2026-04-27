@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Button } from 'react-bootstrap';
+// import './Cashier.css';
 import './ModificationsWindow.css';
 
 export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems, ingredients }) {
@@ -10,8 +12,10 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
     const [iceLevel, setIceLevel] = useState('1x');
     const [sugarLevel, setSugarLevel] = useState('1x');
     const [itemSize, setItemSize] = useState('medium');
-    const levelOptions = ['0.5x', '0.75x', '1x', '1.25x', '1.5x']
+    const levelOptions = ['0.0x', '0.5x', '0.75x', '1x', '1.25x', '1.5x']
     const sizeOptions = ['small', 'medium', 'large'];
+    const [hotSelected, setHotSelected] = useState(false);
+    const [drinkQuantity, setDrinkQuantity] = useState(1);
 
     if (!item || !show) {
         return null;
@@ -49,6 +53,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
     const handleConfirm = () => {
         selectedMods.push({menu_id: 65, name: `Ice ${iceLevel}`, category: 'modifications' ,cost: 0});
         selectedMods.push({menu_id: 64, name: `Sugar ${sugarLevel}`, category: 'modifications' ,cost: 0});
+        hotSelected ? selectedMods.push({menu_id: 71, name: 'hot', category: 'modifications', cost: 0}) : null;
         
         let finalItem = item;
         if(item.category === 'drink' && itemSize !== 'medium') {
@@ -66,13 +71,18 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
         console.log('selected item:', item);
         console.log('final item after size adjustment:', finalItem);
         console.log(`modification array is:`, selectedMods);
-        onAddItem(+finalItem.cost, finalItem.name, finalItem.menu_id, selectedMods);
+
+        for(let i = 0; i < drinkQuantity; i++) {
+            onAddItem(+finalItem.cost, finalItem.name, finalItem.menu_id, selectedMods);
+        }
         
         // Reset and close
         setSelectedMods([]);
         setIceLevel('1x');
         setSugarLevel('1x');
         setItemSize('medium');
+        setHotSelected(false);
+        setDrinkQuantity(1);
         onHide();
     };
 
@@ -198,6 +208,35 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
                                         </div>
                                     );
                                 })}
+                        </div>
+                    </div>
+                    <div>
+                        <button
+                            type="button"
+                            className={`tea-topping-btn ${hotSelected ? 'is-selected' : ''}`}
+                            onClick={() => setHotSelected(prev => !prev)}
+                        >
+                            Hot Drink {hotSelected ? '✅' : '❌'}
+                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }} >
+                            <b>Quantity </b>
+                            <Button
+                            type="button"
+                            className={`tea-topping-btn`}
+                            style={{color: 'black'}}
+                            onClick={() => setDrinkQuantity(Math.max(1, drinkQuantity - 1))}
+                            >
+                            −
+                            </Button>
+                            <span className="tea-qty-value">{drinkQuantity}</span>
+                            <Button
+                            type="button"
+                            className={`tea-topping-btn`}
+                            style={{color: 'black'}}
+                            onClick={() => setDrinkQuantity(drinkQuantity + 1)}
+                            >
+                            +
+                            </Button>
                         </div>
                     </div>
                 </div>
