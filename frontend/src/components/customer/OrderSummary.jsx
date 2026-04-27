@@ -54,6 +54,7 @@ function OrderSummary({
             const lower = String(mod.name || '').toLowerCase();
             return lower === 'oat milk' || lower === 'oak milk';
           });
+          const hotSelected = modifications.some((mod) => String(mod.name || '').toLowerCase() === 'hot');
 
           return (
           <div key={item.id} className="order-line-item">
@@ -92,6 +93,7 @@ function OrderSummary({
                 {iceMod && <div>{translate(iceMod.name)}</div>}
                 {swapSugarSelected && <div>{translate('Swap Sugar: selected')}</div>}
                 {oatMilkSelected && <div>{translate('Oat Milk: selected')}</div>}
+                {hotSelected && <div>{translate('Hot: selected')}</div>}
                 {toppings.length > 0 && (
                   <div>
                     {translate('Toppings:')} {toppings.map((topping) => translate(topping.name)).join(', ')}
