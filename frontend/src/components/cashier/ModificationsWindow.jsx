@@ -3,7 +3,7 @@ import { Button } from 'react-bootstrap';
 // import './Cashier.css';
 import './ModificationsWindow.css';
 
-export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems, ingredients }) {
+export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems, ingredients, initialMods }) {
     useEffect(() => {
         console.log('ingredients received by modifications window:', ingredients);
     }, [ingredients]);
@@ -16,6 +16,52 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
     const sizeOptions = ['small', 'medium', 'large'];
     const [hotSelected, setHotSelected] = useState(false);
     const [drinkQuantity, setDrinkQuantity] = useState(1);
+
+    // Initial setup when modal opens
+    useEffect(() => {
+        if (show) {
+            if (initialMods && initialMods.length > 0) {
+                // We're editing an existing item
+                const newSelectedMods = [];
+                let newIceLevel = '1x';
+                let newSugarLevel = '1x';
+                let newHotSelected = false;
+
+                initialMods.forEach(mod => {
+                    if (mod.menu_id === 65) {
+                        newIceLevel = mod.name.replace('Ice ', '');
+                    } else if (mod.menu_id === 64) {
+                        newSugarLevel = mod.name.replace('Sugar ', '');
+                    } else if (mod.menu_id === 71) {
+                        newHotSelected = true;
+                    } else {
+                        newSelectedMods.push(mod);
+                    }
+                });
+
+                setIceLevel(newIceLevel);
+                setSugarLevel(newSugarLevel);
+                setHotSelected(newHotSelected);
+                setSelectedMods(newSelectedMods);
+                setDrinkQuantity(1); // Default to 1 for editing
+                
+                // Decode size from name if possible
+                if (item && item.name) {
+                    if(item.name.toLowerCase().includes('large')) setItemSize('large');
+                    else if(item.name.toLowerCase().includes('small')) setItemSize('small');
+                    else setItemSize('medium');
+                }
+            } else {
+                // Resetting for a fresh item
+                setSelectedMods([]);
+                setIceLevel('1x');
+                setSugarLevel('1x');
+                setItemSize('medium');
+                setHotSelected(false);
+                setDrinkQuantity(1);
+            }
+        }
+    }, [show, initialMods, item]);
 
     if (!item || !show) {
         return null;
@@ -72,9 +118,8 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
         console.log('final item after size adjustment:', finalItem);
         console.log(`modification array is:`, selectedMods);
 
-        for(let i = 0; i < drinkQuantity; i++) {
-            onAddItem(+finalItem.cost, finalItem.name, finalItem.menu_id, selectedMods);
-        }
+        // Pass the quantity directly back up via onAddItem instead of looping internally
+        onAddItem(+finalItem.cost, finalItem.name, finalItem.menu_id, selectedMods, drinkQuantity);
         
         // Reset and close
         setSelectedMods([]);
@@ -246,7 +291,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
                         Cancel
                     </button>
                     <button className="tea-modal-btn-primary" onClick={handleConfirm}>
-                        Add to Order
+                        {initialMods && initialMods.length > 0 ? "Update Order" : "Add to Order"}
                     </button>
                 </div>
             </div>

@@ -30,71 +30,170 @@ export default function Cashier() {
     })
     const [customerName, setCustomerName] = useState('');
     const [error, setError] = useState(null);
+    const [editingItemIndex, setEditingItemIndex] = useState(null);
 
+    // Helper function to check if two items are exactly identical
+    const areItemsIdentical = (item1, item2) => {
+        if (item1.menu_id !== item2.menu_id) return false;
+        
+        const mods1 = item1.modifications_array || [];
+        const mods2 = item2.modifications_array || [];
+        
+        if (mods1.length !== mods2.length) return false;
+        
+        // Sort by menu_id to ensure order doesn't matter, though usually it's consistent
+        const sorted1 = [...mods1].sort((a,b) => a.menu_id - b.menu_id);
+        const sorted2 = [...mods2].sort((a,b) => a.menu_id - b.menu_id);
+        
+        for (let i = 0; i < sorted1.length; i++) {
+            if (sorted1[i].menu_id !== sorted2[i].menu_id) return false;
+            // If they have distinct names like "Ice 0.5x", name diff matters
+            if (sorted1[i].name !== sorted2[i].name) return false;
+        }
+        
+        return true;
+    };
 
-    const handleAddItem = (cost, name, menu_id, modifications_array) => {
-        setTotal(prevTotal => {
-            const newTotal = prevTotal + parseFloat(cost);
-            return Math.round(newTotal * 100) / 100; //this prevents floating point issues
-        });
-        setTotal(prevTotal => {
-            let newTotal = prevTotal;
-            if (modifications_array && modifications_array.length > 0) {
-                modifications_array.forEach(mod => {
-                    newTotal += parseFloat(mod.cost);
-                });
+    const handleEditComplete = (updatedItem, quantity = 1) => {
+        if (updatedItem && editingItemIndex !== null) {
+            setOrderItems(prevItems => {
+                const newItems = [...prevItems];
+                const oldItem = newItems[editingItemIndex];
+                
+                // Diff the total: subtract the old item's complete total, then add the new item's total
+                let oldCost = parseFloat(oldItem.cost);
+                if (oldItem.modifications_array) {
+                    oldItem.modifications_array.forEach(mod => oldCost += parseFloat(mod.cost || 0));
+                }
+                oldCost *= (oldItem.quantity || 1); // Remove the entire cost of the previous stack
+                
+                let newCost = parseFloat(updatedItem.cost);
+                if (updatedItem.modifications_array) {
+                    updatedItem.modifications_array.forEach(mod => newCost += parseFloat(mod.cost || 0));
+                }
+                
+                setTotal(prevTotal => Math.round((prevTotal - oldCost + (newCost * quantity)) * 100) / 100);
+                
+                // Construct the updated item
+                const newItem = { ...updatedItem, quantity };
+                
+                // Check if another identical item already exists (other than the one we are editing)
+                // If it does, we can merge into it, but it might mess up indices a little bit if we do it inline.
+                // Simple approach: replace the old item. If it matches something else, just let it be a new line 
+                // OR we can explicitly scan and merge.
+                // Let's just replace in place to keep stability, EXCEPT when they change it to an identical existing item
+                
+                let foundMatch = -1;
+                for (let i = 0; i < newItems.length; i++) {
+                    if (i !== editingItemIndex && areItemsIdentical(newItems[i], newItem)) {
+                        foundMatch = i;
+                        break;
+                    }
+                }
+                
+                if (foundMatch !== -1) {
+                    // Merge with the existing identical item
+                    newItems[foundMatch].quantity = (newItems[foundMatch].quantity || 1) + quantity;
+                    newItems.splice(editingItemIndex, 1); // remove the old one entirely
+                } else {
+                    // Just replace it inline
+                    newItems[editingItemIndex] = newItem;
+                }
+                
+                return newItems;
+            });
+        }
+        setEditingItemIndex(null);
+    };
+
+    const triggerEditItem = (index) => {
+        setEditingItemIndex(index);
+    };
+
+    const handleAddItem = (cost, name, menu_id, modifications_array, quantity = 1) => {
+        let itemTotal = parseFloat(cost);
+        if (modifications_array && modifications_array.length > 0) {
+            modifications_array.forEach(mod => {
+                itemTotal += parseFloat(mod.cost);
+            });
+        }
+
+        setTotal(prevTotal => Math.round((prevTotal + (itemTotal * quantity)) * 100) / 100);
+
+        setOrderItems(prevItems => {
+            const newItemObject = { name, cost, menu_id, modifications_array, quantity };
+            const newItems = [...prevItems];
+            
+            // Check if identical item exists
+            let foundMatch = -1;
+            for (let i = 0; i < newItems.length; i++) {
+                if (areItemsIdentical(newItems[i], newItemObject)) {
+                    foundMatch = i;
+                    break;
+                }
             }
-            return Math.round(newTotal * 100) / 100;
+            
+            if (foundMatch !== -1) {
+                // Merge quantity
+                newItems[foundMatch] = {
+                    ...newItems[foundMatch],
+                    quantity: (newItems[foundMatch].quantity || 1) + quantity
+                };
+            } else {
+                newItems.push(newItemObject);
+            }
+            
+            return newItems;
         });
-
-        setOrderItems(prevItems => [...prevItems, { name, cost, menu_id, modifications_array }]);
     };
 
     const handleRemoveItem = (itemIndex, modIndex = null) => {
         if (modIndex === null) {
             // Remove entire item and all its modifications
             const item = orderItems[itemIndex];
-            let totalToRemove = parseFloat(item.cost);
+            const itemQuantity = item.quantity || 1;
             
-            // Add up modification costs
+            let unitCost = parseFloat(item.cost);
             if (item.modifications_array && item.modifications_array.length > 0) {
                 item.modifications_array.forEach(mod => {
-                    totalToRemove += parseFloat(mod.cost);
+                    unitCost += parseFloat(mod.cost);
                 });
             }
             
-            // Update total
+            const totalToRemove = unitCost * itemQuantity;
             setTotal(prevTotal => Math.round((prevTotal - totalToRemove) * 100) / 100);
             
-            // Remove item from order
             setOrderItems(prevItems => prevItems.filter((_, index) => index !== itemIndex));
         } else {
             // Remove or reset specific modification
+            const item = orderItems[itemIndex];
+            const mod = item.modifications_array[modIndex];
+            const itemQuantity = item.quantity || 1;
+            
+            const isIceLevel = mod.menu_id === 65; 
+            const isSugarLevel = mod.menu_id === 64; 
+            
+            if (!isIceLevel && !isSugarLevel) {
+                const costToRemove = parseFloat(mod.cost) * itemQuantity;
+                setTotal(prevTotal => Math.round((prevTotal - costToRemove) * 100) / 100);
+            }
+            
             setOrderItems(prevItems => {
                 const newItems = [...prevItems];
-                const item = newItems[itemIndex];
-                const mod = item.modifications_array[modIndex];
-                
-                // Check if it's ice or sugar level modification
-                const isIceLevel = mod.menu_id === 65; // Ice modification
-                const isSugarLevel = mod.menu_id === 64; // Sugar modification
+                const updatedItem = { ...newItems[itemIndex], modifications_array: [...newItems[itemIndex].modifications_array] };
                 
                 if (isIceLevel || isSugarLevel) {
-                    // Reset to 1x instead of removing
                     const modType = isIceLevel ? 'Ice' : 'Sugar';
-                    item.modifications_array[modIndex] = {
-                        menu_id: mod.menu_id,
+                    updatedItem.modifications_array[modIndex] = {
+                        ...updatedItem.modifications_array[modIndex],
                         name: `${modType} 1x`,
-                        category: 'modifications',
                         cost: 0
                     };
                 } else {
-                    // Remove the modification and update total
-                    const costToRemove = parseFloat(mod.cost);
-                    setTotal(prevTotal => Math.round((prevTotal - costToRemove) * 100) / 100);
-                    item.modifications_array.splice(modIndex, 1);
+                    updatedItem.modifications_array.splice(modIndex, 1);
                 }
                 
+                newItems[itemIndex] = updatedItem;
                 return newItems;
             });
         }
@@ -111,7 +210,7 @@ export default function Cashier() {
             items: orderItems.map(item => {
                 return {
                     menuId: item.menu_id,
-                    quantity: 1,
+                    quantity: item.quantity || 1,
                     toppings: item.modifications_array ? Object.values(item.modifications_array.reduce((acc, mod) => {
                         const isIceOrSugar = mod.name.toLowerCase().includes("ice") || mod.name.toLowerCase().includes("sugar");
                         // console.log(mod.name);
@@ -235,11 +334,26 @@ export default function Cashier() {
                                 Food
                             </Button>
                         </div>
-                        <Menuitems onAddItem={handleAddItem} menuView={menuView}/> 
+                        <Menuitems 
+                            onAddItem={handleAddItem} 
+                            menuView={menuView}
+                            editingItem={editingItemIndex !== null ? orderItems[editingItemIndex] : null}
+                            onEditComplete={(updatedItem, quantity = 1) => {
+                                if (updatedItem) {
+                                    handleEditComplete(updatedItem, quantity);
+                                } else {
+                                    setEditingItemIndex(null);
+                                }
+                            }}
+                        /> 
                     </div>
                     <div className="cashier-order-panel">
                         <h2 className="cashier-panel-title">Order Summary</h2>
-                        <OrderSummary orderItems={orderItems} onRemoveItem={handleRemoveItem} />
+                        <OrderSummary 
+                            orderItems={orderItems} 
+                            onRemoveItem={handleRemoveItem} 
+                            onEditItem={triggerEditItem}
+                        />
                         <div className="cashier-order-total">Total: ${total.toFixed(2)}</div>
                         <div className="cashier-action-group">
                             <Button onClick={handleCheckout} className="cashier-btn-confirm">

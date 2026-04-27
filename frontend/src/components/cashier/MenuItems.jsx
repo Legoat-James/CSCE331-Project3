@@ -3,12 +3,23 @@ import React, { useState, useEffect } from 'react';
 import ModificationsWindow from './ModificationsWindow';
 import './MenuItems.css';
 
-export default function Menuitems({ onAddItem, menuView }) {
+export default function Menuitems({ onAddItem, menuView, editingItem, onEditComplete }) {
     const [menuItems, setMenuItems] = useState([]);
     const [modifications, setModifications] = useState([]);
     const [showModWindow, setShowModWindow] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [ingredients, setIngredients] = useState([]);
+
+    useEffect(() => {
+        if (editingItem) {
+            // Find base item to feed into ModWindow
+            const baseItem = menuItems.find(m => m.menu_id === editingItem.menu_id) || menuItems.find(m => m.name === editingItem.name);
+            if (baseItem && baseItem.category === 'drink') {
+                setSelectedItem(baseItem);
+                setShowModWindow(true);
+            }
+        }
+    }, [editingItem, menuItems]);
 
     useEffect(() => {
     const fetchMenuItems = async () => {
@@ -64,6 +75,15 @@ export default function Menuitems({ onAddItem, menuView }) {
     const handleCloseModWindow = () => {
         setShowModWindow(false);
         setSelectedItem(null);
+        if (onEditComplete) onEditComplete(null);
+    };
+
+    const handleModWindowSubmit = (cost, name, menu_id, mods, quantity = 1) => {
+        if (editingItem) {
+            onEditComplete({ cost, name, menu_id, modifications_array: mods }, quantity);
+        } else {
+            onAddItem(cost, name, menu_id, mods, quantity);
+        }
     };
 
     return (
@@ -89,8 +109,9 @@ export default function Menuitems({ onAddItem, menuView }) {
                 item={selectedItem}
                 modifications={modifications}
                 menuItems={menuItems}
-                onAddItem={onAddItem}
+                onAddItem={handleModWindowSubmit}
                 ingredients={ingredients}
+                initialMods={editingItem ? editingItem.modifications_array : null}
             />
         </div>
     );
