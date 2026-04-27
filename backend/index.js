@@ -1207,7 +1207,7 @@ app.post('/api/orders/create', async (req, res, next) => {
          description: 'Order object',
          required: true,
          schema: {
-         
+
            employeeId: 1,
            customerName: 'Guest',
            items: [

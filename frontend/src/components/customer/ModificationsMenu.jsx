@@ -180,6 +180,15 @@ function DrinkCustomizer({
                 className="tea-toggle-item"
               />
             )}
+
+            <Form.Check
+                type="checkbox"
+                id="hot-sugar-check"
+                label={translate('Hot')}
+                checked={swapSugar}
+                onChange={(e) => onSwapSugarChange(e.target.checked)}
+                className="tea-toggle-item"
+              />
           </div>
 
           <p className="tea-modal-note">

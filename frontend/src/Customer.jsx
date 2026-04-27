@@ -1076,6 +1076,7 @@ function Customer() {
           onOatMilkChange={setUseOatMilk}
           drinkQuantity={drinkQuantity}
           setDrinkQuantity={setDrinkQuantity}
+    
         />
 
         {/* Food Confirmation Modal */}
