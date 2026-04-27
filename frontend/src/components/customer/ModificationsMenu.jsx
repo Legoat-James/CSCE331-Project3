@@ -2,7 +2,7 @@ import React from 'react';
 import { Button, Form } from 'react-bootstrap';
 import { useTranslate } from '../../contexts/TranslationContext';
 
-const iceLevelOptions = ['50%', '75%', '100%', '125%', '150%'];
+const iceLevelOptions = ['0%', '50%', '75%', '100%', '125%', '150%'];
 
 function DrinkCustomizer({
   show = false,
@@ -14,13 +14,15 @@ function DrinkCustomizer({
   toppingItems = [],
   selectedToppings = {},
   sugarMultiplier = 1,
-  iceLevelIndex = 2,
+  iceLevelIndex = 3,
   swapSugar = false,
   useOatMilk = false,
+  isHot = false,
   hasSugarSlider = false,
   hasIceControl = false,
   hasSwapSugar = false,
   hasOatMilkToggle = false,
+  hasHotToggle = false,
   editingOrderItemId = null,
   onClose,
   onSave,
@@ -30,6 +32,7 @@ function DrinkCustomizer({
   onIceChange,
   onSwapSugarChange,
   onOatMilkChange,
+  onHotChange,
   drinkQuantity,
   setDrinkQuantity
 }) {
@@ -124,7 +127,7 @@ function DrinkCustomizer({
                 {translate('Sugar Multiplier:')} <strong>{sugarMultiplier.toFixed(2)}x</strong>
               </p>
               <div className="tea-size-options">
-                {[0.5, 0.75, 1, 1.25, 1.5].map((level) => (
+                {[0.0, 0.5, 0.75, 1, 1.25, 1.5].map((level) => (
                   <Button
                     key={level}
                     type="button"
@@ -180,10 +183,21 @@ function DrinkCustomizer({
                 className="tea-toggle-item"
               />
             )}
+
+            {hasHotToggle && (
+              <Form.Check
+                type="checkbox"
+                id="hot-check"
+                label={translate('Hot')}
+                checked={isHot}
+                onChange={(e) => onHotChange(e.target.checked)}
+                className="tea-toggle-item"
+              />
+            )}
           </div>
 
           <p className="tea-modal-note">
-            {translate('Toppings can be added in any quantity. Swap sugar and oat milk are included in order submission when selected.')}
+            {translate('Toppings can be added in any quantity. Swap sugar, oat milk, and hot options are included in order submission when selected.')}
           </p>
 
           <p className="tea-modal-total">{translate('Current drink total:')} ${selectedDrinkTotal.toFixed(2)}</p>
