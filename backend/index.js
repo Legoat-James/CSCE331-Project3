@@ -265,6 +265,31 @@ app.get('/api/menu/drinks/specials', async (req, res, next) => {
   }
 });
 
+app.get('/api/menu/drinks/slushies', async (req, res, next) => {
+  try {
+    // #swagger.tags = ['Menu']
+    // #swagger.summary = "Get all Tea drinks in the menu"
+    /* #swagger.responses[200] = { 
+            description: 'Successfully retrieved the menu list',
+            schema: [{ 
+                menu_id: 0, 
+                name: 'Black Tea', 
+                category: 'Drink',
+                cost: 4.99,
+                subcategory: 'Teas',
+                is_active: true 
+            }]
+    } */
+
+    const result = await pool.query("SELECT * FROM menu WHERE is_active = true AND category = 'drink' AND subcategory = 'Slushies' ORDER BY menu_id");
+    const menuList = result.rows;
+    res.json(menuList);
+
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.get('/api/menu/drinks/seasonal', async (req, res, next) => {
   try {
     // #swagger.tags = ['Menu']
