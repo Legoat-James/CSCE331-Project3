@@ -9,9 +9,32 @@ export default function Kitchen() {
     // We use react-query (useGet) instead of manual useEffect fetching.
     const { data: pendingOrders = [], isPending, error: oError } = useGet(['fetch-orders'], '/api/orders/fetch', {
         // You might want to use refetchInterval to routinely get new orders!
-        refetchInterval: 5000, 
+        refetchInterval: 500, 
         retry: true,
     });
+    // Use state to track current time so the UI re-renders every second
+    const [currentTime, setCurrentTime] = useState(Date.now());
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(Date.now());
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Helper to determine the color class based on time elapsed
+    const getOrderColorClass = (orderTimestamp) => {
+        const orderTime = new Date(orderTimestamp).getTime();
+        const diffInSeconds = (currentTime - orderTime) / 1000;
+        
+        if (diffInSeconds >= 60) {
+            return 'bg-danger text-white'; // Red for >= 1 min
+        } else if (diffInSeconds >= 30) {
+            return 'bg-warning text-dark'; // Yellow for >= 30 secs
+        } else {
+            return 'bg-success text-white'; // Green for new orders
+        }
+    };
 
     // Define the mutation to fill the transaction
     const fillTransaction = useMutate(
@@ -19,8 +42,6 @@ export default function Kitchen() {
         'PUT',
         ['fetch-orders'] // Invalidate 'fetch-orders' to instantly update the Kitchen screen
     );
-    
-
     // Placeholder for when a kitchen staff member marks an order as completed
     const handleMarkCompleted = (orderId) => {
         // Trigger the mutation and pass the orderId in the request body
@@ -64,7 +85,7 @@ export default function Kitchen() {
                 {pendingOrders.map((order) => (
                     <Col key={order.transaction_id || order.id}>
                         <Card className="h-100 shadow-sm">
-                            <Card.Header className="d-flex justify-content-between align-items-center bg-primary text-white">
+                            <Card.Header className={`d-flex justify-content-between align-items-center ${getOrderColorClass(order.timestamp)}`}>
                                 <strong>Order #{order.transaction_id || order.id}</strong>
                                 <span>{new Date(order.timestamp).toLocaleTimeString()}</span>
                             </Card.Header>
@@ -81,7 +102,7 @@ export default function Kitchen() {
                                                 <ul className="text-danger small mb-1 list-unstyled ms-3">
                                                     {item.modifications.map((mod, modIndex) => (
                                                         <li key={modIndex}>
-                                                            - {mod.action === 'remove' ? 'NO' : 'ADD'} {mod.quantity && mod.quantity !== 1 ? `${mod.quantity}x ` : ''}{mod.ingredient_name || mod.name}
+                                                            - {mod.action === 'remove' ? 'NO' : 'ADD'} {`${mod.quantity}x `}{mod.ingredient_name || mod.name}
                                                         </li>
                                                     ))}
                                                 </ul>
