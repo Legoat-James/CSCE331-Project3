@@ -417,7 +417,7 @@ function Customer() {
         name,
         quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
         modifications_array: normalizedMods,
-        totalPrice: (Number(baseCost) || 0) + modificationsTotal,
+        totalPrice: ((Number(baseCost) || 0) + modificationsTotal) * (Number.isInteger(quantity) && quantity > 0 ? quantity : 1),
       };
     },
     []
@@ -629,15 +629,14 @@ function Customer() {
 
     const selectedDrinkMenuItem = allMenuItems.find((menuItem) => menuItem.id === selectedDrinkMenuId);
     
-    const newEntries = Array.from({ length: drinkQuantity }, (_, i) => 
-      buildOrderEntry({
-        entryId: (editingOrderItemId && i === 0) ? editingOrderItemId : `drink-${Date.now()}-${Math.floor(Math.random() * 10000) + i}`,
-        menuId: selectedDrinkMenuId,
-        name: selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`,
-        baseCost: selectedDrinkPrice,
-        modificationsArray,
-      })
-    );
+    const newEntry = buildOrderEntry({
+      entryId: editingOrderItemId || `drink-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      menuId: selectedDrinkMenuId,
+      name: selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`,
+      baseCost: selectedDrinkPrice,
+      modificationsArray,
+      quantity: drinkQuantity,
+    });
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
@@ -645,13 +644,13 @@ function Customer() {
     if (editingOrderItemId) {
       setOrderItems((prev) => {
         const index = prev.findIndex((item) => item.id === editingOrderItemId);
-        if (index === -1) return [...prev, ...newEntries];
+        if (index === -1) return [...prev, newEntry];
         const copy = [...prev];
-        copy.splice(index, 1, ...newEntries);
+        copy.splice(index, 1, newEntry);
         return copy;
       });
     } else {
-      setOrderItems((prev) => [...prev, ...newEntries]);
+      setOrderItems((prev) => [...prev, newEntry]);
     }
 
     closeToppingsScreen();
@@ -744,6 +743,7 @@ function Customer() {
     setSwapSugar(hasSwapSugarMod);
     setUseOatMilk(hasOatMilkMod);
     setIsHot(hasHotMod);
+    setDrinkQuantity(item.quantity || 1);
     setIsToppingsOpen(true);
   }, [
     allMenuItems,
@@ -772,7 +772,9 @@ function Customer() {
     setOrderSubmitError('');
 
     try {
-      const payloadItems = orderItems.map((item, itemIndex) => {
+      const payloadItems = [];
+
+      orderItems.forEach((item, itemIndex) => {
         if (!Number.isInteger(item?.menuId)) {
           throw new Error(`Could not resolve menu ID for order item ${itemIndex + 1} (${item.name}).`);
         }
@@ -797,13 +799,17 @@ function Customer() {
             quantity,
           }))
           .filter((entry) => Number.isInteger(entry.id) && Number.isFinite(entry.quantity) && entry.quantity >= 0);
-        
 
-        return {
-          menuId: item.menuId,
-          quantity: Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1,
-          toppings,
-        };
+        // Expand items with quantity > 1 into individual entries so each
+        // copy gets its own toppings row in the database.
+        const qty = Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+        for (let i = 0; i < qty; i++) {
+          payloadItems.push({
+            menuId: item.menuId,
+            quantity: 1,
+            toppings,
+          });
+        }
       });
 
       orderMutation.mutate({
