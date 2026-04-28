@@ -29,7 +29,7 @@ function OrderSummary({
   return (
     <aside className="order-panel" aria-label="Current order">
       <h1 
-      font-size="1.0rem"
+      fontSize="1.0rem"
       className="panel-title"
       >{translate('Current Order')}</h1>
       <p className="order-subtitle">{translate('Your selected drinks and snacks will appear here.')}</p>
@@ -41,7 +41,7 @@ function OrderSummary({
       )} */}
       {isError && <div className="backend-status error">{errorMessage}</div>}
 
-      <div className="order-list brown-scroll" tabindex="0" >
+      <div className="order-list brown-scroll" tabIndex="0" >
         {orderItems.length === 0 && (
           <p className="order-empty">{translate('No items in order yet.')}</p>
         )}

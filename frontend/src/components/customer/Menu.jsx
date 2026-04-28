@@ -37,7 +37,7 @@ function Menu({
         </h3>
       </div>
 
-      <div className="menu-grid brown-scroll" tabindex="0">
+      <div className="menu-grid brown-scroll" tabIndex="0">
         {items.length === 0 && (
           <Card className="h-100 text-center tea-card">
             <Card.Body>
