@@ -696,11 +696,11 @@ function Customer() {
     });
 
     const selectedDrinkMenuItem = allMenuItems.find((menuItem) => menuItem.id === selectedDrinkMenuId);
-    
+    const baseDrinkName = selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`;
     const newEntry = buildOrderEntry({
       entryId: editingOrderItemId || `drink-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
       menuId: selectedDrinkMenuId,
-      name: selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`,
+      name: baseDrinkName,
       baseCost: selectedDrinkPrice,
       modificationsArray,
       quantity: drinkQuantity,
@@ -709,17 +709,47 @@ function Customer() {
     setOrderSubmitMessage('');
     setOrderSubmitError('');
     
-    if (editingOrderItemId) {
-      setOrderItems((prev) => {
-        const index = prev.findIndex((item) => item.id === editingOrderItemId);
-        if (index === -1) return [...prev, newEntry];
-        const copy = [...prev];
-        copy.splice(index, 1, newEntry);
-        return copy;
+    setOrderItems((prev) => {
+        let foundMatchIndex = -1;
+        for (let i = 0; i < prev.length; i++) {
+          if (prev[i].id !== editingOrderItemId && areItemsIdentical(prev[i], newEntry)) {
+            foundMatchIndex = i;
+            break;
+          }
+        }
+
+        if (foundMatchIndex !== -1) {
+          const copy = [...prev];
+          const existing = copy[foundMatchIndex];
+          const mergedQty = existing.quantity + newEntry.quantity;
+          
+          copy[foundMatchIndex] = buildOrderEntry({
+            entryId: existing.id,
+            menuId: existing.menuId,
+            name: baseDrinkName,
+            baseCost: selectedDrinkPrice,
+            modificationsArray,
+            quantity: mergedQty
+          });
+
+          if (editingOrderItemId) {
+            const removeIndex = copy.findIndex((item) => item.id === editingOrderItemId);
+            if (removeIndex !== -1) copy.splice(removeIndex, 1);
+          }
+          return copy;
+        }
+
+        if (editingOrderItemId) {
+          const index = prev.findIndex((item) => item.id === editingOrderItemId);
+          if (index === -1) return [...prev, newEntry];
+          const copy = [...prev];
+          copy.splice(index, 1, newEntry);
+          return copy;
+        } else {
+          return [...prev, newEntry];
+        }
       });
-    } else {
-      setOrderItems((prev) => [...prev, newEntry]);
-    }
+
 
     closeToppingsScreen();
   }, [
