@@ -475,6 +475,7 @@ function Customer() {
       setIceLevelIndex(3);
       setSwapSugar(false);
       setUseOatMilk(false);
+      setDrinkQuantity(1);
       setIsToppingsOpen(true);
       return;
     }
@@ -742,7 +743,7 @@ function Customer() {
     setSwapSugar(hasSwapSugarMod);
     setUseOatMilk(hasOatMilkMod);
     setIsHot(hasHotMod);
-    setDrinkQuantity(item.quantity || 1);
+    setDrinkQuantity(Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1);
     setIsToppingsOpen(true);
   }, [
     allMenuItems,
@@ -771,7 +772,8 @@ function Customer() {
     setOrderSubmitError('');
 
     try {
-      const payloadItems = orderItems.map((item, itemIndex) => {
+      const payloadItems = [];
+      orderItems.forEach((item, itemIndex) => {
         if (!Number.isInteger(item?.menuId)) {
           throw new Error(`Could not resolve menu ID for order item ${itemIndex + 1} (${item.name}).`);
         }
@@ -797,12 +799,15 @@ function Customer() {
           }))
           .filter((entry) => Number.isInteger(entry.id) && Number.isFinite(entry.quantity) && entry.quantity >= 0);
         
-
-        return {
-          menuId: item.menuId,
-          quantity: Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1,
-          toppings,
-        };
+        const itemQty = Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+        // Unroll items to ensure the kitchen & inventory correctly maps modifiers to EACH distinct drink instance
+        for (let i = 0; i < itemQty; i++) {
+          payloadItems.push({
+            menuId: item.menuId,
+            quantity: 1,
+            toppings,
+          });
+        }
       });
 
       orderMutation.mutate({
