@@ -187,6 +187,25 @@ const parseDrinkVariant = (drinkName) => {
   return { baseName: normalizedName, size: 'medium' };
 };
 
+const areItemsIdentical = (item1, item2) => {
+  if (item1.menuId !== item2.menuId) return false;
+  
+  const mods1 = item1.modifications_array || [];
+  const mods2 = item2.modifications_array || [];
+  
+  if (mods1.length !== mods2.length) return false;
+  
+  const sorted1 = [...mods1].sort((a,b) => a.menu_id - b.menu_id);
+  const sorted2 = [...mods2].sort((a,b) => a.menu_id - b.menu_id);
+  
+  for (let i = 0; i < sorted1.length; i++) {
+      if (sorted1[i].menu_id !== sorted2[i].menu_id) return false;
+      if (sorted1[i].name !== sorted2[i].name) return false;
+  }
+  
+  return true;
+};
+
 function Customer() {
   const { contrastTheme, setTheme, magnifyScreen, setMagnifyScreen } = useContext(ThemeContext);
   const { translate } = useTranslate();
@@ -399,6 +418,8 @@ function Customer() {
       modificationsArray = [],
       quantity = 1,
     }) => {
+        const validQty = Number.isInteger(quantity) && quantity > 0 ? quantity : 1;
+
       const normalizedMods = modificationsArray
         .map((modification) => ({
           category: String(modification?.category || '').trim().toLowerCase(),
@@ -410,14 +431,18 @@ function Customer() {
 
       const modificationsTotal = normalizedMods.reduce((sum, mod) => sum + mod.cost, 0);
 
+        // Prepend quantity for display in the order summary card, matching the Cashier view
+        const displayName = validQty > 1 ? `${validQty}x ${name}` : name;
+
       return {
         id: entryId || `order-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         menuId,
         cost: Number(baseCost) || 0,
-        name,
-        quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
+          name: displayName,
+          rawName: name,
+          quantity: validQty,
         modifications_array: normalizedMods,
-        totalPrice: ((Number(baseCost) || 0) + modificationsTotal) * (Number.isInteger(quantity) && quantity > 0 ? quantity : 1),
+          totalPrice: ((Number(baseCost) || 0) + modificationsTotal) * validQty,
       };
     },
     []
@@ -510,17 +535,39 @@ function Customer() {
     if(!item){
       return;
     }
-    const orderEntry = buildOrderEntry({
-      entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      menuId: item.id,
-      name: item.name,
-      baseCost: item.price,
-      modificationsArray: [],
-    });
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
-    setOrderItems((prev) => [...prev, orderEntry]);
+
+      setOrderItems((prev) => {
+        // Find if this exact food item is already in the cart
+        const existingIndex = prev.findIndex(
+          (orderItem) => orderItem.menuId === item.id && (!orderItem.modifications_array || orderItem.modifications_array.length === 0)
+        );
+        
+        if (existingIndex !== -1) {
+          const copy = [...prev];
+          const existing = copy[existingIndex];
+          copy[existingIndex] = buildOrderEntry({
+            entryId: existing.id,
+            menuId: existing.menuId,
+            name: item.name,
+            baseCost: item.price,
+            modificationsArray: [],
+            quantity: existing.quantity + 1
+          });
+          return copy;
+        }
+        
+        const orderEntry = buildOrderEntry({
+          entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          menuId: item.id,
+          name: item.name,
+          baseCost: item.price,
+          modificationsArray: [],
+        });
+        return [...prev, orderEntry];
+      });
   }
 
   const confirmAddFood = useCallback(() => {
@@ -530,17 +577,38 @@ function Customer() {
       return;
     }
 
-    const orderEntry = buildOrderEntry({
-      entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      menuId: selectedFood.id,
-      name: selectedFood.name,
-      baseCost: selectedFood.price,
-      modificationsArray: [],
-    });
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
-    setOrderItems((prev) => [...prev, orderEntry]);
+
+      setOrderItems((prev) => {
+        const existingIndex = prev.findIndex(
+          (orderItem) => orderItem.menuId === selectedFood.id && (!orderItem.modifications_array || orderItem.modifications_array.length === 0)
+        );
+        
+        if (existingIndex !== -1) {
+          const copy = [...prev];
+          const existing = copy[existingIndex];
+          copy[existingIndex] = buildOrderEntry({
+            entryId: existing.id,
+            menuId: existing.menuId,
+            name: selectedFood.name,
+            baseCost: selectedFood.price,
+            modificationsArray: [],
+            quantity: existing.quantity + 1
+          });
+          return copy;
+        }
+        
+        const orderEntry = buildOrderEntry({
+          entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          menuId: selectedFood.id,
+          name: selectedFood.name,
+          baseCost: selectedFood.price,
+          modificationsArray: [],
+        });
+        return [...prev, orderEntry];
+      });
     closeFoodConfirm();
   }, [selectedFood, closeFoodConfirm, buildOrderEntry]);
 
