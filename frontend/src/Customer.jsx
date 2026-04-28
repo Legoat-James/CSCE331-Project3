@@ -113,7 +113,7 @@ const itemVisualsByName = {
     image: tigerBobaImg,
   },
   'avocado toast': {
-    description: 'Crisp toasted bread layered with seasoned avocado mash and savory toppings.',
+    description: 'Crisp toasted bread layered with seasoned avocado mash and savory toppings.',const total = Math
     image: avocadoToastImg,
   },
   'bagel sandwich': {
@@ -121,7 +121,7 @@ const itemVisualsByName = {
     image: bagelSandwichImg,
   },
   fries: {
-    description: 'Golden fries with a crisp outside, fluffy center, and a savory potato finish.',
+    description: 'Golden fries with a crisp outside, fluffy center, and a savory potato finish.'const total = Math,
     image: friesImg,
   },
   'grilled cheese': {
@@ -524,6 +524,7 @@ function Customer() {
     setUseOatMilk(false);
     setIsHot(false);
     setEditingOrderItemId(null);
+    setDrinkQuantity(1);
   }, []);
 
   const closeFoodConfirm = useCallback(() => {

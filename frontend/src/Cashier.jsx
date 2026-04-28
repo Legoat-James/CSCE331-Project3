@@ -11,16 +11,16 @@ import { ThemeContext } from './contexts/ThemeContext';
 
 export default function Cashier() {
     const { theme, setTheme } = useContext(ThemeContext);
-    
+
     useEffect(() => {
-    // This code runs once when the component mounts
-    console.log("Page loaded!");
-    setTheme('standard');
+        // This code runs once when the component mounts
+        console.log("Page loaded!");
+        setTheme('standard');
     }, []);
-  
+
     const { user, isSuccess: authSuccess, isPending: authPending } = useIsAuthenticated();
     const isLoggedIn = authSuccess && !!user;
-    
+
     const [isLoading, setLoading] = useState(false);
     const [orderItems, setOrderItems] = useState([]); // this will hold the items in the current order, we can use this to display the order summary and calculate the total
     
@@ -46,22 +46,22 @@ export default function Cashier() {
     // Helper function to check if two items are exactly identical
     const areItemsIdentical = (item1, item2) => {
         if (item1.menu_id !== item2.menu_id) return false;
-        
+
         const mods1 = item1.modifications_array || [];
         const mods2 = item2.modifications_array || [];
-        
+
         if (mods1.length !== mods2.length) return false;
-        
+
         // Sort by menu_id to ensure order doesn't matter, though usually it's consistent
-        const sorted1 = [...mods1].sort((a,b) => a.menu_id - b.menu_id);
-        const sorted2 = [...mods2].sort((a,b) => a.menu_id - b.menu_id);
-        
+        const sorted1 = [...mods1].sort((a, b) => a.menu_id - b.menu_id);
+        const sorted2 = [...mods2].sort((a, b) => a.menu_id - b.menu_id);
+
         for (let i = 0; i < sorted1.length; i++) {
             if (sorted1[i].menu_id !== sorted2[i].menu_id) return false;
             // If they have distinct names like "Ice 0.5x", name diff matters
             if (sorted1[i].name !== sorted2[i].name) return false;
         }
-        
+
         return true;
     };
 
@@ -71,13 +71,13 @@ export default function Cashier() {
                 const newItems = [...prevItems];
                 // Construct the updated item
                 const newItem = { ...updatedItem, quantity };
-                
+
                 // Check if another identical item already exists (other than the one we are editing)
                 // If it does, we can merge into it, but it might mess up indices a little bit if we do it inline.
                 // Simple approach: replace the old item. If it matches something else, just let it be a new line 
                 // OR we can explicitly scan and merge.
                 // Let's just replace in place to keep stability, EXCEPT when they change it to an identical existing item
-                
+
                 let foundMatch = -1;
                 for (let i = 0; i < newItems.length; i++) {
                     if (i !== editingItemIndex && areItemsIdentical(newItems[i], newItem)) {
@@ -85,7 +85,7 @@ export default function Cashier() {
                         break;
                     }
                 }
-                
+
                 if (foundMatch !== -1) {
                     // Merge with the existing identical item
                     newItems[foundMatch].quantity = (newItems[foundMatch].quantity || 1) + quantity;
@@ -94,7 +94,7 @@ export default function Cashier() {
                     // Just replace it inline
                     newItems[editingItemIndex] = newItem;
                 }
-                
+
                 return newItems;
             });
         }
@@ -111,7 +111,7 @@ export default function Cashier() {
         setOrderItems(prevItems => {
             const newItemObject = { name, cost, menu_id, modifications_array, quantity };
             const newItems = [...prevItems];
-            
+
             // Check if identical item exists
             let foundMatch = -1;
             for (let i = 0; i < newItems.length; i++) {
@@ -120,7 +120,7 @@ export default function Cashier() {
                     break;
                 }
             }
-            
+
             if (foundMatch !== -1) {
                 // Merge quantity
                 newItems[foundMatch] = {
@@ -130,7 +130,7 @@ export default function Cashier() {
             } else {
                 newItems.push(newItemObject);
             }
-            
+
             return newItems;
         });
     };
@@ -159,7 +159,7 @@ export default function Cashier() {
                 } else {
                     updatedItem.modifications_array.splice(modIndex, 1);
                 }
-                
+
                 newItems[itemIndex] = updatedItem;
                 return newItems;
             });
@@ -214,15 +214,15 @@ export default function Cashier() {
         //   "id": 61,
         //   "quantity": 1
         // }
-    //   ]
+        //   ]
     }
 
     const handleCheckout = async () => {
         console.log("checkout confirmed, order items:", orderItems);
         let sanatizedOrderItems = sanitizeOrderItems(orderItems);
         console.log("sanitized order items:", sanatizedOrderItems);
-        try{
-            if(!isLoading){
+        try {
+            if (!isLoading) {
                 setLoading(true);
                 const response = await apiClient('/api/orders/create', { method: 'POST', body: sanatizedOrderItems });
                 //the following line produces an error to test api errors and page alerts. 
@@ -254,7 +254,7 @@ export default function Cashier() {
 
     if (!isLoggedIn) {
         return (
-            <div className="cashier-page" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh'}}>
+            <div className="cashier-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
                 <Alert variant="danger">
                     <Alert.Heading>Access Denied</Alert.Heading>
                     <p>You must be logged in to access the Cashier view.</p>
@@ -272,43 +272,43 @@ export default function Cashier() {
             <div className="cashier-shell">
                 {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
                 <div className="cashier-layout">
-                    <div  className="cashier-menu-panel">
+                    <div className="cashier-menu-panel">
                         <h2 className="cashier-panel-title">Customer name</h2>
                         <Form>
                             <Form.Group className="mb-3" controlId="customerName">
                                 <Form.Control
-                                type="text"
-                                placeholder="type here..."
-                                value={customerName}
-                                onChange={(e) => setCustomerName(e.target.value)}
-                                className="cashier-order-total"
+                                    type="text"
+                                    placeholder="type here..."
+                                    value={customerName}
+                                    onChange={(e) => setCustomerName(e.target.value)}
+                                    className="cashier-order-total"
                                 />
                             </Form.Group>
 
                         </Form>
                         <h1 className="cashier-panel-title">Menu</h1>
                         <div className="cashier-category-group">
-                            <Button 
-                                onClick={() => changeMenuView('')} 
+                            <Button
+                                onClick={() => changeMenuView('')}
                                 className={`cashier-category-btn ${menuView === '' ? 'active' : ''}`}
                             >
                                 All Items
                             </Button>
-                            <Button 
-                                onClick={() => changeMenuView('drink')} 
+                            <Button
+                                onClick={() => changeMenuView('drink')}
                                 className={`cashier-category-btn ${menuView === 'drink' ? 'active' : ''}`}
                             >
                                 Drinks
                             </Button>
-                            <Button 
-                                onClick={() => changeMenuView('food')} 
+                            <Button
+                                onClick={() => changeMenuView('food')}
                                 className={`cashier-category-btn ${menuView === 'food' ? 'active' : ''}`}
                             >
                                 Food
                             </Button>
                         </div>
-                        <Menuitems 
-                            onAddItem={handleAddItem} 
+                        <Menuitems
+                            onAddItem={handleAddItem}
                             menuView={menuView}
                             editingItem={editingItemIndex !== null ? orderItems[editingItemIndex] : null}
                             onEditComplete={(updatedItem, quantity = 1) => {
@@ -318,13 +318,13 @@ export default function Cashier() {
                                     setEditingItemIndex(null);
                                 }
                             }}
-                        /> 
+                        />
                     </div>
                     <div className="cashier-order-panel">
                         <h2 className="cashier-panel-title">Order Summary</h2>
-                        <OrderSummary 
-                            orderItems={orderItems} 
-                            onRemoveItem={handleRemoveItem} 
+                        <OrderSummary
+                            orderItems={orderItems}
+                            onRemoveItem={handleRemoveItem}
                             onEditItem={triggerEditItem}
                         />
                         <div className="cashier-order-total">Total: ${total.toFixed(2)}</div>

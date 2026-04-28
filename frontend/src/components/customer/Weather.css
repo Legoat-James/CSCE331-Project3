@@ -34,7 +34,8 @@
 
 .weather-location {
   font-size: 0.75rem;
-  color: var(--tea-muted, #7a5e4c);
+  /* color: var(--tea-muted, #7a5e4c); */
+  color: var(--tea-wood-dark, #6f4c36);
   white-space: nowrap;
 }
 
@@ -51,7 +52,9 @@
 
 .weather-detail {
   font-size: 0.72rem;
-  color: var(--tea-muted, #7a5e4c);
+  /* color: var(--tea-muted, #7a5e4c); */
+  color: var(--tea-wood-dark, #6f4c36);
+  /* color: black; */
   white-space: nowrap;
 }
 

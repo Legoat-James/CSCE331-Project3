@@ -28,7 +28,10 @@ function OrderSummary({
 
   return (
     <aside className="order-panel" aria-label="Current order">
-      <h4 className="panel-title">{translate('Current Order')}</h4>
+      <h1 
+      font-size="1.0rem"
+      className="panel-title"
+      >{translate('Current Order')}</h1>
       <p className="order-subtitle">{translate('Your selected drinks and snacks will appear here.')}</p>
 
       {/* {!isError && (
@@ -38,7 +41,7 @@ function OrderSummary({
       )} */}
       {isError && <div className="backend-status error">{errorMessage}</div>}
 
-      <div className="order-list brown-scroll">
+      <div className="order-list brown-scroll" tabindex="0" >
         {orderItems.length === 0 && (
           <p className="order-empty">{translate('No items in order yet.')}</p>
         )}
@@ -59,7 +62,7 @@ function OrderSummary({
           return (
           <div key={item.id} className="order-line-item">
             <div className="order-line-header">
-              <span className="order-line-name">{translate(item.name)}</span>
+              <span className="order-line-name">{(item.quantity || 1) > 1 ? `${item.quantity}x ` : ''}{translate(item.name)}</span>
               <div className="order-line-actions">
                 <span className="order-line-price">${item.totalPrice.toFixed(2)}</span>
                 {hasDrinkCoreMods && (
