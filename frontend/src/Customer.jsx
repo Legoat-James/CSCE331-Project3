@@ -113,7 +113,7 @@ const itemVisualsByName = {
     image: tigerBobaImg,
   },
   'avocado toast': {
-    description: 'Crisp toasted bread layered with seasoned avocado mash and savory toppings.',
+    description: 'Crisp toasted bread layered with seasoned avocado mash and savory toppings.',const total = Math
     image: avocadoToastImg,
   },
   'bagel sandwich': {
@@ -121,7 +121,7 @@ const itemVisualsByName = {
     image: bagelSandwichImg,
   },
   fries: {
-    description: 'Golden fries with a crisp outside, fluffy center, and a savory potato finish.',
+    description: 'Golden fries with a crisp outside, fluffy center, and a savory potato finish.'const total = Math,
     image: friesImg,
   },
   'grilled cheese': {
@@ -185,6 +185,25 @@ const parseDrinkVariant = (drinkName) => {
     return { baseName: normalizedName.slice(0, -6).trim(), size: 'large' };
   }
   return { baseName: normalizedName, size: 'medium' };
+};
+
+const areItemsIdentical = (item1, item2) => {
+  if (item1.menuId !== item2.menuId) return false;
+  
+  const mods1 = item1.modifications_array || [];
+  const mods2 = item2.modifications_array || [];
+  
+  if (mods1.length !== mods2.length) return false;
+  
+  const sorted1 = [...mods1].sort((a,b) => a.menu_id - b.menu_id);
+  const sorted2 = [...mods2].sort((a,b) => a.menu_id - b.menu_id);
+  
+  for (let i = 0; i < sorted1.length; i++) {
+      if (sorted1[i].menu_id !== sorted2[i].menu_id) return false;
+      if (sorted1[i].name !== sorted2[i].name) return false;
+  }
+  
+  return true;
 };
 
 function Customer() {
@@ -399,6 +418,8 @@ function Customer() {
       modificationsArray = [],
       quantity = 1,
     }) => {
+        const validQty = Number.isInteger(quantity) && quantity > 0 ? quantity : 1;
+
       const normalizedMods = modificationsArray
         .map((modification) => ({
           category: String(modification?.category || '').trim().toLowerCase(),
@@ -410,14 +431,18 @@ function Customer() {
 
       const modificationsTotal = normalizedMods.reduce((sum, mod) => sum + mod.cost, 0);
 
+        // Prepend quantity for display in the order summary card, matching the Cashier view
+        const displayName = validQty > 1 ? `${validQty}x ${name}` : name;
+
       return {
         id: entryId || `order-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         menuId,
         cost: Number(baseCost) || 0,
-        name,
-        quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
+          name: displayName,
+          rawName: name,
+          quantity: validQty,
         modifications_array: normalizedMods,
-        totalPrice: ((Number(baseCost) || 0) + modificationsTotal) * (Number.isInteger(quantity) && quantity > 0 ? quantity : 1),
+          totalPrice: ((Number(baseCost) || 0) + modificationsTotal) * validQty,
       };
     },
     []
@@ -475,6 +500,7 @@ function Customer() {
       setIceLevelIndex(3);
       setSwapSugar(false);
       setUseOatMilk(false);
+      setDrinkQuantity(1);
       setIsToppingsOpen(true);
       return;
     }
@@ -510,17 +536,39 @@ function Customer() {
     if(!item){
       return;
     }
-    const orderEntry = buildOrderEntry({
-      entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      menuId: item.id,
-      name: item.name,
-      baseCost: item.price,
-      modificationsArray: [],
-    });
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
-    setOrderItems((prev) => [...prev, orderEntry]);
+
+      setOrderItems((prev) => {
+        // Find if this exact food item is already in the cart
+        const existingIndex = prev.findIndex(
+          (orderItem) => orderItem.menuId === item.id && (!orderItem.modifications_array || orderItem.modifications_array.length === 0)
+        );
+        
+        if (existingIndex !== -1) {
+          const copy = [...prev];
+          const existing = copy[existingIndex];
+          copy[existingIndex] = buildOrderEntry({
+            entryId: existing.id,
+            menuId: existing.menuId,
+            name: item.name,
+            baseCost: item.price,
+            modificationsArray: [],
+            quantity: existing.quantity + 1
+          });
+          return copy;
+        }
+        
+        const orderEntry = buildOrderEntry({
+          entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          menuId: item.id,
+          name: item.name,
+          baseCost: item.price,
+          modificationsArray: [],
+        });
+        return [...prev, orderEntry];
+      });
   }
 
   const confirmAddFood = useCallback(() => {
@@ -530,17 +578,38 @@ function Customer() {
       return;
     }
 
-    const orderEntry = buildOrderEntry({
-      entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      menuId: selectedFood.id,
-      name: selectedFood.name,
-      baseCost: selectedFood.price,
-      modificationsArray: [],
-    });
 
     setOrderSubmitMessage('');
     setOrderSubmitError('');
-    setOrderItems((prev) => [...prev, orderEntry]);
+
+      setOrderItems((prev) => {
+        const existingIndex = prev.findIndex(
+          (orderItem) => orderItem.menuId === selectedFood.id && (!orderItem.modifications_array || orderItem.modifications_array.length === 0)
+        );
+        
+        if (existingIndex !== -1) {
+          const copy = [...prev];
+          const existing = copy[existingIndex];
+          copy[existingIndex] = buildOrderEntry({
+            entryId: existing.id,
+            menuId: existing.menuId,
+            name: selectedFood.name,
+            baseCost: selectedFood.price,
+            modificationsArray: [],
+            quantity: existing.quantity + 1
+          });
+          return copy;
+        }
+        
+        const orderEntry = buildOrderEntry({
+          entryId: `food-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          menuId: selectedFood.id,
+          name: selectedFood.name,
+          baseCost: selectedFood.price,
+          modificationsArray: [],
+        });
+        return [...prev, orderEntry];
+      });
     closeFoodConfirm();
   }, [selectedFood, closeFoodConfirm, buildOrderEntry]);
 
@@ -628,11 +697,11 @@ function Customer() {
     });
 
     const selectedDrinkMenuItem = allMenuItems.find((menuItem) => menuItem.id === selectedDrinkMenuId);
-    
+    const baseDrinkName = selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`;
     const newEntry = buildOrderEntry({
       entryId: editingOrderItemId || `drink-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
       menuId: selectedDrinkMenuId,
-      name: selectedDrinkMenuItem?.name || `${selectedDrink.name} ${selectedDrinkSize}`,
+      name: baseDrinkName,
       baseCost: selectedDrinkPrice,
       modificationsArray,
       quantity: drinkQuantity,
@@ -641,17 +710,47 @@ function Customer() {
     setOrderSubmitMessage('');
     setOrderSubmitError('');
     
-    if (editingOrderItemId) {
-      setOrderItems((prev) => {
-        const index = prev.findIndex((item) => item.id === editingOrderItemId);
-        if (index === -1) return [...prev, newEntry];
-        const copy = [...prev];
-        copy.splice(index, 1, newEntry);
-        return copy;
+    setOrderItems((prev) => {
+        let foundMatchIndex = -1;
+        for (let i = 0; i < prev.length; i++) {
+          if (prev[i].id !== editingOrderItemId && areItemsIdentical(prev[i], newEntry)) {
+            foundMatchIndex = i;
+            break;
+          }
+        }
+
+        if (foundMatchIndex !== -1) {
+          const copy = [...prev];
+          const existing = copy[foundMatchIndex];
+          const mergedQty = existing.quantity + newEntry.quantity;
+          
+          copy[foundMatchIndex] = buildOrderEntry({
+            entryId: existing.id,
+            menuId: existing.menuId,
+            name: baseDrinkName,
+            baseCost: selectedDrinkPrice,
+            modificationsArray,
+            quantity: mergedQty
+          });
+
+          if (editingOrderItemId) {
+            const removeIndex = copy.findIndex((item) => item.id === editingOrderItemId);
+            if (removeIndex !== -1) copy.splice(removeIndex, 1);
+          }
+          return copy;
+        }
+
+        if (editingOrderItemId) {
+          const index = prev.findIndex((item) => item.id === editingOrderItemId);
+          if (index === -1) return [...prev, newEntry];
+          const copy = [...prev];
+          copy.splice(index, 1, newEntry);
+          return copy;
+        } else {
+          return [...prev, newEntry];
+        }
       });
-    } else {
-      setOrderItems((prev) => [...prev, newEntry]);
-    }
+
 
     closeToppingsScreen();
   }, [
@@ -743,7 +842,7 @@ function Customer() {
     setSwapSugar(hasSwapSugarMod);
     setUseOatMilk(hasOatMilkMod);
     setIsHot(hasHotMod);
-    setDrinkQuantity(item.quantity || 1);
+    setDrinkQuantity(Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1);
     setIsToppingsOpen(true);
   }, [
     allMenuItems,
@@ -773,7 +872,6 @@ function Customer() {
 
     try {
       const payloadItems = [];
-
       orderItems.forEach((item, itemIndex) => {
         if (!Number.isInteger(item?.menuId)) {
           throw new Error(`Could not resolve menu ID for order item ${itemIndex + 1} (${item.name}).`);
@@ -799,11 +897,10 @@ function Customer() {
             quantity,
           }))
           .filter((entry) => Number.isInteger(entry.id) && Number.isFinite(entry.quantity) && entry.quantity >= 0);
-
-        // Expand items with quantity > 1 into individual entries so each
-        // copy gets its own toppings row in the database.
-        const qty = Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1;
-        for (let i = 0; i < qty; i++) {
+        
+        const itemQty = Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+        // Unroll items to ensure the kitchen & inventory correctly maps modifiers to EACH distinct drink instance
+        for (let i = 0; i < itemQty; i++) {
           payloadItems.push({
             menuId: item.menuId,
             quantity: 1,

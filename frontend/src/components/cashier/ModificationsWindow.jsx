@@ -3,7 +3,7 @@ import { Button } from 'react-bootstrap';
 // import './Cashier.css';
 import './ModificationsWindow.css';
 
-export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems, ingredients, initialMods, initialQuantity }) {
+export default function ModificationsWindow({ show, onHide, item, modifications, onAddItem, menuItems, ingredients, initialMods, initialQuantity = 1 }) {
     useEffect(() => {
         console.log('ingredients received by modifications window:', ingredients);
     }, [ingredients]);
@@ -43,7 +43,7 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
                 setSugarLevel(newSugarLevel);
                 setHotSelected(newHotSelected);
                 setSelectedMods(newSelectedMods);
-                setDrinkQuantity(initialQuantity || 1); // Use the actual quantity from the editing item
+                setDrinkQuantity(initialQuantity); // Use passed quantity when editing
                 
                 // Decode size from name if possible
                 if (item && item.name) {
@@ -58,10 +58,10 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
                 setSugarLevel('1x');
                 setItemSize('medium');
                 setHotSelected(false);
-                setDrinkQuantity(1);
+                setDrinkQuantity(initialQuantity);
             }
         }
-    }, [show, initialMods, item]);
+    }, [show, initialMods, item, initialQuantity]);
 
     if (!item || !show) {
         return null;
@@ -97,29 +97,29 @@ export default function ModificationsWindow({ show, onHide, item, modifications,
     };
 
     const handleConfirm = () => {
-        selectedMods.push({menu_id: 65, name: `Ice ${iceLevel}`, category: 'modifications' ,cost: 0});
-        selectedMods.push({menu_id: 64, name: `Sugar ${sugarLevel}`, category: 'modifications' ,cost: 0});
-        hotSelected ? selectedMods.push({menu_id: 71, name: 'hot', category: 'modifications', cost: 0}) : null;
+        const finalMods = [...selectedMods];
+        finalMods.push({menu_id: 65, name: `Ice ${iceLevel}`, category: 'modifications' ,cost: 0});
+        finalMods.push({menu_id: 64, name: `Sugar ${sugarLevel}`, category: 'modifications' ,cost: 0});
+        if (hotSelected) finalMods.push({menu_id: 71, name: 'hot', category: 'modifications', cost: 0});
         
         let finalItem = item;
-        if(item.category === 'drink' && itemSize !== 'medium') {
-            finalItem = menuItems.find(
-                menuItem => menuItem.name.includes(item.name) && menuItem.name.includes(itemSize));
-
-            if (finalItem) {
-                console.log(`found size variant for item: `, finalItem);
-            }
-            else {
-                console.error(`could not find size variant for item: ${item.name}`);
+        if(item.category === 'drink') {
+            const baseName = item.name.replace(/ small| large/i, '').trim();
+            if (itemSize === 'medium') {
+                const found = menuItems.find(m => m.name.toLowerCase() === baseName.toLowerCase());
+                if (found) finalItem = found;
+            } else {
+                const found = menuItems.find(m => m.name.toLowerCase() === `${baseName.toLowerCase()} ${itemSize}`);
+                if (found) finalItem = found;
             }
         }
         console.log(`selected size:`, itemSize);
         console.log('selected item:', item);
         console.log('final item after size adjustment:', finalItem);
-        console.log(`modification array is:`, selectedMods);
+        console.log(`modification array is:`, finalMods);
 
         // Pass the quantity directly back up via onAddItem instead of looping internally
-        onAddItem(+finalItem.cost, finalItem.name, finalItem.menu_id, selectedMods, drinkQuantity);
+        onAddItem(parseFloat(finalItem.cost || 0), finalItem.name, finalItem.menu_id, finalMods, drinkQuantity);
         
         // Reset and close
         setSelectedMods([]);

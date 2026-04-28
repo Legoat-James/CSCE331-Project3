@@ -22,8 +22,19 @@ export default function Cashier() {
     const isLoggedIn = authSuccess && !!user;
 
     const [isLoading, setLoading] = useState(false);
-    const [total, setTotal] = useState(0.00);
     const [orderItems, setOrderItems] = useState([]); // this will hold the items in the current order, we can use this to display the order summary and calculate the total
+    
+    // Compute total dynamically from orderItems to prevent delta-math desync bugs
+    const total = Math.round(orderItems.reduce((acc, item) => {
+        let unitCost = parseFloat(item.cost || 0);
+        if (item.modifications_array) {
+            item.modifications_array.forEach(mod => {
+                unitCost += parseFloat(mod.cost || 0);
+            });
+        }
+        return acc + (unitCost * (item.quantity || 1));
+    }, 0) * 100) / 100;
+
     const [menuView, setMenuView] = useState(() => {
         const savedView = localStorage.getItem('menuView');
         return savedView ? savedView : '';
@@ -58,22 +69,6 @@ export default function Cashier() {
         if (updatedItem && editingItemIndex !== null) {
             setOrderItems(prevItems => {
                 const newItems = [...prevItems];
-                const oldItem = newItems[editingItemIndex];
-
-                // Diff the total: subtract the old item's complete total, then add the new item's total
-                let oldCost = parseFloat(oldItem.cost);
-                if (oldItem.modifications_array) {
-                    oldItem.modifications_array.forEach(mod => oldCost += parseFloat(mod.cost || 0));
-                }
-                oldCost *= (oldItem.quantity || 1); // Remove the entire cost of the previous stack
-
-                let newCost = parseFloat(updatedItem.cost);
-                if (updatedItem.modifications_array) {
-                    updatedItem.modifications_array.forEach(mod => newCost += parseFloat(mod.cost || 0));
-                }
-
-                setTotal(prevTotal => Math.round((prevTotal - oldCost + (newCost * quantity)) * 100) / 100);
-
                 // Construct the updated item
                 const newItem = { ...updatedItem, quantity };
 
@@ -107,19 +102,12 @@ export default function Cashier() {
     };
 
     const triggerEditItem = (index) => {
+        const item = orderItems[index];
+        if (!item.modifications_array || item.modifications_array.length === 0) return;
         setEditingItemIndex(index);
     };
 
     const handleAddItem = (cost, name, menu_id, modifications_array, quantity = 1) => {
-        let itemTotal = parseFloat(cost);
-        if (modifications_array && modifications_array.length > 0) {
-            modifications_array.forEach(mod => {
-                itemTotal += parseFloat(mod.cost);
-            });
-        }
-
-        setTotal(prevTotal => Math.round((prevTotal + (itemTotal * quantity)) * 100) / 100);
-
         setOrderItems(prevItems => {
             const newItemObject = { name, cost, menu_id, modifications_array, quantity };
             const newItems = [...prevItems];
@@ -150,42 +138,21 @@ export default function Cashier() {
     const handleRemoveItem = (itemIndex, modIndex = null) => {
         if (modIndex === null) {
             // Remove entire item and all its modifications
-            const item = orderItems[itemIndex];
-            const itemQuantity = item.quantity || 1;
-
-            let unitCost = parseFloat(item.cost);
-            if (item.modifications_array && item.modifications_array.length > 0) {
-                item.modifications_array.forEach(mod => {
-                    unitCost += parseFloat(mod.cost);
-                });
-            }
-
-            const totalToRemove = unitCost * itemQuantity;
-            setTotal(prevTotal => Math.round((prevTotal - totalToRemove) * 100) / 100);
-
             setOrderItems(prevItems => prevItems.filter((_, index) => index !== itemIndex));
         } else {
             // Remove or reset specific modification
-            const item = orderItems[itemIndex];
-            const mod = item.modifications_array[modIndex];
-            const itemQuantity = item.quantity || 1;
-
-            const isIceLevel = mod.menu_id === 65;
-            const isSugarLevel = mod.menu_id === 64;
-
-            if (!isIceLevel && !isSugarLevel) {
-                const costToRemove = parseFloat(mod.cost) * itemQuantity;
-                setTotal(prevTotal => Math.round((prevTotal - costToRemove) * 100) / 100);
-            }
-
             setOrderItems(prevItems => {
                 const newItems = [...prevItems];
                 const updatedItem = { ...newItems[itemIndex], modifications_array: [...newItems[itemIndex].modifications_array] };
+                const mod = updatedItem.modifications_array[modIndex];
+
+                const isIceLevel = mod.menu_id === 65;
+                const isSugarLevel = mod.menu_id === 64;
 
                 if (isIceLevel || isSugarLevel) {
                     const modType = isIceLevel ? 'Ice' : 'Sugar';
                     updatedItem.modifications_array[modIndex] = {
-                        ...updatedItem.modifications_array[modIndex],
+                        ...mod,
                         name: `${modType} 1x`,
                         cost: 0
                     };
@@ -204,8 +171,7 @@ export default function Cashier() {
         // const employeeId = 1;
         const employeeId = user ? user.employee_id : null;
 
-        const expandedItems = [];
-
+        const unrolledItems = [];
         orderItems.forEach(item => {
             const toppings = item.modifications_array ? Object.values(item.modifications_array.reduce((acc, mod) => {
                 const isIceOrSugar = mod.name.toLowerCase().includes("ice") || mod.name.toLowerCase().includes("sugar");
@@ -227,14 +193,13 @@ export default function Cashier() {
                 return acc;
             }, {})) : [];
 
-            // Expand items with quantity > 1 into individual entries so each
-            // copy gets its own toppings row in the database.
-            const qty = item.quantity || 1;
-            for (let i = 0; i < qty; i++) {
-                expandedItems.push({
+            const itemQty = item.quantity || 1;
+            // Unroll items to ensure the kitchen & inventory correctly maps modifiers to EACH distinct drink instance
+            for (let i = 0; i < itemQty; i++) {
+                unrolledItems.push({
                     menuId: item.menu_id,
                     quantity: 1,
-                    toppings,
+                    toppings: toppings
                 });
             }
         });
@@ -242,7 +207,7 @@ export default function Cashier() {
         return {
             employeeId: employeeId,
             customerName: customerName,
-            items: expandedItems
+            items: unrolledItems
         }
         // "toppings": [
         // {
@@ -259,14 +224,13 @@ export default function Cashier() {
         try {
             if (!isLoading) {
                 setLoading(true);
-                const response = await apiClient('/api/orders/create', { body: sanatizedOrderItems });
+                const response = await apiClient('/api/orders/create', { method: 'POST', body: sanatizedOrderItems });
                 //the following line produces an error to test api errors and page alerts. 
                 // it should not be deleted or uncommented unless testing error handling
                 // const response = await apiClient('/api/orders/create', sanatizedOrderItems); 
                 console.log('order submission response:', response);
                 //reset order on successful submission
                 setOrderItems([]);
-                setTotal(0.00);
                 setError(null);
                 setLoading(false);
                 setCustomerName('');
@@ -280,7 +244,6 @@ export default function Cashier() {
 
     const handleCancel = () => {
         setOrderItems([]);
-        setTotal(0.00);
         setError(null);
     }
 

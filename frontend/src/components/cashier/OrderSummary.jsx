@@ -15,7 +15,7 @@ export default function OrderSummary({ orderItems, onRemoveItem, onEditItem }) {
         <div className="order-list">
             {orderItems.map((item, index) => {
                 const qty = item.quantity || 1;
-                let unitCost = parseFloat(item.cost);
+                let unitCost = parseFloat(item.cost || 0);
                 if(item.modifications_array) {
                     item.modifications_array.forEach(mod => unitCost += parseFloat(mod.cost || 0));
                 }
@@ -28,7 +28,7 @@ export default function OrderSummary({ orderItems, onRemoveItem, onEditItem }) {
                         <div className="order-line-actions">
                             <span className="order-line-price">${parseFloat(lineTotal).toFixed(2)}</span>
                             {/* Make sure we only show edit button if it has modifications */}
-                            {item.modifications_array && (
+                            {item.modifications_array && item.modifications_array.length > 0 && (
                                 <button className="order-edit-btn" onClick={() => onEditItem(index)} title="Edit item" aria-label="Edit item">
                                     <span>✎</span>
                                 </button>
@@ -49,7 +49,7 @@ export default function OrderSummary({ orderItems, onRemoveItem, onEditItem }) {
                                 <div key={modIndex} className="order-mod-row">
                                     <span className="order-mod-name">• {mod.name}</span>
                                     <div className="order-mod-actions">
-                                        <span className="order-mod-price">{parseFloat(mod.cost) > 0 ? `+$${parseFloat(mod.cost * qty).toFixed(2)}` : '$0.00'}</span>
+                                        <span className="order-mod-price">{parseFloat(mod.cost || 0) > 0 ? `+$${(parseFloat(mod.cost || 0) * qty).toFixed(2)}` : '$0.00'}</span>
                                         <button 
                                             className={mod.menu_id === 65 || mod.menu_id === 64 ? "order-reset-btn" : "order-mod-remove-btn"}
                                             onClick={() => onRemoveItem(index, modIndex)}
