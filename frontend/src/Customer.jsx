@@ -113,7 +113,7 @@ const itemVisualsByName = {
     image: tigerBobaImg,
   },
   'avocado toast': {
-    description: 'Crisp toasted bread layered with seasoned avocado mash and savory toppings.',const total = Math
+    description: 'Crisp toasted bread layered with seasoned avocado mash and savory toppings.',
     image: avocadoToastImg,
   },
   'bagel sandwich': {
@@ -121,7 +121,7 @@ const itemVisualsByName = {
     image: bagelSandwichImg,
   },
   fries: {
-    description: 'Golden fries with a crisp outside, fluffy center, and a savory potato finish.'const total = Math,
+    description: 'Golden fries with a crisp outside, fluffy center, and a savory potato finish.',
     image: friesImg,
   },
   'grilled cheese': {
@@ -431,15 +431,11 @@ function Customer() {
 
       const modificationsTotal = normalizedMods.reduce((sum, mod) => sum + mod.cost, 0);
 
-        // Prepend quantity for display in the order summary card, matching the Cashier view
-        const displayName = validQty > 1 ? `${validQty}x ${name}` : name;
-
       return {
         id: entryId || `order-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         menuId,
         cost: Number(baseCost) || 0,
-          name: displayName,
-          rawName: name,
+          name: name,
           quantity: validQty,
         modifications_array: normalizedMods,
           totalPrice: ((Number(baseCost) || 0) + modificationsTotal) * validQty,
