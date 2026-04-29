@@ -251,27 +251,27 @@ function AccessibilityWidget() {
                 className="a11y-option-btn"
                 onClick={() => setTheme(prevTheme => prevTheme === 'standard' ? 'high-contrast' : 'standard')}
                 aria-label='Toggle High Contrast Button'
-              >{theme === "standard" ? "High Contrast" : "Normal Contrast"}</button>
+              >{theme === "standard" ? translate("High Contrast") : translate("Normal Contrast")}</button>
 
               <button
                 type="button"
                 className="a11y-option-btn"
                 onClick={swapTextSize}
                 aria-label='Toggle Through Text Sizes'
-              >Font Size: {displayTextSizeOption()}</button>
+              >{translate("Font Size")}: {translate(displayTextSizeOption())}</button>
               <button
                 type="button"
                 className="a11y-option-btn"
                 onClick={toggleMagnify}
                 aria-label='Toggle Screen Magnification'
-              >Zoom {!magnifyScreen ? "In" : "Out"}</button>
+              >{translate("Zoom")} {!magnifyScreen ? translate("In") : translate("Out")}</button>
               <button
                 type="button"
                 className="a11y-option-btn"
                 onClick={handleOpenDictation}
                 aria-label="Open dictation test window"
               >
-                Dictation
+                {translate("Dictation")}
               </button>
               <button
                 type="button"
@@ -279,7 +279,7 @@ function AccessibilityWidget() {
                 onClick={() => setBackgroundDictationEnabled((prev) => !prev)}
                 aria-label="Toggle background dictation"
               >
-                Background Dictation: {backgroundDictationEnabled ? 'On' : 'Off'}
+                {translate("Background Dictation")}: {backgroundDictationEnabled ? translate('On') : translate('Off')}
               </button>
               </>
             )}
@@ -323,20 +323,20 @@ function AccessibilityWidget() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                   <div style={{ fontSize: '1.02rem', color: 'var(--tea-wood-dark)' }}>
-                    Status: {listening ? 'Listening' : 'Idle'}
+                    {translate("Status")}: {listening ? translate('Listening') : translate('Idle')}
                   </div>
 
                   <div style={{ fontSize: '0.98rem', color: 'var(--tea-wood-dark)' }}>
-                    Background Mode: {backgroundDictationEnabled ? 'On (commands still work when closed)' : 'Off'}
+                    {translate("Background Mode")}: {backgroundDictationEnabled ? translate('On (commands still work when closed)') : translate('Off')}
                   </div>
 
                   {!browserSupportsSpeechRecognition ? (
                     <p style={{ margin: 0, fontSize: '1.05rem', color: 'var(--tea-wood-dark)' }}>
-                      Speech recognition is not supported in this browser.
+                      {translate("Speech recognition is not supported in this browser.")}
                     </p>
                   ) : isMicrophoneAvailable === false ? (
                     <p style={{ margin: 0, fontSize: '1.05rem', color: 'var(--tea-wood-dark)' }}>
-                      Microphone access is needed for dictation.
+                      {translate("Microphone access is needed for dictation.")}
                     </p>
                   ) : (
                     <>
@@ -361,7 +361,7 @@ function AccessibilityWidget() {
                           transcript
                         ) : (
                           <span style={{ fontSize: '0.8rem' }}>
-                            Speak here and your words will appear in this box.
+                            {translate("Speak here and your words will appear in this box.")}
                           </span>
                         )}
                       </div>
@@ -381,7 +381,7 @@ function AccessibilityWidget() {
                             padding: '0.4rem 0.6rem',
                           }}
                         >
-                          {listening ? 'Stop' : 'Start'}
+                          {listening ? translate('Stop') : translate('Start')}
                         </button>
                         <button
                           type="button"
@@ -395,7 +395,7 @@ function AccessibilityWidget() {
                             padding: '0.4rem 0.6rem',
                           }}
                         >
-                          Clear
+                          {translate("Clear")}
                         </button>
                       </div>
 
@@ -410,14 +410,14 @@ function AccessibilityWidget() {
                         }}
                       >
                         <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.35rem' }}>
-                          Voice Commands
+                          {translate("Voice Commands")}
                         </div>
                         <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.92rem', lineHeight: 1.25 }}>
-                          <li>"Enter message" or "Send message": sends the current dictated text to chat.</li>
-                          <li>"Clear message": clears the chat input text.</li>
-                          <li>"Checkout order" or "Finish order": attempts to submit the current order.</li>
-                          <li>"Customer name [name]": sets the customer name.</li>
-                          <li>"End dictation": stops the microphone and clears this transcript box.</li>
+                          <li>{translate('"Enter message" or "Send message": sends the current dictated text to chat.')}</li>
+                          <li>{translate('"Clear message": clears the chat input text.')}</li>
+                          <li>{translate('"Checkout order" or "Finish order": attempts to submit the current order.')}</li>
+                          <li>{translate('"Customer name [name]": sets the customer name.')}</li>
+                          <li>{translate('"End dictation": stops the microphone and clears this transcript box.')}</li>
                         </ul>
                       </div>
                     </>
@@ -444,7 +444,7 @@ function AccessibilityWidget() {
       </button>
       {listening && !isOpen && (
         <div className="a11y-mic-indicator" aria-live="polite">
-          Mic On
+          {translate("Mic On")}
         </div>
       )}
     </div>
